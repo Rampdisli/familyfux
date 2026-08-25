@@ -1,5 +1,5 @@
 {
-  "name": "familifux",
+  "name": "familyfux",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -29,6 +29,7 @@
     "@angular/forms": "^21.1.0",
     "@angular/platform-browser": "^21.1.0",
     "@angular/router": "^21.1.0",
+    "@supabase/supabase-js": "^2.112.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

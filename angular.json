@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "familifux": {
+    "familyfux": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -35,6 +35,12 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
@@ -61,10 +67,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "familifux:build:production"
+              "buildTarget": "familyfux:build:production"
             },
             "development": {
-              "buildTarget": "familifux:build:development"
+              "buildTarget": "familyfux:build:development"
             }
           },
           "defaultConfiguration": "development"

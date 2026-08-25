@@ -1,0 +1,22 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid light-dark(#e2e2e2, #333);
+
+  .brand {
+    font-weight: 700;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  a {
+    color: #2563eb;
+  }
+
+  .user {
+    font-size: 0.9rem;
+    opacity: 0.75;
+  }
+}

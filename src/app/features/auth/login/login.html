@@ -1,0 +1,54 @@
+<section class="auth-card">
+  <h1>{{ mode() === 'signIn' ? 'Anmelden' : 'Registrieren' }}</h1>
+
+  <form (ngSubmit)="submit()" #form="ngForm">
+    <label>
+      E-Mail
+      <input
+        type="email"
+        name="email"
+        required
+        autocomplete="email"
+        [ngModel]="email()"
+        (ngModelChange)="email.set($event)"
+      />
+    </label>
+
+    <label>
+      Passwort
+      <input
+        type="password"
+        name="password"
+        required
+        minlength="6"
+        [autocomplete]="mode() === 'signIn' ? 'current-password' : 'new-password'"
+        [ngModel]="password()"
+        (ngModelChange)="password.set($event)"
+      />
+    </label>
+
+    @if (errorMessage(); as error) {
+      <p class="message error">{{ error }}</p>
+    }
+
+    @if (infoMessage(); as info) {
+      <p class="message info">{{ info }}</p>
+    }
+
+    <button type="submit" [disabled]="loading() || form.invalid">
+      @if (loading()) {
+        Bitte warten…
+      } @else {
+        {{ mode() === 'signIn' ? 'Anmelden' : 'Registrieren' }}
+      }
+    </button>
+  </form>
+
+  <button type="button" class="link" (click)="toggleMode()">
+    @if (mode() === 'signIn') {
+      Noch kein Konto? Jetzt registrieren
+    } @else {
+      Schon ein Konto? Jetzt anmelden
+    }
+  </button>
+</section>
