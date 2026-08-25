@@ -1,0 +1,46 @@
+<header class="topbar">
+  <h1>Aufgaben</h1>
+  <a routerLink="/dashboard">Zurück zum Dashboard</a>
+</header>
+
+<section class="card">
+  <form class="add-form" (submit)="addTask(); $event.preventDefault()">
+    <input
+      type="text"
+      name="title"
+      placeholder="Neue Aufgabe…"
+      [ngModel]="newTitle()"
+      (ngModelChange)="newTitle.set($event)"
+    />
+    <button type="submit">Hinzufügen</button>
+  </form>
+
+  @if (errorMessage(); as message) {
+    <p class="message error">{{ message }}</p>
+  }
+
+  @if (tasks.isLoading()) {
+    <p>Lade…</p>
+  } @else if (tasks.error(); as error) {
+    <p class="message error">
+      Konnte Aufgaben nicht laden: {{ error.message }}. Existiert die Tabelle <code>tasks</code>
+      bereits? Siehe README für das Setup-SQL.
+    </p>
+  } @else if (tasks.value(); as list) {
+    @if (list.length === 0) {
+      <p>Keine Aufgaben vorhanden.</p>
+    } @else {
+      <ul class="task-list">
+        @for (task of list; track task.id) {
+          <li [class.done]="task.is_done">
+            <label>
+              <input type="checkbox" [checked]="task.is_done" (change)="toggleTask(task)" />
+              {{ task.title }}
+            </label>
+            <button type="button" (click)="deleteTask(task)">Löschen</button>
+          </li>
+        }
+      </ul>
+    }
+  }
+</section>

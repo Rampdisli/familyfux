@@ -1,12 +1,12 @@
 import { JsonPipe } from '@angular/common';
 import { Component, inject, resource } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Auth } from '../../core/auth';
 import { supabase } from '../../core/supabase-client';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [JsonPipe],
+  imports: [JsonPipe, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

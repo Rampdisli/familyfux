@@ -10,6 +10,12 @@
     font-size: 1.25rem;
   }
 
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
   button {
     padding: 0.4rem 0.9rem;
     border-radius: 0.5rem;
