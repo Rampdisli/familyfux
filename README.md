@@ -11,7 +11,7 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 1. Create a project at [supabase.com](https://supabase.com/dashboard).
 2. Copy the **Project URL** and **anon public key** from *Project Settings → API*.
-3. Paste them into `src/environments/environment.ts` (used by `ng serve`) and `src/environments/environment.prod.ts` (used by `ng build`):
+3. Paste them into `src/environments/environment.ts`, which `ng serve` uses:
 
    ```ts
    export const environment = {
@@ -20,6 +20,10 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
      supabaseAnonKey: 'eyJ...',
    };
    ```
+
+   The production build (`ng build`) does *not* contain these values: `environment.prod.ts`
+   reads them from `window.__env`, which the Docker image writes into `config.js` on container
+   start from the `SUPABASE_URL` / `SUPABASE_ANON_KEY` env vars — see [Docker](#docker) below.
 
    The anon key is safe to ship to the client — it's designed to be public and access is enforced by [Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security) policies on your tables, not by keeping the key secret.
 
@@ -155,6 +159,58 @@ ng build
 ```
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+
+## Docker
+
+The app ships as an nginx image that serves the compiled bundle. Run it locally:
+
+```bash
+docker compose up --build
+```
+
+That publishes it on <http://localhost:8080> (nginx listens on 8080 inside the container, as
+a non-root user). `/healthz` returns `ok` for container health checks and reverse proxies.
+
+### Runtime configuration
+
+The image contains no Supabase credentials. On every container start,
+`docker/30-familyfux-config.sh` writes `/usr/share/nginx/html/config.js` from two required
+env vars, and `index.html` loads that file before the bundle:
+
+| Variable | Example |
+| --- | --- |
+| `SUPABASE_URL` | `https://aenkarrgedrcnqxpakam.supabase.co` |
+| `SUPABASE_ANON_KEY` | `sb_publishable_...` |
+
+If either is missing the container exits at startup with an error instead of serving a broken
+app. So the same image can be pointed at a different Supabase project without a rebuild —
+and it can stay a public package, since the only values baked in are the app's own sources.
+
+### Publishing to GitHub Container Registry
+
+`.github/workflows/publish-app.yml` builds and pushes `ghcr.io/rampdisli/familyfux-app`
+for `linux/amd64` + `linux/arm64` on every push to `main` (and on `v*` tags). It authenticates
+with the workflow's own `GITHUB_TOKEN`, so no personal access token is involved:
+
+- push to `main` → `:latest` and `:sha-<short>`
+- tag `v1.2.3` → additionally `:1.2.3` and `:1.2`
+
+To pull it on the Synology NAS (once, if the package is private):
+
+```bash
+docker login ghcr.io -u rampdisli   # PAT with read:packages, entered at the prompt
+docker pull ghcr.io/rampdisli/familyfux-app:latest
+```
+
+Then create the container from that image in Container Manager with `SUPABASE_URL` and
+`SUPABASE_ANON_KEY` set, mapping a host port to container port **8080**.
+
+Building and pushing by hand instead, without the workflow:
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t ghcr.io/rampdisli/familyfux-app:latest --push .
+```
 
 ## Running unit tests
 

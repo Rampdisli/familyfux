@@ -1,0 +1,23 @@
+# Build context for the Angular app image — see Dockerfile.
+.git
+.github
+.claude
+.vscode
+.idea
+node_modules
+dist
+out-tsc
+coverage
+.angular
+__screenshots__
+*.log
+.DS_Store
+**/.DS_Store
+.env
+.env.*
+
+# Not part of the app image; the MCP server has its own Dockerfile.
+mcp-server
+supabase
+README.md
+docker-compose*.yml
