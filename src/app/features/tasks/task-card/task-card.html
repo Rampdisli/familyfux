@@ -1,0 +1,34 @@
+<div class="tc-icon tile-{{ task().color }}">{{ task().emoji }}</div>
+
+@if (claimer(); as member) {
+  <div class="claim-badge av-{{ member.color }}" [title]="member.name">{{ member.emoji }}</div>
+}
+
+<div class="tc-name">{{ task().title }}</div>
+<div class="tc-reward">+{{ task().reward }} ⭐</div>
+
+@if (claimer(); as member) {
+  <button type="button" class="done-toggle" [attr.aria-pressed]="task().is_done" (click)="toggleDone()">
+    <span class="dot">{{ task().is_done ? '✓' : '' }}</span>
+    {{ member.name }} übernimmt
+  </button>
+} @else {
+  <button type="button" class="claim-btn" (click)="pickerOpen.set(true)">Ich mach’s!</button>
+}
+
+@if (pickerOpen()) {
+  <div class="picker">
+    <div class="p-head">
+      <span class="p-title">Wer nimmt sich das?</span>
+      <button type="button" class="p-close" aria-label="Schließen" (click)="pickerOpen.set(false)">
+        ×
+      </button>
+    </div>
+    @for (member of pool.family(); track member.id) {
+      <button type="button" class="p-opt" (click)="claim(member.id)">
+        <span class="av av-{{ member.color }}">{{ member.emoji }}</span>
+        {{ member.name }}
+      </button>
+    }
+  </div>
+}

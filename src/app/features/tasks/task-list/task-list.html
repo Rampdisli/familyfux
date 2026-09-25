@@ -1,46 +1,47 @@
-<header class="topbar">
-  <h1>Aufgaben</h1>
-  <a routerLink="/dashboard">Zurück zum Dashboard</a>
-</header>
+<div class="page">
+  <a routerLink="/dashboard" class="back">← Zurück zum Dashboard</a>
 
-<section class="card">
-  <form class="add-form" (submit)="addTask(); $event.preventDefault()">
-    <input
-      type="text"
-      name="title"
-      placeholder="Neue Aufgabe…"
-      [ngModel]="newTitle()"
-      (ngModelChange)="newTitle.set($event)"
-    />
-    <button type="submit">Hinzufügen</button>
-  </form>
-
-  @if (errorMessage(); as message) {
-    <p class="message error">{{ message }}</p>
+  @if (pool.errorMessage(); as message) {
+    <p class="message error">Konnte die Aufgabe nicht speichern: {{ message }}</p>
   }
 
-  @if (tasks.isLoading()) {
-    <p>Lade…</p>
-  } @else if (tasks.error(); as error) {
-    <p class="message error">
-      Konnte Aufgaben nicht laden: {{ error.message }}. Existiert die Tabelle <code>tasks</code>
-      bereits? Siehe README für das Setup-SQL.
+  @if (pool.data.error(); as error) {
+    <p class="message error">Konnte die Aufgaben nicht laden: {{ error.message }}</p>
+  } @else if (!pool.data.hasValue()) {
+    <p class="message">Lade…</p>
+  } @else if (pool.family().length === 0) {
+    <p class="message">
+      Du gehörst noch zu keiner Familie. Sobald du in <code>family_members</code> eingetragen bist,
+      erscheinen hier eure Aufgaben.
     </p>
-  } @else if (tasks.value(); as list) {
-    @if (list.length === 0) {
-      <p>Keine Aufgaben vorhanden.</p>
-    } @else {
-      <ul class="task-list">
-        @for (task of list; track task.id) {
-          <li [class.done]="task.is_done">
-            <label>
-              <input type="checkbox" [checked]="task.is_done" (change)="toggleTask(task)" />
-              {{ task.title }}
-            </label>
-            <button type="button" (click)="deleteTask(task)">Löschen</button>
-          </li>
-        }
-      </ul>
-    }
+  } @else {
+    <div class="family-strip">
+      @for (member of pool.family(); track member.id) {
+        <div class="fam-chip">
+          <div class="av av-{{ member.color }}">{{ member.emoji }}</div>
+          <div>
+            <div class="name">{{ member.name }}</div>
+            <div class="stars">{{ pool.stars()[member.id] ?? 0 }} ⭐ diese Woche</div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <section>
+      <div class="pool-head">
+        <h1>Aufgaben-Pool</h1>
+        <span>frei für alle — nimm dir, was dir liegt</span>
+      </div>
+
+      @if (pool.tasks().length === 0) {
+        <p class="message">Noch keine Aufgaben im Pool.</p>
+      } @else {
+        <div class="pool-grid">
+          @for (task of pool.tasks(); track task.id) {
+            <app-task-card [task]="task" />
+          }
+        </div>
+      }
+    </section>
   }
-</section>
+</div>
