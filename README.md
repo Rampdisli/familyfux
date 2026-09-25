@@ -177,14 +177,36 @@ The image contains no Supabase credentials. On every container start,
 `docker/30-familyfux-config.sh` writes `/usr/share/nginx/html/config.js` from two required
 env vars, and `index.html` loads that file before the bundle:
 
-| Variable | Example |
-| --- | --- |
-| `SUPABASE_URL` | `https://aenkarrgedrcnqxpakam.supabase.co` |
-| `SUPABASE_ANON_KEY` | `sb_publishable_...` |
+| Variable | Required | Example |
+| --- | --- | --- |
+| `SUPABASE_URL` | yes | `https://aenkarrgedrcnqxpakam.supabase.co` |
+| `SUPABASE_ANON_KEY` | yes | `sb_publishable_...` |
+| `BASE_HREF` | no, default `/` | `/familyfux` |
 
-If either is missing the container exits at startup with an error instead of serving a broken
-app. So the same image can be pointed at a different Supabase project without a rebuild —
-and it can stay a public package, since the only values baked in are the app's own sources.
+If either Supabase variable is missing the container exits at startup with an error instead
+of serving a broken app. So the same image can be pointed at a different Supabase project
+without a rebuild — and it can stay a public package, since the only values baked in are the
+app's own sources.
+
+#### Serving under a sub-path (`BASE_HREF`)
+
+When the app is not at the root of its host — e.g. `https://nas.example/familyfux/` behind
+a reverse proxy — set `BASE_HREF` to that path. The startup script then
+
+- rewrites `<base href>` in `index.html`, so Angular's router and all relative asset URLs
+  resolve under that prefix, and
+- makes nginx strip the prefix from incoming requests (`/familyfux/tasks` → `/tasks`), so
+  it works whether the reverse proxy forwards the path as-is or strips it first.
+
+`/familyfux`, `/familyfux/` and a full URL like `https://nas.example/familyfux` are all
+accepted; only the path is used. Nothing needs to be rebuilt — the same image serves at `/`
+and at any prefix.
+
+For a plain `ng build` outside Docker, pass the prefix at build time instead:
+
+```bash
+ng build --base-href /familyfux/
+```
 
 ### Publishing to GitHub Container Registry
 
@@ -203,7 +225,8 @@ docker pull ghcr.io/rampdisli/familyfux-app:latest
 ```
 
 Then create the container from that image in Container Manager with `SUPABASE_URL` and
-`SUPABASE_ANON_KEY` set, mapping a host port to container port **8080**.
+`SUPABASE_ANON_KEY` set (plus `BASE_HREF` if it sits under a sub-path of the reverse
+proxy), mapping a host port to container port **8080**.
 
 Building and pushing by hand instead, without the workflow:
 

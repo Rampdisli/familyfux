@@ -26,9 +26,11 @@ LABEL org.opencontainers.image.title="Familyfux" \
 
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --chmod=755 docker/30-familyfux-config.sh /docker-entrypoint.d/30-familyfux-config.sh
+# --chown so the startup script can overwrite it with the BASE_HREF rewrite.
+COPY --chown=nginx:nginx docker/base-href.conf /etc/nginx/familyfux-base-href.conf
 
 # --chown so the startup script, running as the non-root nginx user, can
-# rewrite config.js in place.
+# rewrite config.js and index.html (base href) in place.
 COPY --from=build --chown=nginx:nginx /app/dist/familyfux/browser /usr/share/nginx/html
 
 EXPOSE 8080

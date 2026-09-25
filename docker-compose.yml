@@ -13,6 +13,9 @@ services:
       # next to this compose file to point the image at another project.
       SUPABASE_URL: ${SUPABASE_URL:-https://aenkarrgedrcnqxpakam.supabase.co}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-sb_publishable_2YZFv1NUDi27_WbPcVoewg_tsu1UDeE}
+      # URL path the app is served under, e.g. /familyfux when it sits behind a
+      # reverse proxy. Becomes <base href> in index.html.
+      BASE_HREF: ${BASE_HREF:-/}
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
       interval: 30s
