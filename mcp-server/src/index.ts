@@ -66,7 +66,7 @@ const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
  * the family tables applies exactly as it would for that user in the Angular app.
  */
 function createMcpServer(supabaseAccessToken: string, userId: string): McpServer {
-  const server = new McpServer({ name: 'familyfux-tasks', version: '0.0.0' });
+  const server = new McpServer({ name: 'familyfux-tasks', version: '0.2.0' });
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false, autoRefreshToken: false },

@@ -1,0 +1,21 @@
+services:
+  mcp-server:
+    build: .
+    expose:
+      - "3000"
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http mcp-server:3000 --url=${NGROK_URL}
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"
+    depends_on:
+      - mcp-server
+    restart: unless-stopped

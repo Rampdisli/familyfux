@@ -1,0 +1,60 @@
+name: Publish MCP server image
+
+# Builds the MCP server image (mcp-server/Dockerfile) and pushes it to GitHub
+# Container Registry. The image version comes from mcp-server/package.json.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mcp-server/**'
+      - '.github/workflows/publish-mcp.yml'
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/rampdisli/familyfux-mcp
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: version
+        run: echo "version=$(jq -r .version mcp-server/package.json)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          # `latest` + short SHA + the package.json version (e.g. 0.2.0).
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+            type=raw,value=${{ steps.version.outputs.version }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: mcp-server
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+          # Own cache scope so it doesn't evict the app image's cache.
+          cache-from: type=gha,scope=mcp
+          cache-to: type=gha,scope=mcp,mode=max
