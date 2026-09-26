@@ -11,6 +11,10 @@ on:
       - '.github/workflows/publish-mcp.yml'
   workflow_dispatch:
 
+concurrency:
+  group: publish-mcp
+  cancel-in-progress: true
+
 env:
   IMAGE: ghcr.io/rampdisli/familyfux-mcp
 
