@@ -1,13 +1,20 @@
 # Familyfux Tasks MCP Server
 
-A minimal [MCP](https://modelcontextprotocol.io/) server exposing one tool, `create_task`,
-that inserts a row into the `tasks` table of the main Familyfux Supabase project.
+A minimal [MCP](https://modelcontextprotocol.io/) server for the family task pool ("Fuxis Plan")
+of the main Familyfux Supabase project:
 
-It's a full **OAuth 2.1 authorization server** in front of that tool (using the
+- `create_task` — new task with optional emoji, colour and reward (stars)
+- `list_tasks` — all tasks of the family, with reward and who claimed them
+- `list_family_members` — family members with their stars this week
+- `claim_task` — assign a task to a family member, or release it
+- `set_task_done` — mark a task as done / open again
+- `delete_task` — delete a task
+
+It's a full **OAuth 2.1 authorization server** in front of these tools (using the
 `@modelcontextprotocol/sdk`'s built-in auth router): connecting a client (ChatGPT, Claude, ...)
 opens a real login screen, checks the email/password against Supabase Auth, and issues that
 client its own access token tied to the signed-in user's Supabase session. No credentials are
-stored in `.env` or anywhere on disk — RLS on `tasks` applies exactly as it does in the
+stored in `.env` or anywhere on disk — RLS on the family tables applies exactly as it does in the
 Angular app, scoped to whichever account logged in.
 
 ## Setup

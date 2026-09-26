@@ -35,12 +35,35 @@ async function logEvent(event: Record<string, unknown>): Promise<void> {
   await appendFile(logFile, line + '\n');
 }
 
+/** Tile colours of the task pool, same as in the Angular app (`PoolColor`). */
+const POOL_COLORS = ['mint', 'lilac', 'sky', 'rose', 'peach', 'lemon'] as const;
+
+/** Task columns plus the family member who claimed it (via the claimed_by foreign key). */
+const TASK_COLUMNS = 'id, title, emoji, color, reward, is_done, claimed_by, claimer:family_members(name, emoji)';
+
+interface TaskRow {
+  id: string;
+  title: string;
+  emoji: string;
+  color: (typeof POOL_COLORS)[number];
+  reward: number;
+  is_done: boolean;
+  claimed_by: string | null;
+  claimer: { name: string; emoji: string } | null;
+}
+
+/** One line per task, e.g. `- [ ] 🧹 Staubsaugen (2 ★, 🦊 Ramona, id: …)`. */
+function formatTask(task: TaskRow): string {
+  const claimer = task.claimer ? `, ${task.claimer.emoji} ${task.claimer.name}` : ', unclaimed';
+  return `- [${task.is_done ? 'x' : ' '}] ${task.emoji} ${task.title} (${task.reward} ★${claimer}, id: ${task.id})`;
+}
+
 const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
 
 /**
  * Builds a Supabase client scoped to one signed-in MCP client's own session
  * (via their access token, obtained through the OAuth login), so RLS on
- * `tasks` applies exactly as it would for that user in the Angular app.
+ * the family tables applies exactly as it would for that user in the Angular app.
  */
 function createMcpServer(supabaseAccessToken: string, userId: string): McpServer {
   const server = new McpServer({ name: 'familyfux-tasks', version: '0.0.0' });
@@ -50,32 +73,38 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     global: { headers: { Authorization: `Bearer ${supabaseAccessToken}` } },
   });
 
+  /** Logs a failed tool call and returns the message as an MCP error result. */
+  async function fail(tool: string, text: string, details: Record<string, unknown> = {}) {
+    await logEvent({ type: 'tool_call', tool, userId, ...details, error: text });
+    return { isError: true, content: [{ type: 'text' as const, text }] };
+  }
+
   server.registerTool(
     'create_task',
     {
       title: 'Create task',
-      description: 'Creates a new task in the Familyfux task list.',
-      inputSchema: { title: z.string().min(1).describe('The title of the task') },
+      description: "Creates a new task in the family's task pool (Fuxis Plan).",
+      inputSchema: {
+        title: z.string().min(1).describe('The title of the task'),
+        emoji: z.string().min(1).optional().describe('An emoji for the task tile, e.g. 🧹 (default ✅)'),
+        color: z.enum(POOL_COLORS).optional().describe('Colour of the task tile (default peach)'),
+        reward: z.number().int().positive().optional().describe('Stars earned for doing it (default 1)'),
+      },
     },
-    async ({ title }) => {
+    async ({ title, emoji, color, reward }) => {
+      // family_id is filled by the tasks_before_write trigger from the user's family.
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ title, user_id: userId })
-        .select()
-        .single();
+        .insert({ title, emoji, color, reward, user_id: userId })
+        .select(TASK_COLUMNS)
+        .single<TaskRow>();
 
       if (error) {
-        await logEvent({ type: 'tool_call', tool: 'create_task', userId, title, error: error.message });
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Failed to create task: ${error.message}` }],
-        };
+        return fail('create_task', `Failed to create task: ${error.message}`, { title });
       }
 
       await logEvent({ type: 'tool_call', tool: 'create_task', userId, title, taskId: data.id });
-      return {
-        content: [{ type: 'text', text: `Created task "${data.title}" (id: ${data.id}).` }],
-      };
+      return { content: [{ type: 'text', text: `Created task:\n${formatTask(data)}` }] };
     },
   );
 
@@ -83,21 +112,20 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     'list_tasks',
     {
       title: 'List tasks',
-      description: 'Lists all tasks in the Familyfux task list.',
+      description:
+        "Lists all tasks in the family's task pool with their reward and who claimed them. Open tasks come first.",
       inputSchema: {},
     },
     async () => {
       const { data, error } = await supabase
         .from('tasks')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select(TASK_COLUMNS)
+        .order('is_done')
+        .order('created_at')
+        .returns<TaskRow[]>();
 
       if (error) {
-        await logEvent({ type: 'tool_call', tool: 'list_tasks', userId, error: error.message });
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Failed to list tasks: ${error.message}` }],
-        };
+        return fail('list_tasks', `Failed to list tasks: ${error.message}`);
       }
 
       await logEvent({ type: 'tool_call', tool: 'list_tasks', userId, count: data.length });
@@ -106,35 +134,110 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         return { content: [{ type: 'text', text: 'No tasks found.' }] };
       }
 
-      const lines = data.map((task) => `- [${task.is_done ? 'x' : ' '}] ${task.title} (id: ${task.id})`);
+      return { content: [{ type: 'text', text: data.map(formatTask).join('\n') }] };
+    },
+  );
+
+  server.registerTool(
+    'list_family_members',
+    {
+      title: 'List family members',
+      description: 'Lists the members of the family with the stars they earned this week, and their ids for claim_task.',
+      inputSchema: {},
+    },
+    async () => {
+      const [members, stars] = await Promise.all([
+        supabase
+          .from('family_members')
+          .select('id, name, emoji, role')
+          .order('sort_order')
+          .order('created_at')
+          .returns<{ id: string; name: string; emoji: string; role: string }[]>(),
+        supabase.from('member_week_stars').select('member_id, stars').returns<{ member_id: string; stars: number }[]>(),
+      ]);
+
+      const error = members.error ?? stars.error;
+      if (error) {
+        return fail('list_family_members', `Failed to list family members: ${error.message}`);
+      }
+
+      const family = members.data ?? [];
+
+      await logEvent({ type: 'tool_call', tool: 'list_family_members', userId, count: family.length });
+
+      if (family.length === 0) {
+        return { content: [{ type: 'text', text: 'You are not a member of any family.' }] };
+      }
+
+      const starsByMember = new Map((stars.data ?? []).map((s) => [s.member_id, s.stars]));
+      const lines = family.map(
+        (m) => `- ${m.emoji} ${m.name} (${m.role}, ${starsByMember.get(m.id) ?? 0} ★ this week, id: ${m.id})`,
+      );
       return { content: [{ type: 'text', text: lines.join('\n') }] };
     },
+  );
+
+  server.registerTool(
+    'claim_task',
+    {
+      title: 'Claim task',
+      description:
+        'Assigns a task to a family member (get their id from list_family_members), or releases it again when member_id is omitted.',
+      inputSchema: {
+        id: z.string().uuid().describe('The id of the task'),
+        member_id: z.string().uuid().optional().describe('The id of the family member taking over the task'),
+      },
+    },
+    async ({ id, member_id }) => {
+      if (member_id) {
+        // RLS only returns members of the user's own family.
+        const { data: member, error } = await supabase
+          .from('family_members')
+          .select('id')
+          .eq('id', member_id)
+          .maybeSingle();
+
+        if (error || !member) {
+          const text = error
+            ? `Failed to claim task: ${error.message}`
+            : `No family member found with id ${member_id}.`;
+          return fail('claim_task', text, { taskId: id, memberId: member_id });
+        }
+      }
+
+      return updateTask('claim_task', id, { claimed_by: member_id ?? null });
+    },
+  );
+
+  server.registerTool(
+    'set_task_done',
+    {
+      title: 'Mark task as done',
+      description: 'Marks a task as done (or as open again with done=false). Done tasks count towards the stars of whoever claimed them.',
+      inputSchema: {
+        id: z.string().uuid().describe('The id of the task'),
+        done: z.boolean().default(true).describe('true = done, false = open again'),
+      },
+    },
+    async ({ id, done }) => updateTask('set_task_done', id, { is_done: done }),
   );
 
   server.registerTool(
     'delete_task',
     {
       title: 'Delete task',
-      description: 'Deletes a task from the Familyfux task list by its id.',
+      description: "Deletes a task from the family's task pool by its id.",
       inputSchema: { id: z.string().uuid().describe('The id of the task to delete') },
     },
     async ({ id }) => {
       const { data, error } = await supabase.from('tasks').delete().eq('id', id).select().maybeSingle();
 
       if (error) {
-        await logEvent({ type: 'tool_call', tool: 'delete_task', userId, taskId: id, error: error.message });
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Failed to delete task: ${error.message}` }],
-        };
+        return fail('delete_task', `Failed to delete task: ${error.message}`, { taskId: id });
       }
 
       if (!data) {
-        await logEvent({ type: 'tool_call', tool: 'delete_task', userId, taskId: id, notFound: true });
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `No task found with id ${id}.` }],
-        };
+        return fail('delete_task', `No task found with id ${id}.`, { taskId: id });
       }
 
       await logEvent({ type: 'tool_call', tool: 'delete_task', userId, taskId: id, title: data.title });
@@ -143,6 +246,27 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       };
     },
   );
+
+  /** Applies `changes` to one task; claimed_at / done_at are kept in sync by the DB trigger. */
+  async function updateTask(tool: string, id: string, changes: { claimed_by?: string | null; is_done?: boolean }) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(changes)
+      .eq('id', id)
+      .select(TASK_COLUMNS)
+      .maybeSingle<TaskRow>();
+
+    if (error) {
+      return fail(tool, `Failed to update task: ${error.message}`, { taskId: id, changes });
+    }
+
+    if (!data) {
+      return fail(tool, `No task found with id ${id}.`, { taskId: id, changes });
+    }
+
+    await logEvent({ type: 'tool_call', tool, userId, taskId: id, changes });
+    return { content: [{ type: 'text' as const, text: `Updated task:\n${formatTask(data)}` }] };
+  }
 
   return server;
 }
