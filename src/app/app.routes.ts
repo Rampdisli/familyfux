@@ -25,6 +25,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/tasks/task-create/task-create').then((m) => m.TaskCreate),
   },
   {
+    path: 'aufgaben',
+    canActivate: [authGuard, parentGuard],
+    loadComponent: () => import('./features/tasks/task-admin/task-admin').then((m) => m.TaskAdmin),
+  },
+  {
     path: 'fortschritt/:memberId',
     canActivate: [authGuard],
     loadComponent: () => import('./features/progress/progress').then((m) => m.Progress),

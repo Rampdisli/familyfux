@@ -57,20 +57,6 @@
   }
 }
 
-.message {
-  margin: 0;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: #fff;
-  font-size: 13.5px;
-  color: var(--brown-soft);
-
-  &.error {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-}
-
 /* POOL */
 .pool-head {
   display: flex;
@@ -92,6 +78,22 @@
     font-size: 13px;
     color: var(--brown-soft);
   }
+}
+
+.pool-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.manage-tasks {
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--brown);
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+  box-shadow: 0 8px 18px var(--shadow-warm);
 }
 
 .new-task {

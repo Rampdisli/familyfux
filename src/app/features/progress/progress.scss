@@ -23,20 +23,6 @@
   text-decoration: none;
 }
 
-.message {
-  margin: 0;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: #fff;
-  font-size: 13.5px;
-  color: var(--brown-soft);
-
-  &.error {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-}
-
 /* PERSON HEADER */
 .person-head {
   display: flex;

@@ -124,3 +124,87 @@ export function scheduleSummary(draft: ScheduleDraft): string {
       return `Erscheint ${draft.daysAfterDone} Tage nach der letzten Erledigung wieder`;
   }
 }
+
+/** Local calendar day as yyyy-mm-dd (what <input type="date"> uses). */
+export function isoDate(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** Form state for a new task: one-off today, recurring fields prefilled with today's weekday / day. */
+export function defaultScheduleDraft(): ScheduleDraft {
+  const today = new Date();
+  const isoWeekday = ((today.getDay() + 6) % 7) + 1;
+
+  return {
+    recurring: false,
+    onceDate: isoDate(today),
+    schedule: 'daily',
+    startDate: isoDate(today),
+    weekday: isoWeekday,
+    weekdays: [isoWeekday],
+    everyXDays: 2,
+    everyXWeeks: 2,
+    everyXMonths: 2,
+    daysAfterDone: 3,
+    monthDay: today.getDate(),
+    month: today.getMonth() + 1,
+  };
+}
+
+/** Form state for editing a stored task (the inverse of toScheduleParams). */
+export function scheduleDraftFrom(params: ScheduleParams): ScheduleDraft {
+  const draft = defaultScheduleDraft();
+  const every = params.repeat_every ?? undefined;
+
+  if (params.schedule === 'once') {
+    return { ...draft, recurring: false, onceDate: params.start_date };
+  }
+
+  return {
+    ...draft,
+    recurring: true,
+    schedule: params.schedule,
+    startDate: params.start_date,
+    weekday: params.weekdays?.[0] ?? draft.weekday,
+    weekdays: params.weekdays?.length ? [...params.weekdays] : draft.weekdays,
+    everyXDays: params.schedule === 'every_x_days' ? every! : draft.everyXDays,
+    everyXWeeks: params.schedule === 'every_x_weeks' ? every! : draft.everyXWeeks,
+    everyXMonths: params.schedule === 'every_x_months' ? every! : draft.everyXMonths,
+    daysAfterDone: params.schedule === 'after_completion' ? every! : draft.daysAfterDone,
+    monthDay: params.month_day ?? draft.monthDay,
+    month: params.month ?? draft.month,
+  };
+}
+
+/** Short label for lists: "Täglich", "An: Montag, Donnerstag", "Einmalig am 14. September 2026". */
+export function scheduleLabel(params: ScheduleParams): string {
+  const days = (params.weekdays ?? []).map((d) => WEEKDAYS_LONG[d - 1]).join(', ');
+
+  switch (params.schedule) {
+    case 'once':
+      return `Einmalig am ${new Date(`${params.start_date}T00:00`).toLocaleDateString('de-DE', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })}`;
+    case 'daily':
+      return 'Täglich';
+    case 'weekly':
+      return `Wöchentlich am ${days}`;
+    case 'weekdays':
+      return `An: ${days}`;
+    case 'every_x_days':
+      return `Alle ${params.repeat_every} Tage`;
+    case 'monthly':
+      return `Monatlich am ${params.month_day}.`;
+    case 'every_x_weeks':
+      return `Alle ${params.repeat_every} Wochen am ${days}`;
+    case 'every_x_months':
+      return `Alle ${params.repeat_every} Monate am ${params.month_day}.`;
+    case 'yearly':
+      return `Jährlich am ${params.month_day}. ${MONTHS[(params.month ?? 1) - 1]}`;
+    case 'after_completion':
+      return `${params.repeat_every} Tage nach letzter Erledigung`;
+  }
+}

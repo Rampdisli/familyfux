@@ -27,11 +27,12 @@
     text-decoration: line-through;
   }
 
-  .done-toggle .dot {
-    background: var(--mint-deep);
-    border-color: var(--mint-deep);
-    color: #fff;
-  }
+}
+
+.done-toggle.done .dot {
+  background: var(--mint-deep);
+  border-color: var(--mint-deep);
+  color: #fff;
 }
 
 .tc-icon {
@@ -56,10 +57,18 @@
   color: var(--brown-soft);
 }
 
-.claim-badge {
+/* Participants' avatars, overlapping in the top right corner. */
+.claim-badges {
   position: absolute;
   top: 14px;
   right: 14px;
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+.claim-badge {
+  margin-left: -8px;
+  border: 2px solid #fff;
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -87,8 +96,53 @@
   }
 }
 
-.done-toggle {
+.participants {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.participant {
+  display: flex;
+  gap: 6px;
+}
+
+.leave {
+  flex-shrink: 0;
+  width: 34px;
+  border: none;
+  border-radius: 13px;
+  background: var(--cream);
+  color: var(--brown-soft);
+  font-size: 16px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--cream-deep);
+  }
+}
+
+.join-btn {
+  padding: 8px 0;
+  border: 2px dashed rgba(90, 52, 35, 0.22);
+  border-radius: 13px;
+  background: transparent;
+  color: var(--brown-soft);
+  font: inherit;
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--orange);
+    color: var(--orange-deep);
+  }
+}
+
+.done-toggle {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 8px;

@@ -4,7 +4,10 @@
       <h1>Familie verwalten</h1>
       <p>Mitglieder hinzufügen, anpassen oder entfernen</p>
     </div>
-    <div class="lock-note">🔒 Nur für Eltern sichtbar</div>
+    <div class="head-actions">
+      <a routerLink="/aufgaben" class="tasks-link">🗂️ Aufgaben verwalten</a>
+      <div class="lock-note">🔒 Nur für Eltern sichtbar</div>
+    </div>
   </div>
 
   @if (errorMessage(); as message) {

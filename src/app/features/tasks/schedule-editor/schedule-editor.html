@@ -1,0 +1,172 @@
+@if (!draft().recurring) {
+  <div class="field">
+    <label class="f-label" for="once-date">Datum</label>
+    <input
+      id="once-date"
+      type="date"
+      required
+      [value]="draft().onceDate"
+      (change)="patch({ onceDate: $any($event.target).value || draft().onceDate })"
+    />
+  </div>
+} @else {
+  <div class="field">
+    <label class="f-label" for="recur-type">Wiederholung</label>
+    <select id="recur-type" [value]="draft().schedule" (change)="setScheduleType($any($event.target).value)">
+      @for (option of recurringOptions; track option.value) {
+        <option [value]="option.value" [selected]="option.value === draft().schedule">
+          {{ option.label }}
+        </option>
+      }
+    </select>
+
+    <div class="recur-panel">
+      @switch (draft().schedule) {
+        @case ('daily') {
+          <div class="inline-fields">Wird jeden Tag im Pool angezeigt.</div>
+        }
+        @case ('weekly') {
+          <div class="inline-fields">Jede Woche am:</div>
+          <ng-container *ngTemplateOutlet="singleWeekday" />
+        }
+        @case ('weekdays') {
+          <div class="inline-fields">An diesen Wochentagen:</div>
+          <div class="weekday-row">
+            @for (day of weekdays; track day; let i = $index) {
+              <button
+                type="button"
+                class="weekday-chip"
+                [class.active]="draft().weekdays.includes(i + 1)"
+                [attr.aria-pressed]="draft().weekdays.includes(i + 1)"
+                (click)="toggleWeekday(i + 1)"
+              >
+                {{ day }}
+              </button>
+            }
+          </div>
+        }
+        @case ('every_x_days') {
+          <div class="inline-fields">
+            Alle
+            <input
+              type="number"
+              min="1"
+              max="365"
+              aria-label="Anzahl Tage"
+              [value]="draft().everyXDays"
+              (input)="setNumber('everyXDays', $any($event.target).value, 1, 365)"
+            />
+            Tage
+          </div>
+        }
+        @case ('monthly') {
+          <div class="inline-fields">
+            Am
+            <ng-container *ngTemplateOutlet="monthDaySelect" />
+            Tag jedes Monats
+          </div>
+        }
+        @case ('every_x_weeks') {
+          <div class="inline-fields">
+            Alle
+            <input
+              type="number"
+              min="1"
+              max="52"
+              aria-label="Anzahl Wochen"
+              [value]="draft().everyXWeeks"
+              (input)="setNumber('everyXWeeks', $any($event.target).value, 1, 52)"
+            />
+            Wochen, am:
+          </div>
+          <ng-container *ngTemplateOutlet="singleWeekday" />
+        }
+        @case ('every_x_months') {
+          <div class="inline-fields">
+            Alle
+            <input
+              type="number"
+              min="1"
+              max="24"
+              aria-label="Anzahl Monate"
+              [value]="draft().everyXMonths"
+              (input)="setNumber('everyXMonths', $any($event.target).value, 1, 24)"
+            />
+            Monate, am
+            <ng-container *ngTemplateOutlet="monthDaySelect" />
+            Tag
+          </div>
+        }
+        @case ('yearly') {
+          <div class="inline-fields">
+            Jedes Jahr am
+            <ng-container *ngTemplateOutlet="monthDaySelect" />
+            <select aria-label="Monat" (change)="setNumber('month', $any($event.target).value, 1, 12)">
+              @for (month of months; track month; let i = $index) {
+                <option [value]="i + 1" [selected]="i + 1 === draft().month">{{ month }}</option>
+              }
+            </select>
+          </div>
+        }
+        @case ('after_completion') {
+          <div class="inline-fields">
+            Erscheint
+            <input
+              type="number"
+              min="1"
+              max="365"
+              aria-label="Anzahl Tage"
+              [value]="draft().daysAfterDone"
+              (input)="setNumber('daysAfterDone', $any($event.target).value, 1, 365)"
+            />
+            Tage, nachdem sie zuletzt als erledigt markiert wurde
+          </div>
+          <div class="hint-note">
+            Praktisch für Aufgaben ohne festen Rhythmus, z. B. „Blumen gießen“ oder „Auto waschen“ — der
+            Countdown startet erst beim Abhaken, nicht an einem festen Datum.
+          </div>
+        }
+      }
+      @if (lateMonthDay()) {
+        <div class="hint-note">In kürzeren Monaten erscheint die Aufgabe am letzten Tag des Monats.</div>
+      }
+    </div>
+
+    <div class="field start-date">
+      <label class="f-label" for="start-date">Startdatum</label>
+      <input
+        id="start-date"
+        type="date"
+        required
+        [value]="draft().startDate"
+        (change)="patch({ startDate: $any($event.target).value || draft().startDate })"
+      />
+    </div>
+
+    <div class="recur-summary">🔁 {{ summary() }}</div>
+  </div>
+}
+
+<ng-template #singleWeekday>
+  <div class="weekday-row">
+    @for (day of weekdays; track day; let i = $index) {
+      <button
+        type="button"
+        class="weekday-chip"
+        [class.active]="draft().weekday === i + 1"
+        [attr.aria-pressed]="draft().weekday === i + 1"
+        (click)="patch({ weekday: i + 1 })"
+      >
+        {{ day }}
+      </button>
+    }
+  </div>
+</ng-template>
+
+<ng-template #monthDaySelect>
+  <select aria-label="Tag im Monat" (change)="setNumber('monthDay', $any($event.target).value, 1, 31)">
+    @for (day of monthDays(); track day) {
+      <option [value]="day" [selected]="day === draft().monthDay">{{ day }}.</option>
+    }
+  </select>
+</ng-template>

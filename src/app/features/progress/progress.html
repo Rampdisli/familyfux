@@ -25,7 +25,7 @@
     <div class="stat-row">
       <div class="stat-tile">
         <div class="s-label">Sterne diese Woche</div>
-        <div class="s-value">{{ pool.stars()[m.id] ?? 0 }} <span class="unit">⭐</span></div>
+        <div class="s-value">{{ stars(pool.stars()[m.id] ?? 0) }} <span class="unit">⭐</span></div>
       </div>
       <div class="stat-tile">
         <div class="s-label">Aufgaben erledigt</div>
@@ -35,7 +35,7 @@
         <div class="s-label">Bester Tag</div>
         @if (bestDay(); as best) {
           <div class="s-value" [title]="longDate(best.date)">
-            {{ weekday(best.date) }} <span class="unit">{{ best.stars }} ⭐</span>
+            {{ weekday(best.date) }} <span class="unit">{{ stars(best.stars) }} ⭐</span>
           </div>
         } @else {
           <div class="s-value">–</div>
@@ -89,7 +89,7 @@
             [style.left.%]="(bar.cx / chartWidth) * 100"
             [style.top.%]="(bar.top / chartHeight) * 100"
           >
-            {{ bar.day.stars }} ⭐
+            {{ stars(bar.day.stars) }} ⭐
             <div class="tt-sub">{{ longDate(bar.day.date) }}</div>
           </div>
         }
@@ -111,7 +111,7 @@
               <div class="t-name">{{ task.title }}</div>
               <div class="t-time">erledigt um {{ time(task.done_at) }} Uhr</div>
             </div>
-            <div class="t-stars">+{{ task.reward }} ⭐</div>
+            <div class="t-stars">+{{ stars(task.stars) }} ⭐</div>
           </div>
         }
       } @empty {

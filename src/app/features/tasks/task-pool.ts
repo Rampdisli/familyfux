@@ -8,6 +8,9 @@ export type PoolColor = 'mint' | 'lilac' | 'sky' | 'rose' | 'peach' | 'lemon';
 
 export const POOL_COLORS: readonly PoolColor[] = ['mint', 'lilac', 'sky', 'rose', 'peach', 'lemon'];
 
+/** Symbols offered when creating / editing a task. */
+export const TASK_ICONS = ['🧸', '🦷', '🎒', '🐕', '🍽️', '🧺', '🌱', '🗑️', '📚', '🧹', '🚲', '🛏️'];
+
 export type MemberRole = 'parent' | 'child';
 
 export interface FamilyMember {
@@ -24,12 +27,22 @@ export interface FamilyMember {
 /** The fields a parent can edit on the "Familie verwalten" page. */
 export type MemberDraft = Pick<FamilyMember, 'name' | 'emoji' | 'color' | 'role'>;
 
-/** One occurrence of a task in the pool (a row of the task_pool view). */
-/** What the "Neue Aufgabe" page saves into `tasks`. */
-export type TaskInput = Pick<PoolTask, 'title' | 'emoji' | 'color' | 'reward'> & ScheduleParams;
+/** 'each': every participant earns the full reward; 'split': they share it. */
+export type RewardMode = 'each' | 'split';
 
+/** What the "Neue Aufgabe" / "Aufgaben verwalten" pages save into `tasks`. */
+export type TaskInput = Pick<PoolTask, 'title' | 'emoji' | 'color' | 'reward' | 'reward_mode'> & ScheduleParams;
+
+/** One participant of a pool entry (a row of task_claims); everybody ticks off their own part. */
+export interface PoolClaim {
+  id: string;
+  member_id: string | null;
+  is_done: boolean;
+}
+
+/** One occurrence of a task in the pool (a row of the task_pool view) with its participants. */
 export interface PoolTask {
-  /** Occurrence id — what gets claimed and ticked off. */
+  /** Occurrence id — what gets joined and ticked off. */
   id: string;
   task_id: string;
   schedule: Schedule;
@@ -37,8 +50,15 @@ export interface PoolTask {
   emoji: string;
   color: PoolColor;
   reward: number;
-  claimed_by: string | null;
+  reward_mode: RewardMode;
+  /** All participants are done. */
   is_done: boolean;
+  claims: PoolClaim[];
+}
+
+/** Stars can be fractional when shared: 1.5 → "1,5". */
+export function formatStars(stars: number): string {
+  return stars.toLocaleString('de-DE', { maximumFractionDigits: 2 });
 }
 
 /**
@@ -64,7 +84,7 @@ export class TaskPool {
         throw new Error(refresh.error.message, { cause: refresh.error });
       }
 
-      const [members, tasks, stars] = await Promise.all([
+      const [members, pool, stars] = await Promise.all([
         supabase
           .from('family_members')
           .select('id, family_id, user_id, name, emoji, color, role')
@@ -72,24 +92,41 @@ export class TaskPool {
           .order('created_at'),
         supabase
           .from('task_pool')
-          .select('id, task_id, schedule, title, emoji, color, reward, claimed_by, is_done')
+          .select('id, task_id, schedule, title, emoji, color, reward, reward_mode, is_done')
           .order('is_done')
           .order('due_date')
           .order('title'),
         supabase.from('member_week_stars').select('member_id, stars'),
       ]);
 
-      const error = members.error ?? tasks.error ?? stars.error;
+      // Participants of the entries currently in the pool.
+      const claims = pool.data?.length
+        ? await supabase
+            .from('task_claims')
+            .select('id, occurrence_id, member_id, is_done')
+            .in('occurrence_id', pool.data.map((t) => t.id))
+            .order('claimed_at')
+        : { data: [], error: null };
+
+      const error = members.error ?? pool.error ?? stars.error ?? claims.error;
       if (error) {
         // PostgrestError is a plain object; resource() needs an Error to expose its message.
         throw new Error(error.message, { cause: error });
       }
 
+      const claimsByOccurrence = new Map<string, PoolClaim[]>();
+      for (const { occurrence_id, ...claim } of (claims.data ?? []) as (PoolClaim & { occurrence_id: string })[]) {
+        claimsByOccurrence.set(occurrence_id, [...(claimsByOccurrence.get(occurrence_id) ?? []), claim]);
+      }
+
       return {
         family: members.data as FamilyMember[],
-        tasks: tasks.data as PoolTask[],
+        tasks: (pool.data as Omit<PoolTask, 'claims'>[]).map((t) => ({
+          ...t,
+          claims: claimsByOccurrence.get(t.id) ?? [],
+        })),
         stars: Object.fromEntries(
-          (stars.data ?? []).map((s) => [s.member_id, s.stars]),
+          (stars.data ?? []).map((s) => [s.member_id, Number(s.stars)]),
         ) as Partial<Record<string, number>>,
       };
     },
@@ -110,12 +147,20 @@ export class TaskPool {
     return this.family().find((m) => m.id === id);
   }
 
-  claim(occurrenceId: string, memberId: string): Promise<void> {
-    return this.updateOccurrence(occurrenceId, { claimed_by: memberId });
+  /** Adds a participant; `done` for "has already done it". */
+  join(occurrenceId: string, memberId: string, done = false): Promise<void> {
+    return this.writeClaim(
+      supabase.from('task_claims').insert({ occurrence_id: occurrenceId, member_id: memberId, is_done: done }),
+    );
   }
 
-  toggleDone(task: PoolTask): Promise<void> {
-    return this.updateOccurrence(task.id, { is_done: !task.is_done });
+  /** Steps out again (only while their part isn't done). */
+  leave(claim: PoolClaim): Promise<void> {
+    return this.writeClaim(supabase.from('task_claims').delete().eq('id', claim.id));
+  }
+
+  toggleDone(claim: PoolClaim): Promise<void> {
+    return this.writeClaim(supabase.from('task_claims').update({ is_done: !claim.is_done }).eq('id', claim.id));
   }
 
   /** Creates a task (one-off or recurring). Resolves to an error message, if any. */
@@ -131,6 +176,21 @@ export class TaskPool {
     return error?.message ?? null;
   }
 
+  /** Saves an edited task; the DB moves open pool entries to the new schedule / reward. */
+  updateTask(taskId: string, input: TaskInput): Promise<string | null> {
+    return this.mutate(supabase.from('tasks').update(input).eq('id', taskId));
+  }
+
+  /** "Löschen" archives: the task leaves the pool, its history stays. Restoring brings it back. */
+  setTaskArchived(taskId: string, archived: boolean): Promise<string | null> {
+    return this.mutate(
+      supabase
+        .from('tasks')
+        .update({ archived_at: archived ? new Date().toISOString() : null })
+        .eq('id', taskId),
+    );
+  }
+
   /** Adds a member to the signed-in user's family. Resolves to an error message, if any. */
   addMember(draft: MemberDraft): Promise<string | null> {
     const familyId = this.me()?.family_id;
@@ -138,33 +198,31 @@ export class TaskPool {
       return Promise.resolve('Du gehörst zu keiner Familie.');
     }
 
-    return this.changeMembers(
+    return this.mutate(
       supabase.from('family_members').insert({ ...draft, family_id: familyId, sort_order: this.family().length }),
     );
   }
 
   updateMember(id: string, draft: MemberDraft): Promise<string | null> {
-    return this.changeMembers(supabase.from('family_members').update(draft).eq('id', id));
+    return this.mutate(supabase.from('family_members').update(draft).eq('id', id));
   }
 
   removeMember(id: string): Promise<string | null> {
-    return this.changeMembers(supabase.from('family_members').delete().eq('id', id));
+    return this.mutate(supabase.from('family_members').delete().eq('id', id));
   }
 
-  private async changeMembers(query: PromiseLike<{ error: { message: string } | null }>): Promise<string | null> {
+  /** Runs a write, reloads the pool and resolves to the error message, if any. */
+  private async mutate(query: PromiseLike<{ error: { message: string } | null }>): Promise<string | null> {
     const { error } = await query;
     this.data.reload();
     return error?.message ?? null;
   }
 
-  private async updateOccurrence(
-    occurrenceId: string,
-    changes: Partial<Pick<PoolTask, 'claimed_by' | 'is_done'>>,
-  ): Promise<void> {
+  /** Pool actions show their error above the pool instead of returning it. */
+  private async writeClaim(query: PromiseLike<{ error: { message: string } | null }>): Promise<void> {
     this.errorMessage.set(null);
 
-    const { error } = await supabase.from('task_occurrences').update(changes).eq('id', occurrenceId);
-
+    const { error } = await query;
     if (error) {
       this.errorMessage.set(error.message);
     }

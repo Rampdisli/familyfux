@@ -103,30 +103,39 @@ function describeSchedule(t: TaskSchedule): string {
   }
 }
 
-/** A task's current occurrence in the pool (row of the task_pool view). */
+/** A task's current occurrence in the pool (row of the task_pool view) with its participants. */
 interface PoolRow {
   id: string;
   task_id: string;
   title: string;
   emoji: string;
   reward: number;
+  /** each: every participant earns the reward; split: they share it. */
+  reward_mode: 'each' | 'split';
   schedule: Schedule;
   due_date: string;
+  /** All participants are done. */
   is_done: boolean;
-  claimed_by: string | null;
+  claims: { member_id: string | null; is_done: boolean }[];
 }
 
-const POOL_COLUMNS = 'id, task_id, title, emoji, reward, schedule, due_date, is_done, claimed_by';
+const POOL_COLUMNS = 'id, task_id, title, emoji, reward, reward_mode, schedule, due_date, is_done';
 
 type MemberNames = Map<string, string>;
 
-/** One line per pool entry, e.g. `- [ ] 🧹 Staubsaugen (2 ★, daily, due 2026-09-27, 🦊 Ramona, id: …, task_id: …)`. */
+/**
+ * One line per pool entry, e.g.
+ * `- [ ] 🧹 Staubsaugen (2 ★ each, daily, due 2026-09-27, with: 🦊 Mia ✓, 🐻 Ben, id: …, task_id: …)`.
+ */
 function formatPoolRow(row: PoolRow, members: MemberNames): string {
-  const claimer = row.claimed_by ? (members.get(row.claimed_by) ?? 'someone') : 'unclaimed';
+  const people = row.claims.length
+    ? 'with: ' + row.claims.map((c) => `${members.get(c.member_id ?? '') ?? 'former member'}${c.is_done ? ' ✓' : ''}`).join(', ')
+    : 'nobody yet';
+  const reward = `${row.reward} ★ ${row.reward_mode === 'split' ? 'shared' : 'each'}`;
   const schedule = row.schedule === 'once' ? 'one-off' : `recurring: ${row.schedule}`;
   return (
     `- [${row.is_done ? 'x' : ' '}] ${row.emoji} ${row.title} ` +
-    `(${row.reward} ★, ${schedule}, due ${row.due_date}, ${claimer}, id: ${row.id}, task_id: ${row.task_id})`
+    `(${reward}, ${schedule}, due ${row.due_date}, ${people}, id: ${row.id}, task_id: ${row.task_id})`
   );
 }
 
@@ -158,6 +167,22 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     return { isError: true, content: [{ type: 'text' as const, text }] };
   }
 
+  /** Adds the participants to pool rows. */
+  async function withClaims(rows: Omit<PoolRow, 'claims'>[]): Promise<PoolRow[]> {
+    if (rows.length === 0) {
+      return [];
+    }
+    const { data } = await supabase
+      .from('task_claims')
+      .select('occurrence_id, member_id, is_done')
+      .in('occurrence_id', rows.map((r) => r.id))
+      .order('claimed_at');
+    return rows.map((row) => ({
+      ...row,
+      claims: (data ?? []).filter((c) => c.occurrence_id === row.id),
+    }));
+  }
+
   /** "🦊 Ramona" per member id, for the pool listings. */
   async function memberNames(): Promise<MemberNames> {
     const { data } = await supabase.from('family_members').select('id, name, emoji');
@@ -185,6 +210,10 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
           .max(10)
           .optional()
           .describe('Stars (1–10) earned for doing it. Leave out if the user did not say.'),
+        reward_mode: z
+          .enum(['each', 'split'])
+          .default('each')
+          .describe('When several members do it together: each earns the full reward, or they split it (default each)'),
         schedule: z
           .enum(SCHEDULES)
           .optional()
@@ -210,7 +239,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         month: z.number().int().min(1).max(12).optional().describe('Month for yearly tasks'),
       },
     },
-    async ({ title, emoji, color, reward, schedule, start_date, repeat_every, weekdays, month_day, month }) => {
+    async ({ title, emoji, color, reward, reward_mode, schedule, start_date, repeat_every, weekdays, month_day, month }) => {
       const params = { repeat_every, weekdays, month_day, month };
 
       // Follow-up questions instead of defaults: Claude asks the user (by voice) and calls again.
@@ -244,7 +273,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       // family_id comes from the tasks_before_write trigger, the first occurrence from tasks_after_insert.
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ title, emoji, color, reward, schedule, start_date, ...params, user_id: userId })
+        .insert({ title, emoji, color, reward, reward_mode, schedule, start_date, ...params, user_id: userId })
         .select('id, title, schedule, start_date, repeat_every, weekdays, month_day, month')
         .single<TaskSchedule & { id: string; title: string }>();
 
@@ -256,11 +285,11 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         .from('task_pool')
         .select(POOL_COLUMNS)
         .eq('task_id', data.id)
-        .maybeSingle<PoolRow>();
+        .maybeSingle<Omit<PoolRow, 'claims'>>();
 
       await logEvent({ type: 'tool_call', tool: 'create_task', userId, title, schedule, taskId: data.id });
       const pool = current
-        ? `It is in the pool now:\n${formatPoolRow(current, await memberNames())}`
+        ? `It is in the pool now:\n${formatPoolRow({ ...current, claims: [] }, await memberNames())}`
         : 'It appears in the pool once it is due.';
       return {
         content: [
@@ -279,7 +308,9 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       title: 'List tasks',
       description:
         "Lists the family's task pool: every task that is currently due (open, or finished today) with its reward, " +
-        'schedule and who claimed it. Open tasks come first. Use `id` for claim_task / set_task_done, `task_id` for delete_task.',
+        'schedule and who takes part (✓ = their part is done). Several members can do a task together; ' +
+        'it is done once all of them are. Open tasks come first. ' +
+        'Use `id` for claim_task / leave_task / set_task_done, `task_id` for delete_task.',
       inputSchema: {},
     },
     async () => {
@@ -296,7 +327,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
           .order('is_done')
           .order('due_date')
           .order('title')
-          .returns<PoolRow[]>(),
+          .returns<Omit<PoolRow, 'claims'>[]>(),
         memberNames(),
       ]);
 
@@ -310,7 +341,8 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         return { content: [{ type: 'text', text: 'The task pool is empty.' }] };
       }
 
-      return { content: [{ type: 'text', text: pool.data.map((row) => formatPoolRow(row, members)).join('\n') }] };
+      const rows = await withClaims(pool.data);
+      return { content: [{ type: 'text', text: rows.map((row) => formatPoolRow(row, members)).join('\n') }] };
     },
   );
 
@@ -329,7 +361,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
           .order('sort_order')
           .order('created_at')
           .returns<{ id: string; name: string; emoji: string; role: string }[]>(),
-        supabase.from('member_week_stars').select('member_id, stars').returns<{ member_id: string; stars: number }[]>(),
+        supabase.from('member_week_stars').select('member_id, stars').returns<{ member_id: string; stars: number | string }[]>(),
       ]);
 
       const error = members.error ?? stars.error;
@@ -345,7 +377,8 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         return { content: [{ type: 'text', text: 'You are not a member of any family.' }] };
       }
 
-      const starsByMember = new Map((stars.data ?? []).map((s) => [s.member_id, s.stars]));
+      // numeric: shared tasks give fractional stars (1.5).
+      const starsByMember = new Map((stars.data ?? []).map((s) => [s.member_id, Number(s.stars)]));
       const lines = family.map(
         (m) => `- ${m.emoji} ${m.name} (${m.role}, ${starsByMember.get(m.id) ?? 0} ★ this week, id: ${m.id})`,
       );
@@ -356,17 +389,55 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
   server.registerTool(
     'claim_task',
     {
-      title: 'Claim task',
+      title: 'Take part in a task',
       description:
-        'Assigns a task in the pool to a family member (get their id from list_family_members), ' +
-        'or releases it again when member_id is omitted.',
+        'Adds a family member (id from list_family_members) as participant of a pool entry. ' +
+        'Several members can take part; each ticks off their own part with set_task_done.',
       inputSchema: {
         id: z.string().uuid().describe('The `id` of the pool entry from list_tasks (not the task_id)'),
-        member_id: z.string().uuid().optional().describe('The id of the family member taking over the task'),
+        member_id: z.string().uuid().describe('The family member taking part'),
       },
     },
-    // The DB trigger rejects members of other families.
-    async ({ id, member_id }) => updateOccurrence('claim_task', id, { claimed_by: member_id ?? null }),
+    async ({ id, member_id }) => {
+      // The DB trigger rejects members of other families.
+      const { error } = await supabase.from('task_claims').insert({ occurrence_id: id, member_id });
+      if (error) {
+        const text = error.code === '23505' ? 'This member already takes part.' : `Failed to claim task: ${error.message}`;
+        return fail('claim_task', text, { occurrenceId: id, memberId: member_id });
+      }
+      return reportEntry('claim_task', id, { memberId: member_id });
+    },
+  );
+
+  server.registerTool(
+    'leave_task',
+    {
+      title: 'Step out of a task',
+      description: "Removes a participant from a pool entry again (only while their part isn't done).",
+      inputSchema: {
+        id: z.string().uuid().describe('The `id` of the pool entry from list_tasks (not the task_id)'),
+        member_id: z.string().uuid().describe('The family member stepping out'),
+      },
+    },
+    async ({ id, member_id }) => {
+      const { data, error } = await supabase
+        .from('task_claims')
+        .delete()
+        .eq('occurrence_id', id)
+        .eq('member_id', member_id)
+        .select('id');
+
+      if (error) {
+        return fail('leave_task', `Failed to leave task: ${error.message}`, { occurrenceId: id, memberId: member_id });
+      }
+      if (!data.length) {
+        return fail('leave_task', 'This member does not take part, or their part is already done.', {
+          occurrenceId: id,
+          memberId: member_id,
+        });
+      }
+      return reportEntry('leave_task', id, { memberId: member_id });
+    },
   );
 
   server.registerTool(
@@ -374,14 +445,43 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     {
       title: 'Mark task as done',
       description:
-        'Marks a task in the pool as done (or as open again with done=false). ' +
-        'Done tasks count towards the stars of whoever claimed them.',
+        "Ticks off a member's part of a pool entry (or opens it again with done=false). " +
+        'If the member does not take part yet, they are added — so "Mia brushed her teeth" is a single call. ' +
+        'The entry is done once all participants are; each earns the full reward or a share, depending on the task.',
       inputSchema: {
         id: z.string().uuid().describe('The `id` of the pool entry from list_tasks (not the task_id)'),
+        member_id: z.string().uuid().describe('The family member who did it'),
         done: z.boolean().default(true).describe('true = done, false = open again'),
       },
     },
-    async ({ id, done }) => updateOccurrence('set_task_done', id, { is_done: done }),
+    async ({ id, member_id, done }) => {
+      const updated = await supabase
+        .from('task_claims')
+        .update({ is_done: done })
+        .eq('occurrence_id', id)
+        .eq('member_id', member_id)
+        .select('id');
+
+      if (updated.error) {
+        return fail('set_task_done', `Failed to update task: ${updated.error.message}`, { occurrenceId: id, memberId: member_id });
+      }
+
+      if (!updated.data.length) {
+        if (!done) {
+          return fail('set_task_done', 'This member does not take part in the task.', { occurrenceId: id, memberId: member_id });
+        }
+        // Not a participant yet: join and finish in one go.
+        const inserted = await supabase.from('task_claims').insert({ occurrence_id: id, member_id, is_done: true });
+        if (inserted.error) {
+          return fail('set_task_done', `Failed to update task: ${inserted.error.message}`, {
+            occurrenceId: id,
+            memberId: member_id,
+          });
+        }
+      }
+
+      return reportEntry('set_task_done', id, { memberId: member_id, done });
+    },
   );
 
   server.registerTool(
@@ -417,37 +517,17 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     },
   );
 
-  /** Claims / ticks off one occurrence; claimed_at / done_at are kept in sync by the DB trigger. */
-  async function updateOccurrence(
-    tool: string,
-    id: string,
-    changes: { claimed_by?: string | null; is_done?: boolean },
-  ) {
-    const { data, error } = await supabase
-      .from('task_occurrences')
-      .update(changes)
-      .eq('id', id)
-      .select('id, task_id, due_date, reward, is_done, claimed_by, task:tasks(title, emoji, schedule)')
-      .maybeSingle();
+  /** Logs a successful claim change and answers with the entry's current state. */
+  async function reportEntry(tool: string, id: string, details: Record<string, unknown>) {
+    await logEvent({ type: 'tool_call', tool, userId, occurrenceId: id, ...details });
 
-    if (error) {
-      return fail(tool, `Failed to update task: ${error.message}`, { occurrenceId: id, changes });
-    }
-
+    const { data } = await supabase.from('task_pool').select(POOL_COLUMNS).eq('id', id).maybeSingle<Omit<PoolRow, 'claims'>>();
     if (!data) {
-      return fail(tool, `No task in the pool with id ${id}.`, { occurrenceId: id, changes });
+      return { content: [{ type: 'text' as const, text: 'Done. (The entry is no longer in the current pool.)' }] };
     }
 
-    const { task, ...occurrence } = data as unknown as Omit<PoolRow, 'title' | 'emoji' | 'schedule'> & {
-      task: Pick<PoolRow, 'title' | 'emoji' | 'schedule'>;
-    };
-
-    await logEvent({ type: 'tool_call', tool, userId, occurrenceId: id, changes });
-    return {
-      content: [
-        { type: 'text' as const, text: `Updated task:\n${formatPoolRow({ ...occurrence, ...task }, await memberNames())}` },
-      ],
-    };
+    const [row] = await withClaims([data]);
+    return { content: [{ type: 'text' as const, text: `Updated task:\n${formatPoolRow(row, await memberNames())}` }] };
   }
 
   return server;

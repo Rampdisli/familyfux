@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { supabase } from '../../core/supabase-client';
-import { PoolColor, TaskPool } from '../tasks/task-pool';
+import { PoolColor, TaskPool, formatStars } from '../tasks/task-pool';
 
 /** A finished occurrence with its task's title / emoji / colour. */
 interface DoneTask {
@@ -10,7 +10,8 @@ interface DoneTask {
   title: string;
   emoji: string;
   color: PoolColor;
-  reward: number;
+  /** Full reward, or this member's share of it. */
+  stars: number;
   done_at: string;
 }
 
@@ -73,23 +74,33 @@ export class Progress {
       const since = startOfDay(new Date());
       since.setDate(since.getDate() - 29);
 
-      const { data, error } = await supabase
-        .from('task_occurrences')
-        .select('id, reward, done_at, task:tasks(title, emoji, color)')
-        .eq('claimed_by', params.memberId)
+      // The member's finished parts, with their stars (full reward or their share).
+      const claims = await supabase
+        .from('claim_rewards')
+        .select('id, task_id, done_at, stars')
+        .eq('member_id', params.memberId)
         .eq('is_done', true)
         .gte('done_at', since.toISOString())
         .order('done_at', { ascending: false });
 
-      if (error) {
-        throw new Error(error.message, { cause: error });
+      if (claims.error) {
+        throw new Error(claims.error.message, { cause: claims.error });
       }
 
-      // Flatten the embedded task; reward is the one stored on the occurrence.
-      type Row = Pick<DoneTask, 'id' | 'reward' | 'done_at'> & {
-        task: Pick<DoneTask, 'title' | 'emoji' | 'color'>;
-      };
-      return (data as unknown as Row[]).map(({ task, ...rest }) => ({ ...rest, ...task }));
+      const rows = claims.data as (Pick<DoneTask, 'id' | 'done_at' | 'stars'> & { task_id: string })[];
+      const tasks = rows.length
+        ? await supabase
+            .from('tasks')
+            .select('id, title, emoji, color')
+            .in('id', [...new Set(rows.map((r) => r.task_id))])
+        : { data: [], error: null };
+
+      if (tasks.error) {
+        throw new Error(tasks.error.message, { cause: tasks.error });
+      }
+
+      const byId = new Map((tasks.data as (Pick<DoneTask, 'title' | 'emoji' | 'color'> & { id: string })[]).map((t) => [t.id, t]));
+      return rows.map(({ task_id, stars, ...claim }) => ({ ...claim, ...byId.get(task_id)!, stars: Number(stars) }));
     },
   });
 
@@ -98,7 +109,7 @@ export class Progress {
     const starsByDay = new Map<string, number>();
     for (const task of this.done.value() ?? []) {
       const key = dayKey(new Date(task.done_at));
-      starsByDay.set(key, (starsByDay.get(key) ?? 0) + task.reward);
+      starsByDay.set(key, (starsByDay.get(key) ?? 0) + task.stars);
     }
 
     const today = startOfDay(new Date());
@@ -190,6 +201,10 @@ export class Progress {
 
   protected barLabel(day: Day): string {
     return `${this.longDate(day.date)}: ${day.stars} Sterne`;
+  }
+
+  protected stars(stars: number): string {
+    return formatStars(stars);
   }
 
   protected weekday(date: Date): string {

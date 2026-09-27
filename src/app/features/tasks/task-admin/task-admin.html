@@ -1,0 +1,219 @@
+<div class="board">
+  <a routerLink="/familie" class="back-link">← Zurück zur Familie verwalten</a>
+
+  <div class="page-head">
+    <div>
+      <h1>Aufgaben verwalten</h1>
+      <p>Alle Aufgaben, ihre Wiederholung und bisherige Erledigungen</p>
+    </div>
+    <div class="lock-note">🔒 Nur für Eltern sichtbar</div>
+  </div>
+
+  <div class="filter-row">
+    <div class="filter-tabs" role="group" aria-label="Filter">
+      <button type="button" [class.active]="filter() === 'all'" (click)="setFilter('all')">Alle</button>
+      <button type="button" [class.active]="filter() === 'active'" (click)="setFilter('active')">Aktiv</button>
+      <button type="button" [class.active]="filter() === 'archived'" (click)="setFilter('archived')">Gelöscht</button>
+    </div>
+    <a routerLink="/tasks/neu" class="add-link">+ Neue Aufgabe</a>
+  </div>
+
+  @if (errorMessage(); as message) {
+    <p class="message error">Konnte nicht speichern: {{ message }}</p>
+  }
+
+  @if (tasks.error(); as error) {
+    <p class="message error">Konnte die Aufgaben nicht laden: {{ error.message }}</p>
+  } @else if (!tasks.hasValue()) {
+    <p class="message">Lade…</p>
+  } @else {
+    <div class="task-list">
+      @for (task of visible(); track task.id) {
+        <div class="task-card" [class.deleted]="task.archived_at">
+          @if (editing() === task.id && draft(); as d) {
+            <form class="edit-panel" (submit)="$event.preventDefault(); save(task)">
+              <div class="edit-grid">
+                <label class="edit-field">
+                  <span class="f-label">Name</span>
+                  <input
+                    type="text"
+                    required
+                    [value]="d.title"
+                    (input)="patch({ title: $any($event.target).value })"
+                  />
+                </label>
+                <div class="edit-field">
+                  <span class="f-label">Sterne-Belohnung</span>
+                  <div class="stepper">
+                    <button type="button" aria-label="Weniger Sterne" [disabled]="d.reward <= 1" (click)="changeReward(-1)">
+                      −
+                    </button>
+                    <div class="val">{{ d.reward }} ⭐</div>
+                    <button type="button" aria-label="Mehr Sterne" [disabled]="d.reward >= 10" (click)="changeReward(1)">
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="edit-field">
+                <span class="f-label">Wenn mehrere mitmachen</span>
+                <div class="segmented" role="group" aria-label="Sterne verteilen">
+                  <button type="button" [class.active]="d.reward_mode === 'each'" (click)="patch({ reward_mode: 'each' })">
+                    Jeder bekommt {{ d.reward }} ⭐
+                  </button>
+                  <button type="button" [class.active]="d.reward_mode === 'split'" (click)="patch({ reward_mode: 'split' })">
+                    {{ d.reward }} ⭐ werden geteilt
+                  </button>
+                </div>
+              </div>
+
+              <div class="edit-field">
+                <span class="f-label">Symbol</span>
+                <div class="swatch-row">
+                  @for (icon of icons(); track icon) {
+                    <button
+                      type="button"
+                      class="icon-swatch tile-{{ d.color }}"
+                      [class.active]="d.emoji === icon"
+                      [attr.aria-pressed]="d.emoji === icon"
+                      (click)="patch({ emoji: icon })"
+                    >
+                      {{ icon }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="edit-field">
+                <span class="f-label">Farbe</span>
+                <div class="swatch-row">
+                  @for (c of colors; track c) {
+                    <button
+                      type="button"
+                      class="color-swatch tile-{{ c }}"
+                      [class.active]="d.color === c"
+                      [attr.aria-pressed]="d.color === c"
+                      [attr.aria-label]="c"
+                      (click)="patch({ color: c })"
+                    ></button>
+                  }
+                </div>
+              </div>
+
+              <label class="edit-field">
+                <span class="f-label">Aufgabentyp</span>
+                <select
+                  (change)="setScheduleDraft({ ...d.schedule, recurring: $any($event.target).value === 'recurring' })"
+                >
+                  <option value="once" [selected]="!d.schedule.recurring">Einmalig</option>
+                  <option value="recurring" [selected]="d.schedule.recurring">Wiederkehrend</option>
+                </select>
+              </label>
+
+              <app-schedule-editor [draft]="d.schedule" (draftChange)="setScheduleDraft($event)" />
+
+              @if (d.schedule.recurring) {
+                <p class="edit-note">
+                  Ein offener Eintrag im Pool richtet sich sofort nach der neuen Wiederholung. Bereits erledigte
+                  bleiben im Verlauf, wie sie waren.
+                </p>
+              }
+
+              <div class="edit-actions">
+                <button type="submit" class="m-btn save" [disabled]="saving() || !d.title.trim()">
+                  {{ saving() ? 'Speichere…' : 'Speichern' }}
+                </button>
+                <button type="button" class="m-btn cancel" (click)="cancelEdit()">Abbrechen</button>
+              </div>
+            </form>
+          } @else {
+            <div class="task-row">
+              <div class="t-icon tile-{{ task.color }}">{{ task.emoji }}</div>
+              <div class="t-main">
+                <div class="t-name">
+                  {{ task.title }}
+                  <span class="t-badge" [class.recurring]="task.schedule !== 'once'">
+                    {{ task.schedule === 'once' ? 'Einmalig' : 'Wiederkehrend' }}
+                  </span>
+                  @if (task.archived_at) {
+                    <span class="t-badge deleted-badge">Gelöscht</span>
+                  }
+                </div>
+                <div class="t-sub">{{ label(task) }} · {{ task.doneCount }}× erledigt</div>
+              </div>
+              <div class="t-reward">
+                +{{ task.reward }} ⭐
+                <span class="t-mode">{{ task.reward_mode === 'split' ? 'geteilt' : 'für jeden' }}</span>
+              </div>
+              <div class="t-actions">
+                @if (task.archived_at) {
+                  <button
+                    type="button"
+                    class="icon-btn restore"
+                    title="Wiederherstellen"
+                    aria-label="Wiederherstellen"
+                    (click)="restore(task)"
+                  >
+                    ↩️
+                  </button>
+                } @else {
+                  <button type="button" class="icon-btn" title="Bearbeiten" aria-label="Bearbeiten" (click)="edit(task)">
+                    ✏️
+                  </button>
+                  <button
+                    type="button"
+                    class="icon-btn del"
+                    [class.confirm]="deleteArmed() === task.id"
+                    [title]="deleteArmed() === task.id ? 'Wirklich löschen?' : 'Löschen'"
+                    [attr.aria-label]="deleteArmed() === task.id ? 'Wirklich löschen?' : 'Löschen'"
+                    (click)="remove(task)"
+                  >
+                    {{ deleteArmed() === task.id ? '✓' : '🗑️' }}
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="icon-btn"
+                  title="Verlauf anzeigen"
+                  aria-label="Verlauf anzeigen"
+                  [attr.aria-expanded]="expanded() === task.id"
+                  (click)="toggleHistory(task)"
+                >
+                  <span class="chevron" [class.open]="expanded() === task.id">▾</span>
+                </button>
+              </div>
+            </div>
+
+            @if (expanded() === task.id) {
+              <div class="history-panel">
+                @for (entry of task.done; track entry.id) {
+                  <div class="history-entry">
+                    <div class="he-person av-{{ memberColor(entry.member_id) }}">
+                      {{ memberEmoji(entry.member_id) }}
+                    </div>
+                    <div class="he-date">
+                      <b>{{ memberName(entry.member_id) }}</b> · {{ dateTime(entry.done_at) }}
+                    </div>
+                    <div class="he-stars">+{{ stars(entry.stars) }} ⭐</div>
+                  </div>
+                } @empty {
+                  <div class="history-empty">Noch keine Erledigung erfasst.</div>
+                }
+                @if (task.archived_at) {
+                  <div class="history-note">
+                    🔒 Diese Aufgabe wurde am {{ date(task.archived_at) }} gelöscht — der Verlauf bleibt erhalten.
+                  </div>
+                }
+              </div>
+            }
+          }
+        </div>
+      } @empty {
+        <p class="message">
+          {{ filter() === 'archived' ? 'Keine gelöschten Aufgaben.' : 'Noch keine Aufgaben angelegt.' }}
+        </p>
+      }
+    </div>
+  }
+</div>

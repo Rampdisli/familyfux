@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FamilyMember, MemberDraft, POOL_COLORS, TaskPool } from '../tasks/task-pool';
 
 const ROLE_LABELS: Record<FamilyMember['role'], string> = { parent: 'Elternteil', child: 'Kind' };
@@ -10,7 +11,7 @@ const ROLE_LABELS: Record<FamilyMember['role'], string> = { parent: 'Elternteil'
  */
 @Component({
   selector: 'app-family-admin',
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, RouterLink],
   templateUrl: './family-admin.html',
   styleUrl: './family-admin.scss',
 })

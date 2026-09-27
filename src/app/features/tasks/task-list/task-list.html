@@ -19,7 +19,7 @@
           <div class="av av-{{ member.color }}">{{ member.emoji }}</div>
           <div>
             <div class="name">{{ member.name }}</div>
-            <div class="stars">{{ pool.stars()[member.id] ?? 0 }} ⭐ diese Woche</div>
+            <div class="stars">{{ stars(pool.stars()[member.id] ?? 0) }} ⭐ diese Woche</div>
           </div>
         </a>
       }
@@ -32,7 +32,10 @@
           <span>frei für alle — nimm dir, was dir liegt</span>
         </div>
         @if (pool.isParent()) {
-          <a routerLink="/tasks/neu" class="new-task">+ Neue Aufgabe</a>
+          <div class="pool-actions">
+            <a routerLink="/aufgaben" class="manage-tasks">Verwalten</a>
+            <a routerLink="/tasks/neu" class="new-task">+ Neue Aufgabe</a>
+          </div>
         }
       </div>
 

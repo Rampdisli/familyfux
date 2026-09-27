@@ -1,22 +1,54 @@
 <div class="tc-icon tile-{{ task().color }}">{{ task().emoji }}</div>
 
-@if (claimer(); as member) {
-  <div class="claim-badge av-{{ member.color }}" [title]="member.name">{{ member.emoji }}</div>
+@if (participants().length) {
+  <div class="claim-badges">
+    @for (p of participants(); track p.claim.id) {
+      <div class="claim-badge av-{{ p.member?.color ?? 'peach' }}" [title]="p.member?.name ?? ''">
+        {{ p.member?.emoji ?? '❔' }}
+      </div>
+    }
+  </div>
 }
 
 <div class="tc-name">{{ task().title }}</div>
 <div class="tc-reward">
-  +{{ task().reward }} ⭐
+  {{ rewardLabel() }}
   @if (task().schedule !== 'once') {
     <span title="Wiederkehrende Aufgabe"> · 🔁</span>
   }
 </div>
 
-@if (claimer(); as member) {
-  <button type="button" class="done-toggle" [attr.aria-pressed]="task().is_done" (click)="toggleDone()">
-    <span class="dot">{{ task().is_done ? '✓' : '' }}</span>
-    {{ member.name }} übernimmt
-  </button>
+@if (participants().length) {
+  <div class="participants">
+    @for (p of participants(); track p.claim.id) {
+      <div class="participant">
+        <button
+          type="button"
+          class="done-toggle"
+          [class.done]="p.claim.is_done"
+          [attr.aria-pressed]="p.claim.is_done"
+          (click)="toggleDone(p.claim)"
+        >
+          <span class="dot">{{ p.claim.is_done ? '✓' : '' }}</span>
+          {{ p.member?.name ?? 'Ehemaliges Mitglied' }}
+        </button>
+        @if (!p.claim.is_done) {
+          <button
+            type="button"
+            class="leave"
+            [attr.aria-label]="(p.member?.name ?? 'Mitglied') + ' steigt aus'"
+            [title]="'Aussteigen'"
+            (click)="leave(p.claim)"
+          >
+            ×
+          </button>
+        }
+      </div>
+    }
+  </div>
+  @if (available().length && !task().is_done) {
+    <button type="button" class="join-btn" (click)="pickerOpen.set(true)">+ Mitmachen</button>
+  }
 } @else {
   <button type="button" class="claim-btn" (click)="pickerOpen.set(true)">Ich mach’s!</button>
 }
@@ -24,13 +56,13 @@
 @if (pickerOpen()) {
   <div class="picker">
     <div class="p-head">
-      <span class="p-title">Wer nimmt sich das?</span>
+      <span class="p-title">{{ participants().length ? 'Wer macht mit?' : 'Wer nimmt sich das?' }}</span>
       <button type="button" class="p-close" aria-label="Schließen" (click)="pickerOpen.set(false)">
         ×
       </button>
     </div>
-    @for (member of pool.family(); track member.id) {
-      <button type="button" class="p-opt" (click)="claim(member.id)">
+    @for (member of available(); track member.id) {
+      <button type="button" class="p-opt" (click)="join(member.id)">
         <span class="av av-{{ member.color }}">{{ member.emoji }}</span>
         {{ member.name }}
       </button>

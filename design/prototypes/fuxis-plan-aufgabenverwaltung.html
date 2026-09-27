@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuxis Plan — Aufgaben verwalten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FCEFE3;
+    --cream-deep: #F7E3CF;
+    --orange: #E8703C;
+    --orange-deep: #C85A2C;
+    --amber: #F6B93B;
+    --brown: #5A3423;
+    --brown-soft: #8A6250;
+    --brown-muted: #B39C8C;
+    --mint: #B8E6C4;
+    --mint-deep: #4FA868;
+    --lilac: #DCC6F2;
+    --sky: #BFE3F5;
+    --rose: #F5C6CE;
+    --peach: #F9D8B4;
+    --shadow-warm: rgba(90, 52, 35, 0.16);
+    --danger: #D2543E;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(160deg, #FDF5EC 0%, var(--cream) 60%, var(--cream-deep) 100%);
+    color: var(--brown);
+  }
+
+  .board {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 30px 34px 60px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; }
+  .back-link { font-size: 13.5px; font-weight: 600; color: var(--brown-soft); text-decoration: none; }
+
+  .page-head { display: flex; align-items: center; justify-content: space-between; }
+  .page-head h1 { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 26px; }
+  .page-head p { font-size: 13.5px; color: var(--brown-soft); margin-top: 4px; }
+
+  .lock-note {
+    display: flex; align-items: center; gap: 7px;
+    background: #fff; padding: 9px 14px; border-radius: 14px;
+    font-size: 12.5px; font-weight: 600; color: var(--brown-soft);
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+
+  /* FILTER TABS */
+  .filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .filter-tabs {
+    display: flex;
+    gap: 4px;
+    background: #fff;
+    padding: 5px;
+    border-radius: 14px;
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+
+  .filter-tabs button {
+    border: none;
+    background: transparent;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--brown-soft);
+    cursor: pointer;
+  }
+
+  .filter-tabs button.active { background: var(--orange); color: #fff; }
+
+  .add-link {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--orange); color: #fff;
+    padding: 11px 18px; border-radius: 14px;
+    font-weight: 700; font-size: 13.5px;
+    text-decoration: none;
+    box-shadow: 0 14px 26px -12px rgba(232,112,60,0.55);
+  }
+
+  /* TASK LIST */
+  .task-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .task-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 14px 28px -18px var(--shadow-warm);
+    overflow: hidden;
+  }
+
+  .task-card.deleted { opacity: 0.6; }
+
+  .task-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+  }
+
+  .t-icon {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 21px;
+    flex-shrink: 0;
+  }
+
+  .t-main { flex: 1; min-width: 0; }
+
+  .t-name {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 15.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .t-badge {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 8px;
+    background: var(--cream);
+    color: var(--brown-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .t-badge.recurring { background: #E4F7E9; color: var(--mint-deep); }
+  .t-badge.deleted-badge { background: #FBE4DF; color: var(--danger); }
+
+  .t-sub {
+    font-size: 12.5px;
+    color: var(--brown-soft);
+    margin-top: 3px;
+  }
+
+  .t-reward {
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--orange-deep);
+    white-space: nowrap;
+  }
+
+  .t-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    border: none;
+    background: var(--cream);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .icon-btn.del { background: #FBE4DF; color: var(--danger); }
+  .icon-btn.del.confirm { background: var(--danger); color: #fff; }
+  .icon-btn.restore { background: #E4F7E9; color: var(--mint-deep); }
+
+  .chevron {
+    transition: transform 0.2s ease;
+    font-size: 12px;
+    color: var(--brown-muted);
+  }
+
+  .task-card.expanded .chevron { transform: rotate(180deg); }
+
+  /* HISTORY */
+  .history-panel {
+    display: none;
+    border-top: 1px solid var(--cream);
+    padding: 4px 16px 16px 76px;
+  }
+
+  .task-card.expanded .history-panel { display: block; }
+
+  .history-empty {
+    font-size: 12.5px;
+    color: var(--brown-soft);
+    padding: 10px 0;
+  }
+
+  .history-entry {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--cream);
+  }
+
+  .history-entry:last-child { border-bottom: none; }
+
+  .he-person {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .he-date { flex: 1; color: var(--brown-soft); }
+  .he-date b { color: var(--brown); font-weight: 600; }
+  .he-stars { font-weight: 700; color: var(--orange-deep); font-size: 12.5px; }
+
+  .history-note {
+    font-size: 11.5px;
+    color: var(--brown-muted);
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* EDIT PANEL */
+  .edit-panel {
+    display: none;
+    border-top: 1px solid var(--cream);
+    padding: 16px;
+    background: var(--cream);
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .task-card.editing .edit-panel { display: flex; }
+  .task-card.editing .task-row,
+  .task-card.editing .history-panel { display: none; }
+
+  .edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .edit-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brown-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 7px;
+  }
+
+  .edit-field input[type="text"], .edit-field input[type="number"], .edit-field select {
+    width: 100%;
+    border: 2px solid var(--cream-deep);
+    background: #fff;
+    border-radius: 12px;
+    padding: 9px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--brown);
+    outline: none;
+  }
+
+  .swatch-row { display: flex; flex-wrap: wrap; gap: 7px; }
+
+  .icon-swatch, .color-swatch {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    background: #fff;
+  }
+
+  .icon-swatch.active { border-color: var(--orange); }
+  .color-swatch { border-radius: 50%; }
+  .color-swatch.active { border-color: var(--brown); }
+  .color-swatch.active::after { content: '✓'; font-size: 11px; color: var(--brown); font-weight: 700; }
+
+  .weekday-row { display: flex; gap: 5px; }
+  .weekday-chip {
+    flex: 1; text-align: center; padding: 7px 0;
+    border-radius: 9px; background: #fff;
+    font-weight: 700; font-size: 11.5px; color: var(--brown-soft);
+    cursor: pointer; border: 2px solid transparent;
+  }
+  .weekday-chip.active { background: var(--orange); color: #fff; }
+
+  .inline-fields {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font-size: 13px; font-weight: 600;
+  }
+  .inline-fields input[type="number"] { width: 70px; padding: 7px 9px; }
+  .inline-fields select { width: auto; padding: 7px 9px; }
+
+  .recur-summary-mini {
+    background: #fff; padding: 9px 12px; border-radius: 10px;
+    font-size: 12.5px; font-weight: 600; color: var(--orange-deep);
+  }
+
+  .edit-actions { display: flex; gap: 8px; }
+  .m-btn {
+    border: none; padding: 10px 18px; border-radius: 12px;
+    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer;
+  }
+  .m-btn.save { background: var(--orange); color: #fff; }
+  .m-btn.cancel { background: #fff; color: var(--brown); }
+
+  .stepper { display: inline-flex; align-items: center; gap: 10px; background: #fff; border-radius: 12px; padding: 5px 7px; }
+  .stepper button { width: 26px; height: 26px; border-radius: 8px; border: none; background: var(--cream); font-weight: 700; color: var(--orange-deep); cursor: pointer; }
+  .stepper .val { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 14px; min-width: 40px; text-align: center; }
+
+  @media (max-width: 700px) {
+    .edit-grid { grid-template-columns: 1fr; }
+    .history-panel { padding-left: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="board">
+
+  <div class="topbar">
+    <a class="back-link" href="#">← Zurück zur Familie verwalten</a>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <h1>Aufgaben verwalten</h1>
+      <p>Alle Aufgaben, ihre Wiederholung und bisherige Erledigungen</p>
+    </div>
+    <div class="lock-note">🔒 Nur für Eltern sichtbar</div>
+  </div>
+
+  <div class="filter-row">
+    <div class="filter-tabs" id="filterTabs">
+      <button class="active" data-filter="alle">Alle</button>
+      <button data-filter="aktiv">Aktiv</button>
+      <button data-filter="geloescht">Gelöscht</button>
+    </div>
+    <a class="add-link" href="#">+ Neue Aufgabe</a>
+  </div>
+
+  <div class="task-list" id="taskList"></div>
+
+</div>
+
+<script>
+  const icons = ['🧸','🦷','🎒','🐕','🍽️','🧺','🌱','🗑️','📚','🧹'];
+  const colors = [
+    { cls: 'mint', bg: 'var(--mint)' }, { cls: 'lilac', bg: 'var(--lilac)' },
+    { cls: 'sky', bg: 'var(--sky)' }, { cls: 'rose', bg: 'var(--rose)' },
+    { cls: 'peach', bg: 'var(--peach)' }, { cls: 'amber', bg: 'var(--amber)' },
+  ];
+  const weekdays = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  const weekdaysFull = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+  const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+  const people = {
+    mia: { name: 'Mia', icon: '🦊' }, ben: { name: 'Ben', icon: '🐻' },
+    papa: { name: 'Papa', icon: '🦉' }, mama: { name: 'Mama', icon: '🐰' },
+  };
+
+  function colorBg(cls) { return (colors.find(c => c.cls === cls) || colors[0]).bg; }
+
+  function d(daysAgo, h, m) {
+    const dt = new Date(2026, 8, 27, h, m);
+    dt.setDate(dt.getDate() - daysAgo);
+    return dt;
+  }
+
+  let tasks = [
+    {
+      id: 't1', name: 'Zähne putzen', icon: '🦷', color: 'sky', reward: 2,
+      type: 'wiederkehrend', recur: { type: 'taeglich' },
+      deleted: false,
+      history: [
+        { date: d(0, 7, 40), person: 'mia', stars: 2 },
+        { date: d(0, 21, 5), person: 'mia', stars: 2 },
+        { date: d(1, 7, 32), person: 'mia', stars: 2 },
+        { date: d(2, 7, 50), person: 'mia', stars: 2 },
+      ]
+    },
+    {
+      id: 't2', name: 'Zimmer aufräumen', icon: '🧸', color: 'lilac', reward: 3,
+      type: 'wiederkehrend', recur: { type: 'wochentage', weekdays: [1, 4] },
+      deleted: false,
+      history: [
+        { date: d(2, 17, 20), person: 'ben', stars: 3 },
+        { date: d(9, 18, 10), person: 'mia', stars: 3 },
+      ]
+    },
+    {
+      id: 't3', name: 'Hund füttern', icon: '🐕', color: 'peach', reward: 4,
+      type: 'wiederkehrend', recur: { type: 'taeglich' },
+      deleted: false,
+      history: [
+        { date: d(0, 8, 5), person: 'papa', stars: 4 },
+        { date: d(1, 8, 0), person: 'ben', stars: 4 },
+        { date: d(3, 8, 12), person: 'papa', stars: 4 },
+      ]
+    },
+    {
+      id: 't4', name: 'Blumen gießen', icon: '🌱', color: 'mint', reward: 2,
+      type: 'wiederkehrend', recur: { type: 'nachErledigung', daysAfterDone: 4 },
+      deleted: false,
+      history: [
+        { date: d(4, 16, 30), person: 'mama', stars: 2 },
+        { date: d(8, 17, 0), person: 'mama', stars: 2 },
+      ]
+    },
+    {
+      id: 't5', name: 'Geburtstagskarte für Oma basteln', icon: '📚', color: 'rose', reward: 3,
+      type: 'einmalig', onceDate: '2026-09-14',
+      deleted: false,
+      history: [
+        { date: d(13, 15, 0), person: 'mia', stars: 3 },
+      ]
+    },
+    {
+      id: 't6', name: 'Fenster putzen', icon: '🧹', color: 'amber', reward: 5,
+      type: 'wiederkehrend', recur: { type: 'monatlich', monthDay: 1 },
+      deleted: true, deletedAt: d(5, 10, 0),
+      history: [
+        { date: d(5, 11, 0), person: 'papa', stars: 5 },
+        { date: d(35, 10, 40), person: 'mama', stars: 5 },
+      ]
+    },
+  ];
+
+  let expandedId = null;
+  let editingId = null;
+  let deleteArmedId = null;
+  let activeFilter = 'alle';
+
+  const taskList = document.getElementById('taskList');
+
+  function recurSummary(task) {
+    if (task.type === 'einmalig') {
+      const dt = new Date(task.onceDate);
+      return `Einmalig am ${dt.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })}`;
+    }
+    const r = task.recur;
+    switch (r.type) {
+      case 'taeglich': return 'Täglich';
+      case 'woechentlich': return `Wöchentlich am ${weekdaysFull[r.weekday ?? 0]}`;
+      case 'wochentage': return `An: ${(r.weekdays || []).slice().sort((a,b)=>a-b).map(i => weekdaysFull[i]).join(', ')}`;
+      case 'alleXTage': return `Alle ${r.everyXDays || 2} Tage`;
+      case 'monatlich': return `Monatlich am ${r.monthDay || 1}.`;
+      case 'alleXWochen': return `Alle ${r.everyXWeeks || 2} Wochen am ${weekdaysFull[r.weekday ?? 0]}`;
+      case 'alleXMonate': return `Alle ${r.everyXMonths || 2} Monate am ${r.monthDay || 1}.`;
+      case 'jaehrlich': return `Jährlich am ${r.yearDay || 1}. ${months[(r.yearMonth || 1) - 1]}`;
+      case 'nachErledigung': return `${r.daysAfterDone || 3} Tage nach letzter Erledigung`;
+    }
+    return '';
+  }
+
+  function fmtDateTime(dt) {
+    return dt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+      ' · ' + dt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
+  }
+
+  function render() {
+    taskList.innerHTML = '';
+    const visible = tasks.filter(t => {
+      if (activeFilter === 'aktiv') return !t.deleted;
+      if (activeFilter === 'geloescht') return t.deleted;
+      return true;
+    });
+
+    visible.forEach(task => {
+      const card = document.createElement('div');
+      card.className = 'task-card'
+        + (task.deleted ? ' deleted' : '')
+        + (expandedId === task.id ? ' expanded' : '')
+        + (editingId === task.id ? ' editing' : '');
+
+      const sortedHistory = task.history.slice().sort((a, b) => b.date - a.date);
+
+      card.innerHTML = `
+        <div class="task-row">
+          <div class="t-icon" style="background:${colorBg(task.color)}">${task.icon}</div>
+          <div class="t-main">
+            <div class="t-name">
+              ${task.name}
+              <span class="t-badge ${task.type === 'wiederkehrend' ? 'recurring' : ''}">${task.type === 'wiederkehrend' ? 'Wiederkehrend' : 'Einmalig'}</span>
+              ${task.deleted ? '<span class="t-badge deleted-badge">Gelöscht</span>' : ''}
+            </div>
+            <div class="t-sub">${recurSummary(task)} · ${task.history.length} von ${sortedHistory.length ? task.history.length : 0} erledigt</div>
+          </div>
+          <div class="t-reward">+${task.reward} ⭐</div>
+          <div class="t-actions">
+            ${!task.deleted ? `<button class="icon-btn" data-act="edit" title="Bearbeiten">✏️</button>` : ''}
+            ${task.deleted
+              ? `<button class="icon-btn restore" data-act="restore" title="Wiederherstellen">↩️</button>`
+              : `<button class="icon-btn del ${deleteArmedId === task.id ? 'confirm' : ''}" data-act="del" title="Löschen">${deleteArmedId === task.id ? '✓' : '🗑️'}</button>`}
+            <button class="icon-btn" data-act="toggle" title="Verlauf anzeigen"><span class="chevron">▾</span></button>
+          </div>
+        </div>
+
+        <div class="history-panel">
+          ${sortedHistory.length === 0
+            ? '<div class="history-empty">Noch keine Erledigung erfasst.</div>'
+            : sortedHistory.map(h => {
+                const p = people[h.person];
+                return `<div class="history-entry">
+                  <div class="he-person" style="background:${colorBg('mint')}">${p.icon}</div>
+                  <div class="he-date"><b>${p.name}</b> · ${fmtDateTime(h.date)}</div>
+                  <div class="he-stars">+${h.stars} ⭐</div>
+                </div>`;
+              }).join('')
+          }
+          ${task.deleted ? `<div class="history-note">🔒 Diese Aufgabe wurde gelöscht am ${task.deletedAt.toLocaleDateString('de-DE')} — der Verlauf bleibt erhalten.</div>` : ''}
+        </div>
+
+        <div class="edit-panel" id="edit-${task.id}"></div>
+      `;
+
+      card.querySelector('[data-act="toggle"]')?.addEventListener('click', () => {
+        expandedId = expandedId === task.id ? null : task.id;
+        editingId = null;
+        render();
+      });
+
+      card.querySelector('[data-act="edit"]')?.addEventListener('click', () => {
+        editingId = task.id;
+        expandedId = null;
+        deleteArmedId = null;
+        render();
+        renderEditPanel(task);
+      });
+
+      card.querySelector('[data-act="del"]')?.addEventListener('click', () => {
+        if (deleteArmedId === task.id) {
+          task.deleted = true;
+          task.deletedAt = new Date();
+          deleteArmedId = null;
+        } else {
+          deleteArmedId = task.id;
+        }
+        render();
+      });
+
+      card.querySelector('[data-act="restore"]')?.addEventListener('click', () => {
+        task.deleted = false;
+        task.deletedAt = null;
+        render();
+      });
+
+      taskList.appendChild(card);
+    });
+
+    if (editingId && visible.some(t => t.id === editingId)) {
+      renderEditPanel(tasks.find(t => t.id === editingId));
+    }
+  }
+
+  function weekdayRowHtml(selected, multi, name) {
+    return `<div class="weekday-row" data-name="${name}" data-multi="${multi}">
+      ${weekdays.map((wd, i) => `<div class="weekday-chip ${selected.includes(i) ? 'active' : ''}" data-i="${i}">${wd}</div>`).join('')}
+    </div>`;
+  }
+
+  function recurEditorHtml(draft) {
+    switch (draft.type) {
+      case 'taeglich':
+        return `<div class="inline-fields">Wird jeden Tag im Pool angezeigt.</div>`;
+      case 'woechentlich':
+        return `<div class="inline-fields">Jede Woche am:</div>` + weekdayRowHtml([draft.weekday ?? 0], false, 'weekday');
+      case 'wochentage':
+        return `<div class="inline-fields">An diesen Tagen:</div>` + weekdayRowHtml(draft.weekdays || [], true, 'weekdays');
+      case 'alleXTage':
+        return `<div class="inline-fields">Alle <input type="number" min="1" max="60" id="fXDays" value="${draft.everyXDays || 2}"> Tage</div>`;
+      case 'monatlich':
+        return `<div class="inline-fields">Am <select id="fMonthDay">${Array.from({length:31},(_,i)=>i+1).map(v => `<option value="${v}" ${v===(draft.monthDay||1)?'selected':''}>${v}.</option>`).join('')}</select> jedes Monats</div>`;
+      case 'alleXWochen':
+        return `<div class="inline-fields">Alle <input type="number" min="1" max="52" id="fXWeeks" value="${draft.everyXWeeks || 2}"> Wochen, am:</div>` + weekdayRowHtml([draft.weekday ?? 0], false, 'weekday');
+      case 'alleXMonate':
+        return `<div class="inline-fields">Alle <input type="number" min="1" max="24" id="fXMonths" value="${draft.everyXMonths || 2}"> Monate, am <select id="fMonthDay">${Array.from({length:31},(_,i)=>i+1).map(v => `<option value="${v}" ${v===(draft.monthDay||1)?'selected':''}>${v}.</option>`).join('')}</select></div>`;
+      case 'jaehrlich':
+        return `<div class="inline-fields">Jedes Jahr am
+          <select id="fYearDay">${Array.from({length:31},(_,i)=>i+1).map(v => `<option value="${v}" ${v===(draft.yearDay||1)?'selected':''}>${v}.</option>`).join('')}</select>
+          <select id="fYearMonth">${months.map((m,i) => `<option value="${i+1}" ${i+1===(draft.yearMonth||1)?'selected':''}>${m}</option>`).join('')}</select>
+        </div>`;
+      case 'nachErledigung':
+        return `<div class="inline-fields">Erscheint <input type="number" min="1" max="365" id="fXAfter" value="${draft.daysAfterDone || 3}"> Tage nach letzter Erledigung</div>`;
+    }
+    return '';
+  }
+
+  function renderEditPanel(task) {
+    const panel = document.getElementById('edit-' + task.id);
+    if (!panel) return;
+
+    const draft = {
+      name: task.name, icon: task.icon, color: task.color, reward: task.reward,
+      type: task.type,
+      onceDate: task.onceDate || '',
+      recur: JSON.parse(JSON.stringify(task.recur || { type: 'taeglich' })),
+    };
+
+    function fullHtml() {
+      return `
+        <div class="edit-grid">
+          <div class="edit-field">
+            <label>Name</label>
+            <input type="text" id="fName" value="${draft.name}">
+          </div>
+          <div class="edit-field">
+            <label>Sterne-Belohnung</label>
+            <div class="stepper">
+              <button id="fRewardMinus" type="button">−</button>
+              <div class="val" id="fRewardVal">${draft.reward} ⭐</div>
+              <button id="fRewardPlus" type="button">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="edit-field">
+          <label>Symbol</label>
+          <div class="swatch-row" id="fIconRow">
+            ${icons.map(ic => `<div class="icon-swatch ${ic === draft.icon ? 'active' : ''}" data-icon="${ic}" style="background:${colorBg(draft.color)}">${ic}</div>`).join('')}
+          </div>
+        </div>
+
+        <div class="edit-field">
+          <label>Farbe</label>
+          <div class="swatch-row" id="fColorRow">
+            ${colors.map(c => `<div class="color-swatch ${c.cls === draft.color ? 'active' : ''}" data-color="${c.cls}" style="background:${c.bg}"></div>`).join('')}
+          </div>
+        </div>
+
+        <div class="edit-field">
+          <label>Aufgabentyp</label>
+          <select id="fType">
+            <option value="einmalig" ${draft.type === 'einmalig' ? 'selected' : ''}>Einmalig</option>
+            <option value="wiederkehrend" ${draft.type === 'wiederkehrend' ? 'selected' : ''}>Wiederkehrend</option>
+          </select>
+        </div>
+
+        ${draft.type === 'einmalig' ? `
+          <div class="edit-field">
+            <label>Datum</label>
+            <input type="date" id="fOnceDate" value="${draft.onceDate}">
+          </div>
+        ` : `
+          <div class="edit-field">
+            <label>Wiederholung</label>
+            <select id="fRecurType">
+              <option value="taeglich" ${draft.recur.type==='taeglich'?'selected':''}>Täglich</option>
+              <option value="woechentlich" ${draft.recur.type==='woechentlich'?'selected':''}>Wöchentlich (an einem Tag)</option>
+              <option value="wochentage" ${draft.recur.type==='wochentage'?'selected':''}>An bestimmten Wochentagen</option>
+              <option value="alleXTage" ${draft.recur.type==='alleXTage'?'selected':''}>Alle X Tage</option>
+              <option value="monatlich" ${draft.recur.type==='monatlich'?'selected':''}>Monatlich</option>
+              <option value="alleXWochen" ${draft.recur.type==='alleXWochen'?'selected':''}>Alle X Wochen</option>
+              <option value="alleXMonate" ${draft.recur.type==='alleXMonate'?'selected':''}>Alle X Monate</option>
+              <option value="jaehrlich" ${draft.recur.type==='jaehrlich'?'selected':''}>Jährlich</option>
+              <option value="nachErledigung" ${draft.recur.type==='nachErledigung'?'selected':''}>X Tage nach letzter Erledigung</option>
+            </select>
+          </div>
+          <div id="fRecurPanel" style="margin-top:-4px;">${recurEditorHtml(draft.recur)}</div>
+          <div class="recur-summary-mini" id="fRecurSummary">🔁 ${recurSummary({ type: 'wiederkehrend', recur: draft.recur })}</div>
+        `}
+
+        <div class="edit-actions">
+          <button class="m-btn save" id="fSave" type="button">Speichern</button>
+          <button class="m-btn cancel" id="fCancel" type="button">Abbrechen</button>
+        </div>
+      `;
+    }
+
+    panel.innerHTML = fullHtml();
+    attachHandlers();
+
+    function attachHandlers() {
+      panel.querySelector('#fName').addEventListener('input', e => draft.name = e.target.value);
+
+      panel.querySelector('#fRewardMinus').addEventListener('click', () => {
+        draft.reward = Math.max(1, draft.reward - 1);
+        panel.querySelector('#fRewardVal').textContent = draft.reward + ' ⭐';
+      });
+      panel.querySelector('#fRewardPlus').addEventListener('click', () => {
+        draft.reward = Math.min(10, draft.reward + 1);
+        panel.querySelector('#fRewardVal').textContent = draft.reward + ' ⭐';
+      });
+
+      panel.querySelectorAll('#fIconRow .icon-swatch').forEach(el => {
+        el.addEventListener('click', () => {
+          draft.icon = el.dataset.icon;
+          panel.querySelectorAll('#fIconRow .icon-swatch').forEach(s => {
+            s.classList.toggle('active', s.dataset.icon === draft.icon);
+            s.style.background = colorBg(draft.color);
+          });
+        });
+      });
+
+      panel.querySelectorAll('#fColorRow .color-swatch').forEach(el => {
+        el.addEventListener('click', () => {
+          draft.color = el.dataset.color;
+          panel.querySelectorAll('#fColorRow .color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === draft.color));
+          panel.querySelectorAll('#fIconRow .icon-swatch').forEach(s => s.style.background = colorBg(draft.color));
+        });
+      });
+
+      const typeSelect = panel.querySelector('#fType');
+      if (typeSelect) typeSelect.addEventListener('change', () => {
+        draft.type = typeSelect.value;
+        panel.innerHTML = fullHtml();
+        attachHandlers();
+      });
+
+      const onceDate = panel.querySelector('#fOnceDate');
+      if (onceDate) onceDate.addEventListener('input', () => draft.onceDate = onceDate.value);
+
+      const recurTypeSelect = panel.querySelector('#fRecurType');
+      if (recurTypeSelect) recurTypeSelect.addEventListener('change', () => {
+        draft.recur = { type: recurTypeSelect.value };
+        panel.querySelector('#fRecurPanel').innerHTML = recurEditorHtml(draft.recur);
+        bindRecurFields();
+        updateMiniSummary();
+      });
+
+      bindRecurFields();
+
+      function bindRecurFields() {
+        const recurPanel = panel.querySelector('#fRecurPanel');
+        if (!recurPanel) return;
+
+        recurPanel.querySelectorAll('.weekday-row').forEach(row => {
+          const multi = row.dataset.multi === 'true';
+          const name = row.dataset.name;
+          row.querySelectorAll('.weekday-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+              const i = parseInt(chip.dataset.i, 10);
+              if (multi) {
+                draft.recur.weekdays = draft.recur.weekdays || [];
+                const idx = draft.recur.weekdays.indexOf(i);
+                if (idx > -1) draft.recur.weekdays.splice(idx, 1); else draft.recur.weekdays.push(i);
+                if (draft.recur.weekdays.length === 0) draft.recur.weekdays.push(i);
+              } else {
+                draft.recur.weekday = i;
+              }
+              recurPanel.innerHTML = recurEditorHtml(draft.recur);
+              bindRecurFields();
+              updateMiniSummary();
+            });
+          });
+        });
+
+        const map = {
+          fXDays: v => draft.recur.everyXDays = parseInt(v || 1, 10),
+          fMonthDay: v => draft.recur.monthDay = parseInt(v, 10),
+          fXWeeks: v => draft.recur.everyXWeeks = parseInt(v || 1, 10),
+          fXMonths: v => draft.recur.everyXMonths = parseInt(v || 1, 10),
+          fYearDay: v => draft.recur.yearDay = parseInt(v, 10),
+          fYearMonth: v => draft.recur.yearMonth = parseInt(v, 10),
+          fXAfter: v => draft.recur.daysAfterDone = parseInt(v || 1, 10),
+        };
+        Object.keys(map).forEach(id => {
+          const el = recurPanel.querySelector('#' + id);
+          if (el) el.addEventListener('input', () => { map[id](el.value); updateMiniSummary(); });
+          if (el && el.tagName === 'SELECT') el.addEventListener('change', () => { map[id](el.value); updateMiniSummary(); });
+        });
+      }
+
+      function updateMiniSummary() {
+        const s = panel.querySelector('#fRecurSummary');
+        if (s) s.innerHTML = '🔁 ' + recurSummary({ type: 'wiederkehrend', recur: draft.recur });
+      }
+
+      panel.querySelector('#fSave').addEventListener('click', () => {
+        task.name = draft.name;
+        task.icon = draft.icon;
+        task.color = draft.color;
+        task.reward = draft.reward;
+        task.type = draft.type;
+        if (draft.type === 'einmalig') {
+          task.onceDate = draft.onceDate;
+        } else {
+          task.recur = draft.recur;
+        }
+        editingId = null;
+        render();
+      });
+
+      panel.querySelector('#fCancel').addEventListener('click', () => {
+        editingId = null;
+        render();
+      });
+    }
+  }
+
+  document.getElementById('filterTabs').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('#filterTabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    render();
+  });
+
+  render();
+</script>
+
+</body>
+</html>

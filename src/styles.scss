@@ -54,3 +54,46 @@ body {
 .tile-sky { background: #e1f3fa; }
 .tile-rose { background: #fde6ea; }
 .tile-lemon { background: #fff3d6; }
+
+/* Two-option switch, e.g. "Jeder bekommt 3 ⭐ | 3 ⭐ werden geteilt". */
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--segmented-bg, var(--cream));
+
+  button {
+    border: none;
+    background: transparent;
+    padding: 7px 12px;
+    border-radius: 9px;
+    font: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--brown-soft);
+    cursor: pointer;
+
+    &.active {
+      background: #fff;
+      color: var(--brown);
+      box-shadow: 0 4px 10px -4px var(--shadow-warm);
+    }
+  }
+}
+
+/* Info / error line above or inside a page ("Lade…", "Konnte … nicht laden"). */
+.message {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #fff;
+  font-size: 13.5px;
+  color: var(--brown-soft);
+
+  &.error {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+}
