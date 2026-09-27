@@ -138,7 +138,14 @@ const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
  * the family tables applies exactly as it would for that user in the Angular app.
  */
 function createMcpServer(supabaseAccessToken: string, userId: string): McpServer {
-  const server = new McpServer({ name: 'familyfux-tasks', version: '0.3.0' });
+  const server = new McpServer(
+    { name: 'familyfux-tasks', version: '0.3.0' },
+    {
+      instructions:
+        'Family chore pool ("Fuxis Plan"). Users often talk to you by voice, mostly in German: keep replies ' +
+        'and follow-up questions short and speakable, and never invent details they did not give — ask instead.',
+    },
+  );
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -162,18 +169,28 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     {
       title: 'Create task',
       description:
-        "Creates a task in the family's task pool (Fuxis Plan): one-off (default) or recurring. " +
-        'Recurring tasks reappear in the pool automatically according to their schedule.',
+        "Creates a task in the family's task pool (Fuxis Plan): one-off or recurring. " +
+        'Recurring tasks reappear in the pool automatically according to their schedule. ' +
+        'Only pass schedule and reward if the user actually said them — do not guess. ' +
+        'If something is missing, the tool creates nothing and tells you what to ask the user; ' +
+        'ask, then call it again with the answers.',
       inputSchema: {
         title: z.string().min(1).describe('The title of the task'),
         emoji: z.string().min(1).optional().describe('An emoji for the task tile, e.g. 🧹 (default ✅)'),
         color: z.enum(POOL_COLORS).optional().describe('Colour of the task tile (default peach)'),
-        reward: z.number().int().min(1).max(10).optional().describe('Stars earned for doing it (default 1)'),
+        reward: z
+          .number()
+          .int()
+          .min(1)
+          .max(10)
+          .optional()
+          .describe('Stars (1–10) earned for doing it. Leave out if the user did not say.'),
         schedule: z
           .enum(SCHEDULES)
-          .default('once')
+          .optional()
           .describe(
-            'once: appears on start_date. daily. weekly: on weekdays[0]. weekdays: on each of weekdays. ' +
+            'Leave out if the user did not say whether it is one-off or recurring. ' +
+              'once: appears on start_date. daily. weekly: on weekdays[0]. weekdays: on each of weekdays. ' +
               'every_x_days: every repeat_every days from start_date. monthly: on month_day. ' +
               'every_x_weeks: every repeat_every weeks on weekdays[0]. every_x_months: every repeat_every months on month_day. ' +
               'yearly: on month_day of month. after_completion: repeat_every days after it was last done.',
@@ -195,9 +212,33 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     },
     async ({ title, emoji, color, reward, schedule, start_date, repeat_every, weekdays, month_day, month }) => {
       const params = { repeat_every, weekdays, month_day, month };
-      const missing = (REQUIRED_PARAMS[schedule] ?? []).filter((key) => params[key] === undefined);
-      if (missing.length > 0) {
-        return fail('create_task', `Schedule "${schedule}" needs: ${missing.join(', ')}.`, { title, schedule });
+
+      // Follow-up questions instead of defaults: Claude asks the user (by voice) and calls again.
+      const questions: string[] = [];
+      if (!schedule) {
+        questions.push('Is it a one-off task or a recurring one? If recurring: how often (e.g. daily, every Monday, every 3 days)?');
+      } else {
+        const missing = (REQUIRED_PARAMS[schedule] ?? []).filter((key) => params[key] === undefined);
+        if (missing.length > 0) {
+          questions.push(`For "${schedule}" I still need: ${missing.join(', ')} — ask the user (e.g. which weekday / how many days).`);
+        }
+      }
+      if (reward === undefined) {
+        questions.push('How many stars (1–10) should it be worth?');
+      }
+
+      if (questions.length > 0) {
+        await logEvent({ type: 'tool_call', tool: 'create_task', userId, title, followUp: questions });
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text:
+                `Nothing created yet. Ask the user briefly, in their language, then call create_task again ` +
+                `for "${title}" with the answers:\n- ${questions.join('\n- ')}`,
+            },
+          ],
+        };
       }
 
       // family_id comes from the tasks_before_write trigger, the first occurrence from tasks_after_insert.
