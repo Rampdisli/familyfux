@@ -5,7 +5,8 @@ of the main Familyfux Supabase project:
 
 - `create_task` — new task with optional emoji, colour and reward (stars); one-off or recurring
   (daily, weekly, on certain weekdays, every X days/weeks/months, monthly, yearly, or X days after
-  the last completion); when several members do it together, each earns the reward or they split it
+  the last completion); when several members do it together, each earns the reward or they split it;
+  optionally assigned to family members by name
 - `list_tasks` — the current pool: every task that is due, with reward, schedule and who takes part
 - `list_family_members` — family members with their stars this week
 - `claim_task` / `leave_task` — a family member joins a pool entry or steps out again

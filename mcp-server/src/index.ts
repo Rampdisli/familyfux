@@ -210,6 +210,13 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
           .max(10)
           .optional()
           .describe('Stars (1–10) earned for doing it. Leave out if the user did not say.'),
+        assign_to: z
+          .array(z.string().min(1))
+          .optional()
+          .describe(
+            'Optional: family members (names or ids) the task is assigned to; they take part in every occurrence. ' +
+              'Leave out if the user did not name anyone — then whoever wants picks it up from the pool.',
+          ),
         reward_mode: z
           .enum(['each', 'split'])
           .default('each')
@@ -239,7 +246,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         month: z.number().int().min(1).max(12).optional().describe('Month for yearly tasks'),
       },
     },
-    async ({ title, emoji, color, reward, reward_mode, schedule, start_date, repeat_every, weekdays, month_day, month }) => {
+    async ({ title, emoji, color, reward, reward_mode, assign_to, schedule, start_date, repeat_every, weekdays, month_day, month }) => {
       const params = { repeat_every, weekdays, month_day, month };
 
       // Follow-up questions instead of defaults: Claude asks the user (by voice) and calls again.
@@ -254,6 +261,28 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       }
       if (reward === undefined) {
         questions.push('How many stars (1–10) should it be worth?');
+      }
+
+      // Names (as spoken) or ids → member ids; unknown names become a question.
+      let assignees: { id: string; name: string }[] = [];
+      if (assign_to?.length) {
+        const { data: family } = await supabase.from('family_members').select('id, name');
+        const members = family ?? [];
+        const unknown: string[] = [];
+        for (const who of assign_to) {
+          const match = members.find((m) => m.id === who || m.name.toLowerCase() === who.trim().toLowerCase());
+          if (match) {
+            assignees.push(match);
+          } else {
+            unknown.push(who);
+          }
+        }
+        assignees = [...new Map(assignees.map((m) => [m.id, m])).values()];
+        if (unknown.length) {
+          questions.push(
+            `Who is meant by ${unknown.map((u) => `"${u}"`).join(', ')}? Family members: ${members.map((m) => m.name).join(', ')}.`,
+          );
+        }
       }
 
       if (questions.length > 0) {
@@ -281,21 +310,36 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         return fail('create_task', `Failed to create task: ${error.message}`, { title, schedule });
       }
 
+      // Assignees join the task's open occurrence right away (DB trigger).
+      if (assignees.length) {
+        const assigned = await supabase
+          .from('task_assignees')
+          .insert(assignees.map((m) => ({ task_id: data.id, member_id: m.id })));
+        if (assigned.error) {
+          return fail('create_task', `Created the task, but assigning failed: ${assigned.error.message}`, {
+            title,
+            taskId: data.id,
+          });
+        }
+      }
+
       const { data: current } = await supabase
         .from('task_pool')
         .select(POOL_COLUMNS)
         .eq('task_id', data.id)
         .maybeSingle<Omit<PoolRow, 'claims'>>();
+      const [currentRow] = current ? await withClaims([current]) : [];
 
       await logEvent({ type: 'tool_call', tool: 'create_task', userId, title, schedule, taskId: data.id });
-      const pool = current
-        ? `It is in the pool now:\n${formatPoolRow({ ...current, claims: [] }, await memberNames())}`
+      const pool = currentRow
+        ? `It is in the pool now:\n${formatPoolRow(currentRow, await memberNames())}`
         : 'It appears in the pool once it is due.';
+      const assignedText = assignees.length ? ` Assigned to ${assignees.map((m) => m.name).join(', ')}.` : '';
       return {
         content: [
           {
             type: 'text',
-            text: `Created task "${data.title}" (${describeSchedule(data)}, task_id: ${data.id}). ${pool}`,
+            text: `Created task "${data.title}" (${describeSchedule(data)}, task_id: ${data.id}).${assignedText} ${pool}`,
           },
         ],
       };

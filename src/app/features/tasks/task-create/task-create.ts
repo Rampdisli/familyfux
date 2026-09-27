@@ -1,18 +1,19 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ScheduleDraft, defaultScheduleDraft, scheduleSummary, toScheduleParams } from '../schedule';
+import { MemberPicker } from '../member-picker/member-picker';
 import { ScheduleEditor } from '../schedule-editor/schedule-editor';
 import { POOL_COLORS, PoolColor, RewardMode, TASK_ICONS, TaskPool } from '../task-pool';
 
 /** "Neue Aufgabe erstellen" — design/prototypes/fuxis-plan-aufgabe-erstellen.html */
 @Component({
   selector: 'app-task-create',
-  imports: [RouterLink, ScheduleEditor],
+  imports: [MemberPicker, RouterLink, ScheduleEditor],
   templateUrl: './task-create.html',
   styleUrl: './task-create.scss',
 })
 export class TaskCreate {
-  private readonly pool = inject(TaskPool);
+  protected readonly pool = inject(TaskPool);
   private readonly router = inject(Router);
 
   protected readonly icons = TASK_ICONS;
@@ -23,6 +24,14 @@ export class TaskCreate {
   protected readonly color = signal<PoolColor>(POOL_COLORS[0]);
   protected readonly reward = signal(3);
   protected readonly rewardMode = signal<RewardMode>('each');
+  /** Optional; nobody = up for grabs in the pool. */
+  protected readonly assignees = signal<string[]>([]);
+
+  /** Assignees in family order, for the preview. */
+  protected readonly assignedMembers = computed(() =>
+    this.pool.family().filter((m) => this.assignees().includes(m.id)),
+  );
+  protected readonly assignedNames = computed(() => this.assignedMembers().map((m) => m.name).join(', '));
   protected readonly schedule = signal<ScheduleDraft>(defaultScheduleDraft());
 
   protected readonly saving = signal(false);
@@ -55,7 +64,7 @@ export class TaskCreate {
       reward: this.reward(),
       reward_mode: this.rewardMode(),
       ...toScheduleParams(this.schedule()),
-    });
+    }, this.assignees());
 
     this.saving.set(false);
 

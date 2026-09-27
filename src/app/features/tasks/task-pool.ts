@@ -53,6 +53,8 @@ export interface PoolTask {
   reward_mode: RewardMode;
   /** All participants are done. */
   is_done: boolean;
+  /** When the last participant finished. */
+  done_at: string | null;
   claims: PoolClaim[];
 }
 
@@ -92,7 +94,7 @@ export class TaskPool {
           .order('created_at'),
         supabase
           .from('task_pool')
-          .select('id, task_id, schedule, title, emoji, color, reward, reward_mode, is_done')
+          .select('id, task_id, schedule, title, emoji, color, reward, reward_mode, is_done, done_at')
           .order('is_done')
           .order('due_date')
           .order('title'),
@@ -163,22 +165,55 @@ export class TaskPool {
     return this.writeClaim(supabase.from('task_claims').update({ is_done: !claim.is_done }).eq('id', claim.id));
   }
 
-  /** Creates a task (one-off or recurring). Resolves to an error message, if any. */
-  async createTask(input: TaskInput): Promise<string | null> {
+  /** Creates a task (one-off or recurring), optionally assigned to members. Resolves to an error message, if any. */
+  async createTask(input: TaskInput, assignees: string[] = []): Promise<string | null> {
     const userId = this.auth.user()?.id;
     if (!userId) {
       return 'Du bist nicht angemeldet.';
     }
 
     // family_id comes from the tasks_before_write trigger, the first occurrence from tasks_after_insert.
-    const { error } = await supabase.from('tasks').insert({ ...input, user_id: userId });
-    this.data.reload();
-    return error?.message ?? null;
+    const { data, error } = await supabase.from('tasks').insert({ ...input, user_id: userId }).select('id').single();
+    if (error) {
+      this.data.reload();
+      return error.message;
+    }
+
+    // Assignees join the open occurrence right away (task_assignees_after_write).
+    return this.mutate(this.assign(data.id, assignees));
   }
 
-  /** Saves an edited task; the DB moves open pool entries to the new schedule / reward. */
-  updateTask(taskId: string, input: TaskInput): Promise<string | null> {
-    return this.mutate(supabase.from('tasks').update(input).eq('id', taskId));
+  /** Saves an edited task; the DB moves open pool entries to the new schedule / reward / assignees. */
+  async updateTask(
+    taskId: string,
+    input: TaskInput,
+    assignees: { add: string[]; remove: string[] },
+  ): Promise<string | null> {
+    const updated = await supabase.from('tasks').update(input).eq('id', taskId);
+    if (updated.error) {
+      this.data.reload();
+      return updated.error.message;
+    }
+
+    if (assignees.remove.length) {
+      const removed = await supabase
+        .from('task_assignees')
+        .delete()
+        .eq('task_id', taskId)
+        .in('member_id', assignees.remove);
+      if (removed.error) {
+        this.data.reload();
+        return removed.error.message;
+      }
+    }
+
+    return this.mutate(this.assign(taskId, assignees.add));
+  }
+
+  private assign(taskId: string, memberIds: string[]): PromiseLike<{ error: { message: string } | null }> {
+    return memberIds.length
+      ? supabase.from('task_assignees').insert(memberIds.map((member_id) => ({ task_id: taskId, member_id })))
+      : Promise.resolve({ error: null });
   }
 
   /** "Löschen" archives: the task leaves the pool, its history stays. Restoring brings it back. */

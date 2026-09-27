@@ -75,6 +75,14 @@
       </div>
 
       <div class="field">
+        <span class="f-label">Zuweisen <span class="optional">(optional)</span></span>
+        <app-member-picker [(selected)]="assignees" />
+        <p class="hint">
+          {{ assignees().length ? 'Andere können trotzdem mitmachen.' : 'Ohne Auswahl nimmt sie sich im Pool, wer will.' }}
+        </p>
+      </div>
+
+      <div class="field">
         <span class="f-label">Aufgabentyp</span>
         <div class="type-toggle">
           <button
@@ -120,7 +128,16 @@
         <div class="pt-reward">
           {{ rewardMode() === 'each' ? '+' + reward() + ' ⭐ für jeden' : reward() + ' ⭐ zum Teilen' }}
         </div>
-        <div class="pt-claim">Ich mach’s!</div>
+        @if (assignedMembers().length) {
+          <div class="pt-assigned">
+            @for (m of assignedMembers(); track m.id) {
+              <span class="av av-{{ m.color }}">{{ m.emoji }}</span>
+            }
+            Für {{ assignedNames() }}
+          </div>
+        } @else {
+          <div class="pt-claim">Ich mach’s!</div>
+        }
       </div>
       @if (schedule().recurring) {
         <div class="preview-recur">

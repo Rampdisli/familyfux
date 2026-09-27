@@ -2,6 +2,7 @@ import { Component, computed, inject, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { supabase } from '../../../core/supabase-client';
 import { ScheduleDraft, ScheduleParams, scheduleDraftFrom, scheduleLabel, toScheduleParams } from '../schedule';
+import { MemberPicker } from '../member-picker/member-picker';
 import { ScheduleEditor } from '../schedule-editor/schedule-editor';
 import { POOL_COLORS, PoolColor, RewardMode, TASK_ICONS, TaskPool, formatStars } from '../task-pool';
 
@@ -23,6 +24,8 @@ interface ManagedTask extends ScheduleParams {
   reward: number;
   reward_mode: RewardMode;
   archived_at: string | null;
+  /** Assigned member ids (empty = up for grabs). */
+  assignees: string[];
   done: DoneClaim[];
   /** Pool entries somebody finished a part of. */
   doneCount: number;
@@ -36,6 +39,7 @@ interface EditDraft {
   color: PoolColor;
   reward: number;
   reward_mode: RewardMode;
+  assignees: string[];
   schedule: ScheduleDraft;
 }
 
@@ -48,7 +52,7 @@ interface EditDraft {
  */
 @Component({
   selector: 'app-task-admin',
-  imports: [RouterLink, ScheduleEditor],
+  imports: [MemberPicker, RouterLink, ScheduleEditor],
   templateUrl: './task-admin.html',
   styleUrl: './task-admin.scss',
 })
@@ -69,7 +73,7 @@ export class TaskAdmin {
     // Reloads with the pool, e.g. after a task was ticked off or saved here.
     params: () => ({ poolTasks: this.pool.tasks() }),
     loader: async () => {
-      const [tasks, claims] = await Promise.all([
+      const [tasks, claims, assignees] = await Promise.all([
         supabase
           .from('tasks')
           .select(
@@ -81,9 +85,10 @@ export class TaskAdmin {
           .select('id, task_id, occurrence_id, member_id, done_at, stars')
           .eq('is_done', true)
           .order('done_at', { ascending: false }),
+        supabase.from('task_assignees').select('task_id, member_id'),
       ]);
 
-      const error = tasks.error ?? claims.error;
+      const error = tasks.error ?? claims.error ?? assignees.error;
       if (error) {
         throw new Error(error.message, { cause: error });
       }
@@ -93,9 +98,14 @@ export class TaskAdmin {
         doneByTask.set(task_id, [...(doneByTask.get(task_id) ?? []), { ...claim, stars: Number(claim.stars) }]);
       }
 
-      return (tasks.data as Omit<ManagedTask, 'done' | 'doneCount'>[]).map((task) => {
+      return (tasks.data as Omit<ManagedTask, 'done' | 'doneCount' | 'assignees'>[]).map((task) => {
         const done = doneByTask.get(task.id) ?? [];
-        return { ...task, done, doneCount: new Set(done.map((c) => c.occurrence_id)).size };
+        return {
+          ...task,
+          assignees: (assignees.data ?? []).filter((a) => a.task_id === task.id).map((a) => a.member_id),
+          done,
+          doneCount: new Set(done.map((c) => c.occurrence_id)).size,
+        };
       }) satisfies ManagedTask[];
     },
   });
@@ -139,6 +149,7 @@ export class TaskAdmin {
       color: task.color,
       reward: task.reward,
       reward_mode: task.reward_mode,
+      assignees: [...task.assignees],
       schedule: scheduleDraftFrom(task),
     });
   }
@@ -174,6 +185,9 @@ export class TaskAdmin {
       reward: draft.reward,
       reward_mode: draft.reward_mode,
       ...toScheduleParams(draft.schedule),
+    }, {
+      add: draft.assignees.filter((id) => !task.assignees.includes(id)),
+      remove: task.assignees.filter((id) => !draft.assignees.includes(id)),
     });
     this.saving.set(false);
 
@@ -200,6 +214,15 @@ export class TaskAdmin {
 
   protected label(task: ManagedTask): string {
     return scheduleLabel(task);
+  }
+
+  /** "Mia, Ben" in family order. */
+  protected assigneeNames(task: ManagedTask): string {
+    return this.pool
+      .family()
+      .filter((m) => task.assignees.includes(m.id))
+      .map((m) => m.name)
+      .join(', ');
   }
 
   protected memberName(id: string | null): string {

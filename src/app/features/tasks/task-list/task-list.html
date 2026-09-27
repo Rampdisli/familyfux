@@ -39,11 +39,13 @@
         }
       </div>
 
-      @if (pool.tasks().length === 0) {
-        <p class="message">Noch keine Aufgaben im Pool.</p>
+      @if (visibleTasks().length === 0) {
+        <p class="message">
+          {{ pool.tasks().length ? 'Alles erledigt — gut gemacht! 🎉' : 'Noch keine Aufgaben im Pool.' }}
+        </p>
       } @else {
         <div class="pool-grid">
-          @for (task of pool.tasks(); track task.id) {
+          @for (task of visibleTasks(); track task.id) {
             <app-task-card [task]="task" />
           }
         </div>

@@ -101,6 +101,11 @@
                 </div>
               </div>
 
+              <div class="edit-field">
+                <span class="f-label">Zuweisen (optional)</span>
+                <app-member-picker [selected]="d.assignees" (selectedChange)="patch({ assignees: $event })" />
+              </div>
+
               <label class="edit-field">
                 <span class="f-label">Aufgabentyp</span>
                 <select
@@ -140,7 +145,13 @@
                     <span class="t-badge deleted-badge">Gelöscht</span>
                   }
                 </div>
-                <div class="t-sub">{{ label(task) }} · {{ task.doneCount }}× erledigt</div>
+                <div class="t-sub">
+                  {{ label(task) }}
+                  @if (task.assignees.length) {
+                    · für {{ assigneeNames(task) }}
+                  }
+                  · {{ task.doneCount }}× erledigt
+                </div>
               </div>
               <div class="t-reward">
                 +{{ task.reward }} ⭐
