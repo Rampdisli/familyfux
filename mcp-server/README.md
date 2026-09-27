@@ -3,12 +3,14 @@
 A minimal [MCP](https://modelcontextprotocol.io/) server for the family task pool ("Fuxis Plan")
 of the main Familyfux Supabase project:
 
-- `create_task` — new task with optional emoji, colour and reward (stars)
-- `list_tasks` — all tasks of the family, with reward and who claimed them
+- `create_task` — new task with optional emoji, colour and reward (stars); one-off or recurring
+  (daily, weekly, on certain weekdays, every X days/weeks/months, monthly, yearly, or X days after
+  the last completion)
+- `list_tasks` — the current pool: every task that is due, with reward, schedule and who claimed it
 - `list_family_members` — family members with their stars this week
-- `claim_task` — assign a task to a family member, or release it
-- `set_task_done` — mark a task as done / open again
-- `delete_task` — delete a task
+- `claim_task` — assign a pool entry to a family member, or release it
+- `set_task_done` — mark a pool entry as done / open again
+- `delete_task` — remove a task from the pool (recurring tasks stop; finished ones stay in the history)
 
 It's a full **OAuth 2.1 authorization server** in front of these tools (using the
 `@modelcontextprotocol/sdk`'s built-in auth router): connecting a client (ChatGPT, Claude, ...)

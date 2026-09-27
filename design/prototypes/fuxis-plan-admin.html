@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuxis Plan — Familie verwalten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FCEFE3;
+    --cream-deep: #F7E3CF;
+    --orange: #E8703C;
+    --orange-deep: #C85A2C;
+    --amber: #F6B93B;
+    --brown: #5A3423;
+    --brown-soft: #8A6250;
+    --mint: #B8E6C4;
+    --mint-deep: #4FA868;
+    --lilac: #DCC6F2;
+    --lilac-deep: #9366C9;
+    --sky: #BFE3F5;
+    --sky-deep: #4C9AC4;
+    --rose: #F5C6CE;
+    --rose-deep: #D66E82;
+    --peach: #F9D8B4;
+    --peach-deep: #DB9A4E;
+    --shadow-warm: rgba(90, 52, 35, 0.16);
+    --danger: #D2543E;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(160deg, #FDF5EC 0%, var(--cream) 60%, var(--cream-deep) 100%);
+    color: var(--brown);
+  }
+
+  .board {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 30px 34px 50px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand { display: flex; align-items: center; gap: 12px; }
+
+  .brand-mark {
+    width: 40px; height: 40px;
+    border-radius: 50% 50% 50% 14px;
+    background: linear-gradient(135deg, var(--amber), var(--orange));
+    box-shadow: 0 8px 16px var(--shadow-warm);
+  }
+
+  .brand-name {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600; font-size: 19px;
+    color: var(--orange-deep);
+  }
+
+  .back-link {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--brown-soft);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* PAGE HEAD */
+  .page-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .page-head h1 {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 27px;
+  }
+
+  .page-head p {
+    font-size: 13.5px;
+    color: var(--brown-soft);
+    margin-top: 4px;
+  }
+
+  .lock-note {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: #fff;
+    padding: 9px 14px;
+    border-radius: 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--brown-soft);
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+
+  /* MEMBER GRID */
+  .member-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .member-card {
+    background: #fff;
+    border-radius: 22px;
+    padding: 18px;
+    box-shadow: 0 16px 32px -18px var(--shadow-warm);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+  }
+
+  .m-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .m-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  .m-name {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 16.5px;
+  }
+
+  .m-role {
+    font-size: 12px;
+    color: var(--brown-soft);
+    margin-top: 1px;
+  }
+
+  .m-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+  }
+
+  .m-btn {
+    flex: 1;
+    border: none;
+    padding: 9px 0;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .m-btn.edit {
+    background: var(--cream);
+    color: var(--brown);
+  }
+
+  .m-btn.del {
+    background: #FBE4DF;
+    color: var(--danger);
+  }
+
+  .m-btn.del.confirm {
+    background: var(--danger);
+    color: #fff;
+  }
+
+  /* EDIT MODE */
+  .edit-panel {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .member-card.editing .m-head,
+  .member-card.editing .m-actions.view { display: none; }
+
+  .member-card.editing .edit-panel { display: flex; }
+
+  .edit-panel label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--brown-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .edit-panel input[type="text"] {
+    border: 2px solid var(--cream-deep);
+    background: var(--cream);
+    border-radius: 12px;
+    padding: 9px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--brown);
+    outline: none;
+  }
+
+  .edit-panel input[type="text"]:focus {
+    border-color: var(--orange);
+  }
+
+  .swatch-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .icon-swatch, .color-swatch {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    border: 2.5px solid transparent;
+    background: var(--cream);
+  }
+
+  .icon-swatch.active { border-color: var(--orange); }
+
+  .color-swatch.active { border-color: var(--brown); }
+  .color-swatch.active::after { content: '✓'; font-size: 13px; color: var(--brown); font-weight: 700; }
+
+  .edit-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .m-btn.save { background: var(--orange); color: #fff; }
+  .m-btn.cancel { background: var(--cream); color: var(--brown); }
+
+  /* ADD MEMBER CARD */
+  .add-card {
+    background: transparent;
+    border: 2.5px dashed rgba(90,52,35,0.25);
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 168px;
+    cursor: pointer;
+    color: var(--brown-soft);
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .add-card .plus {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    color: var(--orange);
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+
+  .add-card.editing {
+    border-style: solid;
+    background: #fff;
+    box-shadow: 0 16px 32px -18px var(--shadow-warm);
+    cursor: default;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 18px;
+  }
+
+  .add-card.editing .add-prompt { display: none; }
+  .add-form { display: none; flex-direction: column; gap: 10px; }
+  .add-card.editing .add-form { display: flex; }
+
+  /* FUXI */
+  .fuxi-strip {
+    margin-top: auto;
+    background: #fff;
+    border-radius: 24px;
+    padding: 16px 22px 16px 16px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 16px 32px -18px var(--shadow-warm);
+  }
+
+  .fuxi-strip img { width: 52px; height: 52px; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(90,52,35,0.25)); }
+  .fuxi-strip .msg { font-size: 14px; font-weight: 500; line-height: 1.4; }
+  .fuxi-strip .msg b { font-family: 'Fredoka', sans-serif; color: var(--orange-deep); }
+
+  @media (max-width: 800px) {
+    .member-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .member-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="board">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-name">Fuxis Plan</div>
+    </div>
+    <a class="back-link" href="#">← Zurück zum Familien-Board</a>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <h1>Familie verwalten</h1>
+      <p>Mitglieder hinzufügen, anpassen oder entfernen</p>
+    </div>
+    <div class="lock-note">🔒 Nur für Eltern sichtbar</div>
+  </div>
+
+  <div class="member-grid" id="memberGrid"></div>
+
+  <div class="fuxi-strip">
+    <img src="fuxi-mascot.png" alt="Fuxi">
+    <div class="msg" id="fuxiMsg">Aktuell sind <b>4 Personen</b> im Familien-Board.</div>
+  </div>
+
+</div>
+
+<script>
+  const icons = ['🦊', '🐻', '🦉', '🐰', '🐱', '🐶', '🐼', '🐢', '🐨', '🐹'];
+  const colors = [
+    { cls: 'mint', bg: 'var(--mint)' },
+    { cls: 'lilac', bg: 'var(--lilac)' },
+    { cls: 'sky', bg: 'var(--sky)' },
+    { cls: 'rose', bg: 'var(--rose)' },
+    { cls: 'peach', bg: 'var(--peach)' },
+    { cls: 'amber', bg: 'var(--amber)' },
+  ];
+
+  let members = [
+    { id: 'mia', name: 'Mia', role: 'Kind', icon: '🦊', color: 'mint' },
+    { id: 'ben', name: 'Ben', role: 'Kind', icon: '🐻', color: 'lilac' },
+    { id: 'papa', name: 'Papa', role: 'Elternteil', icon: '🦉', color: 'sky' },
+    { id: 'mama', name: 'Mama', role: 'Elternteil', icon: '🐰', color: 'rose' },
+  ];
+
+  let editingId = null;
+  let addOpen = false;
+  let deleteArmedId = null;
+
+  const grid = document.getElementById('memberGrid');
+  const fuxiMsg = document.getElementById('fuxiMsg');
+
+  function colorBg(cls) {
+    const c = colors.find(c => c.cls === cls);
+    return c ? c.bg : 'var(--cream)';
+  }
+
+  function render() {
+    grid.innerHTML = '';
+
+    members.forEach(m => {
+      const isEditing = editingId === m.id;
+      const card = document.createElement('div');
+      card.className = 'member-card' + (isEditing ? ' editing' : '');
+
+      card.innerHTML = `
+        <div class="m-head">
+          <div class="m-avatar" style="background:${colorBg(m.color)}">${m.icon}</div>
+          <div>
+            <div class="m-name">${m.name}</div>
+            <div class="m-role">${m.role}</div>
+          </div>
+        </div>
+        <div class="m-actions view">
+          <button class="m-btn edit" data-act="edit">Bearbeiten</button>
+          <button class="m-btn del ${deleteArmedId === m.id ? 'confirm' : ''}" data-act="del">
+            ${deleteArmedId === m.id ? 'Wirklich löschen?' : 'Entfernen'}
+          </button>
+        </div>
+
+        <div class="edit-panel">
+          <div>
+            <label>Name</label>
+            <input type="text" class="edit-name" value="${m.name}">
+          </div>
+          <div>
+            <label>Symbol</label>
+            <div class="swatch-row icon-row">
+              ${icons.map(ic => `<div class="icon-swatch ${ic === m.icon ? 'active' : ''}" data-icon="${ic}" style="background:${colorBg(m.color)}">${ic}</div>`).join('')}
+            </div>
+          </div>
+          <div>
+            <label>Farbe</label>
+            <div class="swatch-row color-row">
+              ${colors.map(c => `<div class="color-swatch ${c.cls === m.color ? 'active' : ''}" data-color="${c.cls}" style="background:${c.bg}"></div>`).join('')}
+            </div>
+          </div>
+          <div class="edit-actions">
+            <button class="m-btn save" data-act="save">Speichern</button>
+            <button class="m-btn cancel" data-act="cancel">Abbrechen</button>
+          </div>
+        </div>
+      `;
+
+      let draftIcon = m.icon;
+      let draftColor = m.color;
+
+      card.querySelector('[data-act="edit"]')?.addEventListener('click', () => {
+        editingId = m.id;
+        deleteArmedId = null;
+        render();
+      });
+
+      card.querySelector('[data-act="cancel"]')?.addEventListener('click', () => {
+        editingId = null;
+        render();
+      });
+
+      card.querySelector('[data-act="del"]')?.addEventListener('click', () => {
+        if (deleteArmedId === m.id) {
+          members = members.filter(x => x.id !== m.id);
+          deleteArmedId = null;
+          updateFuxi();
+          render();
+        } else {
+          deleteArmedId = m.id;
+          render();
+        }
+      });
+
+      card.querySelectorAll('.icon-swatch').forEach(el => {
+        el.addEventListener('click', () => {
+          draftIcon = el.dataset.icon;
+          card.querySelectorAll('.icon-swatch').forEach(s => {
+            s.classList.toggle('active', s.dataset.icon === draftIcon);
+            s.style.background = colorBg(draftColor);
+          });
+        });
+      });
+
+      card.querySelectorAll('.color-swatch').forEach(el => {
+        el.addEventListener('click', () => {
+          draftColor = el.dataset.color;
+          card.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === draftColor));
+          card.querySelectorAll('.icon-swatch').forEach(s => s.style.background = colorBg(draftColor));
+        });
+      });
+
+      card.querySelector('[data-act="save"]')?.addEventListener('click', () => {
+        const newName = card.querySelector('.edit-name').value.trim();
+        m.name = newName || m.name;
+        m.icon = draftIcon;
+        m.color = draftColor;
+        editingId = null;
+        render();
+      });
+
+      grid.appendChild(card);
+    });
+
+    // ADD CARD
+    const addCard = document.createElement('div');
+    addCard.className = 'member-card add-card' + (addOpen ? ' editing' : '');
+
+    let newIcon = icons[0];
+    let newColor = colors[0].cls;
+
+    addCard.innerHTML = `
+      <div class="add-prompt">
+        <div class="plus">+</div>
+        Mitglied hinzufügen
+      </div>
+      <div class="add-form">
+        <div>
+          <label>Name</label>
+          <input type="text" class="new-name" placeholder="z. B. Oma">
+        </div>
+        <div>
+          <label>Symbol</label>
+          <div class="swatch-row icon-row">
+            ${icons.map((ic, i) => `<div class="icon-swatch ${i === 0 ? 'active' : ''}" data-icon="${ic}" style="background:${colors[0].bg}">${ic}</div>`).join('')}
+          </div>
+        </div>
+        <div>
+          <label>Farbe</label>
+          <div class="swatch-row color-row">
+            ${colors.map((c, i) => `<div class="color-swatch ${i === 0 ? 'active' : ''}" data-color="${c.cls}" style="background:${c.bg}"></div>`).join('')}
+          </div>
+        </div>
+        <div class="edit-actions">
+          <button class="m-btn save" data-act="add-save">Hinzufügen</button>
+          <button class="m-btn cancel" data-act="add-cancel">Abbrechen</button>
+        </div>
+      </div>
+    `;
+
+    if (!addOpen) {
+      addCard.addEventListener('click', () => { addOpen = true; editingId = null; render(); });
+    } else {
+      addCard.querySelectorAll('.icon-swatch').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          newIcon = el.dataset.icon;
+          addCard.querySelectorAll('.icon-swatch').forEach(s => {
+            s.classList.toggle('active', s.dataset.icon === newIcon);
+            s.style.background = colorBg(newColor);
+          });
+        });
+      });
+      addCard.querySelectorAll('.color-swatch').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          newColor = el.dataset.color;
+          addCard.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === newColor));
+          addCard.querySelectorAll('.icon-swatch').forEach(s => s.style.background = colorBg(newColor));
+        });
+      });
+      addCard.querySelector('[data-act="add-save"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const name = addCard.querySelector('.new-name').value.trim();
+        if (!name) return;
+        members.push({
+          id: 'm' + Date.now(),
+          name,
+          role: 'Familienmitglied',
+          icon: newIcon,
+          color: newColor
+        });
+        addOpen = false;
+        updateFuxi();
+        render();
+      });
+      addCard.querySelector('[data-act="add-cancel"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        addOpen = false;
+        render();
+      });
+    }
+
+    grid.appendChild(addCard);
+  }
+
+  function updateFuxi() {
+    fuxiMsg.innerHTML = `Aktuell sind <b>${members.length} Personen</b> im Familien-Board.`;
+  }
+
+  render();
+</script>
+
+</body>
+</html>

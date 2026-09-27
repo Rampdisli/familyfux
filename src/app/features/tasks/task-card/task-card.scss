@@ -1,4 +1,4 @@
-// Colour tokens (--cream, --orange, …) are defined on the task list page.
+// Colour tokens (--cream, --orange, …), .av-* and .tile-* live in src/styles.scss.
 
 :host {
   position: relative;
@@ -43,20 +43,6 @@
   justify-content: center;
   font-size: 22px;
 }
-
-.tile-peach { background: #fdebd9; }
-.tile-mint { background: #e4f7e9; }
-.tile-lilac { background: #f2e4ff; }
-.tile-sky { background: #e1f3fa; }
-.tile-rose { background: #fde6ea; }
-.tile-lemon { background: #fff3d6; }
-
-.av-mint { background: var(--mint); }
-.av-lilac { background: var(--lilac); }
-.av-sky { background: var(--sky); }
-.av-rose { background: var(--rose); }
-.av-peach { background: #fdebd9; }
-.av-lemon { background: #fff3d6; }
 
 .tc-name {
   font-family: var(--font-display);

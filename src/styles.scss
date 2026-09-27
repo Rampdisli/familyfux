@@ -1,21 +1,56 @@
-/* You can add global styles to this file, and also import other style files */
+/* Fuxis Plan design tokens — see design/DESIGN.md */
 
 :root {
-  color-scheme: light dark;
+  --cream: #fcefe3;
+  --cream-deep: #f7e3cf;
+  --orange: #e8703c;
+  --orange-deep: #c85a2c;
+  --amber: #f6b93b;
+  --brown: #5a3423;
+  --brown-soft: #8a6250;
+  --mint: #b8e6c4;
+  --mint-deep: #4fa868;
+  --lilac: #dcc6f2;
+  --sky: #bfe3f5;
+  --rose: #f5c6ce;
+  --peach: #f9d8b4;
+  --lemon: #fbe29a;
+  --danger: #d2543e;
+  --shadow-warm: rgba(90, 52, 35, 0.16);
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Fredoka', var(--font-body);
+
+  color-scheme: light;
 }
 
 * {
   box-sizing: border-box;
 }
 
+/* On html, so the gradient covers long pages too (not just the first screen). */
+html {
+  min-height: 100%;
+  background: linear-gradient(160deg, #fdf5ec 0%, var(--cream) 60%, var(--cream-deep) 100%);
+}
+
 body {
   margin: 0;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  color: light-dark(#1a1a1a, #e5e5e5);
-  background: light-dark(#ffffff, #121212);
+  font-family: var(--font-body);
+  color: var(--brown);
 }
+
+/* Person colours (family_members.color), used for avatars everywhere. */
+.av-mint { background: var(--mint); }
+.av-lilac { background: var(--lilac); }
+.av-sky { background: var(--sky); }
+.av-rose { background: var(--rose); }
+.av-peach { background: var(--peach); }
+.av-lemon { background: var(--lemon); }
+
+/* Task tile tints (tasks.color): lighter than the person colours. */
+.tile-peach { background: #fdebd9; }
+.tile-mint { background: #e4f7e9; }
+.tile-lilac { background: #f2e4ff; }
+.tile-sky { background: #e1f3fa; }
+.tile-rose { background: #fde6ea; }
+.tile-lemon { background: #fff3d6; }

@@ -1,13 +1,51 @@
-<header class="app-header">
-  <a routerLink="/" class="brand">Familyfux</a>
+@if (auth.isAuthenticated()) {
+  <nav class="topnav">
+    <a routerLink="/tasks" class="brand">
+      <span class="brand-mark"></span>
+      <span class="brand-name">Fuxis Plan</span>
+    </a>
 
-  @if (auth.isAuthenticated()) {
-    <span class="user">{{ auth.user()?.email }}</span>
-  } @else {
-    <a routerLink="/login">Anmelden</a>
-  }
-</header>
+    <div class="nav-pills">
+      @for (item of nav; track item.path) {
+        <a class="nav-pill" [routerLink]="item.path" routerLinkActive="active" [title]="item.label">
+          <span class="ic">{{ item.icon }}</span><span class="label">{{ item.label }}</span>
+          @if (badge(item); as count) {
+            <span class="badge">{{ count }}</span>
+          }
+        </a>
+      }
+    </div>
 
-<main>
+    <div class="nav-right">
+      @if (pool.isParent()) {
+        <a
+          class="icon-btn admin"
+          routerLink="/familie"
+          routerLinkActive="active"
+          #admin="routerLinkActive"
+          title="Familie verwalten"
+          aria-label="Familie verwalten"
+          >{{ admin.isActive ? '👪' : '🔒' }}</a
+        >
+      }
+      <button type="button" class="icon-btn" title="Abmelden" aria-label="Abmelden" (click)="signOut()">
+        👋
+      </button>
+    </div>
+  </nav>
+
+  <nav class="bottom-bar">
+    @for (item of nav; track item.path) {
+      <a class="bottom-item" [routerLink]="item.path" routerLinkActive="active">
+        <span class="ic">{{ item.icon }}</span>{{ item.short }}
+        @if (badge(item); as count) {
+          <span class="badge">{{ count }}</span>
+        }
+      </a>
+    }
+  </nav>
+}
+
+<main [class.with-nav]="auth.isAuthenticated()">
   <router-outlet />
 </main>

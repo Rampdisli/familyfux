@@ -50,6 +50,6 @@ export class Login {
       return;
     }
 
-    void this.router.navigateByUrl('/dashboard');
+    void this.router.navigateByUrl('/tasks');
   }
 }

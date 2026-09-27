@@ -1,0 +1,124 @@
+<div class="board">
+  <a routerLink="/tasks" class="back-link">← Zurück zum Aufgaben-Pool</a>
+
+  @if (pool.data.error(); as error) {
+    <p class="message error">Konnte die Familie nicht laden: {{ error.message }}</p>
+  } @else if (!pool.data.hasValue()) {
+    <p class="message">Lade…</p>
+  } @else if (!member()) {
+    <p class="message">Dieses Familienmitglied gibt es nicht (mehr).</p>
+  } @else {
+    @let m = member()!;
+
+    <div class="person-head">
+      <div class="p-avatar av-{{ m.color }}">{{ m.emoji }}</div>
+      <div>
+        <h1>{{ possessive() }} Fortschritt</h1>
+        <p>Alle verdienten Sterne und erledigten Aufgaben im Überblick</p>
+      </div>
+    </div>
+
+    @if (done.error(); as error) {
+      <p class="message error">Konnte den Fortschritt nicht laden: {{ error.message }}</p>
+    }
+
+    <div class="stat-row">
+      <div class="stat-tile">
+        <div class="s-label">Sterne diese Woche</div>
+        <div class="s-value">{{ pool.stars()[m.id] ?? 0 }} <span class="unit">⭐</span></div>
+      </div>
+      <div class="stat-tile">
+        <div class="s-label">Aufgaben erledigt</div>
+        <div class="s-value">{{ inRange().length }} <span class="unit">letzte {{ range() }} Tage</span></div>
+      </div>
+      <div class="stat-tile">
+        <div class="s-label">Bester Tag</div>
+        @if (bestDay(); as best) {
+          <div class="s-value" [title]="longDate(best.date)">
+            {{ weekday(best.date) }} <span class="unit">{{ best.stars }} ⭐</span>
+          </div>
+        } @else {
+          <div class="s-value">–</div>
+        }
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <h2>Verdiente Sterne</h2>
+        <div class="range-toggle" role="group" aria-label="Zeitraum">
+          <button type="button" [class.active]="range() === 14" (click)="setRange(14)">14 Tage</button>
+          <button type="button" [class.active]="range() === 30" (click)="setRange(30)">30 Tage</button>
+        </div>
+      </div>
+
+      <div class="chart-wrap" (mouseleave)="hovered.set(null)">
+        <svg [attr.viewBox]="viewBox" role="img" [attr.aria-label]="'Verdiente Sterne der letzten ' + range() + ' Tage'">
+          @for (tick of ticks(); track tick.value) {
+            <line class="grid-line" [attr.x1]="plotLeft" [attr.x2]="plotRight" [attr.y1]="tick.y" [attr.y2]="tick.y" />
+            <text class="y-tick" x="4" [attr.y]="tick.y + 3">{{ tick.value }}</text>
+          }
+
+          @for (bar of bars(); track bar.day.key; let i = $index) {
+            <path class="bar" [class.empty]="!bar.day.stars" [class.hovered]="hovered() === i" [attr.d]="bar.path" />
+            @if (bar.label) {
+              <text class="axis-label" [class.today]="bar.isToday" text-anchor="middle" [attr.x]="bar.cx" [attr.y]="axisY">
+                {{ bar.label }}
+              </text>
+            }
+            <!-- Hit target: the whole day slot, larger than the bar itself. -->
+            <rect
+              class="hit"
+              tabindex="0"
+              [attr.x]="bar.slotX"
+              [attr.width]="bar.slotW"
+              y="0"
+              [attr.height]="chartHeight"
+              [attr.aria-label]="barLabel(bar.day)"
+              (mouseenter)="hovered.set(i)"
+              (focus)="hovered.set(i)"
+              (blur)="hovered.set(null)"
+            />
+          }
+        </svg>
+
+        @if (hovered() !== null) {
+          @let bar = bars()[hovered()!];
+          <div
+            class="bar-tooltip"
+            [style.left.%]="(bar.cx / chartWidth) * 100"
+            [style.top.%]="(bar.top / chartHeight) * 100"
+          >
+            {{ bar.day.stars }} ⭐
+            <div class="tt-sub">{{ longDate(bar.day.date) }}</div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <section class="history">
+      <div class="history-head">
+        <h2>Erledigte Aufgaben</h2>
+        <span>neueste zuerst</span>
+      </div>
+
+      @for (group of history(); track group.label) {
+        <div class="day-heading">{{ group.label }}</div>
+        @for (task of group.tasks; track task.id) {
+          <div class="task-row">
+            <div class="t-icon tile-{{ task.color }}">{{ task.emoji }}</div>
+            <div class="t-body">
+              <div class="t-name">{{ task.title }}</div>
+              <div class="t-time">erledigt um {{ time(task.done_at) }} Uhr</div>
+            </div>
+            <div class="t-stars">+{{ task.reward }} ⭐</div>
+          </div>
+        }
+      } @empty {
+        @if (done.hasValue()) {
+          <p class="message">In den letzten {{ range() }} Tagen noch nichts erledigt.</p>
+        }
+      }
+    </section>
+  }
+</div>

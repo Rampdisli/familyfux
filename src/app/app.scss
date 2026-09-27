@@ -1,22 +1,202 @@
-.app-header {
+/* Navigation — design/prototypes/fuxis-plan-navigation.html */
+
+.topnav {
+  max-width: 1240px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid light-dark(#e2e2e2, #333);
+  gap: 24px;
+  padding: 22px 34px;
+}
 
-  .brand {
-    font-weight: 700;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 50% 50% 50% 14px;
+  background: linear-gradient(135deg, var(--amber), var(--orange));
+  box-shadow: 0 8px 16px var(--shadow-warm);
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--orange-deep);
+  white-space: nowrap;
+}
+
+.nav-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  padding: 6px;
+  border-radius: 20px;
+  box-shadow: 0 10px 24px -12px var(--shadow-warm);
+}
+
+.nav-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 15px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--brown-soft);
+  text-decoration: none;
+  white-space: nowrap;
+
+  .ic {
+    font-size: 17px;
+  }
+
+  &.active {
+    background: linear-gradient(135deg, var(--amber), var(--orange));
+    color: #fff;
+    box-shadow: 0 10px 20px -8px rgba(232, 112, 60, 0.55);
+
+    .badge {
+      background: #fff;
+      color: var(--orange-deep);
+    }
+  }
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--brown);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 14px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 8px 18px var(--shadow-warm);
+
+  &.admin.active {
+    background: var(--brown);
+  }
+}
+
+/* Mobile: bottom tab bar instead of the pills */
+.bottom-bar {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .nav-pills .label,
+  .brand-name {
+    display: none;
+  }
+
+  .nav-pill {
+    padding: 11px 13px;
+  }
+}
+
+@media (max-width: 640px) {
+  .topnav {
+    padding: 18px 18px 14px;
+  }
+
+  .nav-pills {
+    display: none;
+  }
+
+  .brand-name {
+    display: inline;
+  }
+
+  main.with-nav {
+    padding-bottom: 90px;
+  }
+
+  .bottom-bar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-around;
+    background: #fff;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 24px -12px var(--shadow-warm);
+  }
+
+  .bottom-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 8px;
+    color: var(--brown-soft);
+    font-size: 10.5px;
+    font-weight: 600;
     text-decoration: none;
-    color: inherit;
-  }
 
-  a {
-    color: #2563eb;
-  }
+    .ic {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 21px;
+    }
 
-  .user {
-    font-size: 0.9rem;
-    opacity: 0.75;
+    .badge {
+      top: 2px;
+      right: 2px;
+      min-width: 15px;
+      height: 15px;
+      font-size: 9.5px;
+    }
+
+    &.active {
+      color: var(--orange-deep);
+
+      .ic {
+        background: linear-gradient(135deg, var(--amber), var(--orange));
+      }
+    }
   }
 }

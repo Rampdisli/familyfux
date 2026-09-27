@@ -1,9 +1,12 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase-client';
 
 @Injectable({ providedIn: 'root' })
 export class Auth {
+  private readonly router = inject(Router);
+
   private readonly _session = signal<Session | null>(null);
 
   /** Current Supabase session, or `null` when signed out. */
@@ -27,8 +30,14 @@ export class Auth {
       this._session.set(data.session);
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange((event, session) => {
       this._session.set(session);
+
+      // Signed out while on a page (another tab, failed token refresh, ...):
+      // the guards only run on navigation, so send the user to the login.
+      if (event === 'SIGNED_OUT') {
+        void this.router.navigateByUrl('/login');
+      }
     });
   }
 

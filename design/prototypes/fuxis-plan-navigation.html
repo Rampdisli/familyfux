@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuxis Plan — Navigation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FCEFE3;
+    --cream-deep: #F7E3CF;
+    --orange: #E8703C;
+    --orange-deep: #C85A2C;
+    --amber: #F6B93B;
+    --brown: #5A3423;
+    --brown-soft: #8A6250;
+    --mint: #B8E6C4;
+    --shadow-warm: rgba(90, 52, 35, 0.16);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(160deg, #FDF5EC 0%, var(--cream) 60%, var(--cream-deep) 100%);
+    color: var(--brown);
+  }
+
+  .app {
+    max-width: 1240px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* NAV BAR */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 34px;
+    gap: 24px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .brand-mark {
+    width: 38px; height: 38px;
+    border-radius: 50% 50% 50% 14px;
+    background: linear-gradient(135deg, var(--amber), var(--orange));
+    box-shadow: 0 8px 16px var(--shadow-warm);
+  }
+
+  .brand-name {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--orange-deep);
+    white-space: nowrap;
+  }
+
+  .nav-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    padding: 6px;
+    border-radius: 20px;
+    box-shadow: 0 10px 24px -12px var(--shadow-warm);
+  }
+
+  .nav-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: transparent;
+    padding: 11px 18px;
+    border-radius: 15px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--brown-soft);
+    cursor: pointer;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .nav-pill .ic { font-size: 17px; }
+
+  .nav-pill.active {
+    background: linear-gradient(135deg, var(--amber), var(--orange));
+    color: #fff;
+    box-shadow: 0 10px 20px -8px rgba(232,112,60,0.55);
+  }
+
+  .nav-pill .badge {
+    position: absolute;
+    top: -4px;
+    right: -2px;
+    background: var(--brown);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+  }
+
+  .nav-pill.active .badge {
+    background: #fff;
+    color: var(--orange-deep);
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .weather-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    padding: 10px 16px;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 8px 18px var(--shadow-warm);
+    white-space: nowrap;
+  }
+
+  .admin-btn {
+    width: 42px; height: 42px;
+    border-radius: 14px;
+    background: #fff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 8px 18px var(--shadow-warm);
+    flex-shrink: 0;
+  }
+
+  .admin-btn.active {
+    background: var(--brown);
+  }
+
+  /* MOBILE: bottom tab bar */
+  .bottom-bar {
+    display: none;
+  }
+
+  /* CONTENT PLACEHOLDER */
+  .content {
+    flex: 1;
+    padding: 0 34px 34px;
+  }
+
+  .panel {
+    display: none;
+    background: #fff;
+    border-radius: 26px;
+    min-height: 420px;
+    padding: 40px;
+    box-shadow: 0 16px 32px -18px var(--shadow-warm);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 14px;
+  }
+
+  .panel.active { display: flex; }
+
+  .panel .p-icon {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: var(--cream);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 34px;
+  }
+
+  .panel h2 {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 22px;
+  }
+
+  .panel p {
+    color: var(--brown-soft);
+    font-size: 14px;
+    max-width: 340px;
+  }
+
+  @media (max-width: 900px) {
+    .nav-pills .label { display: none; }
+    .nav-pill { padding: 11px 13px; }
+    .brand-name { display: none; }
+  }
+
+  @media (max-width: 640px) {
+    nav { padding: 18px 18px 0; }
+    .nav-pills { display: none; }
+    .content { padding: 0 18px 90px; }
+
+    .bottom-bar {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #fff;
+      padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+      box-shadow: 0 -8px 24px -12px var(--shadow-warm);
+      justify-content: space-around;
+      z-index: 10;
+    }
+
+    .bottom-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      border: none;
+      background: transparent;
+      color: var(--brown-soft);
+      font-size: 10.5px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 8px;
+      position: relative;
+    }
+
+    .bottom-item .ic {
+      font-size: 21px;
+      width: 38px; height: 38px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .bottom-item.active { color: var(--orange-deep); }
+    .bottom-item.active .ic {
+      background: linear-gradient(135deg, var(--amber), var(--orange));
+    }
+
+    .bottom-item .badge {
+      position: absolute;
+      top: 2px; right: 2px;
+      background: var(--brown);
+      color: #fff;
+      font-size: 9.5px;
+      font-weight: 700;
+      min-width: 15px; height: 15px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <nav>
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-name">Fuxis Plan</div>
+    </div>
+
+    <div class="nav-pills" id="navPills">
+      <button class="nav-pill active" data-target="pool">
+        <span class="ic">🗂️</span><span class="label">Aufgaben-Pool</span>
+        <span class="badge">6</span>
+      </button>
+      <button class="nav-pill" data-target="kalender">
+        <span class="ic">📅</span><span class="label">Kalender</span>
+      </button>
+      <button class="nav-pill" data-target="einkaufen">
+        <span class="ic">🛒</span><span class="label">Einkaufen</span>
+        <span class="badge">7</span>
+      </button>
+      <button class="nav-pill" data-target="essen">
+        <span class="ic">🍝</span><span class="label">Essensplan</span>
+      </button>
+    </div>
+
+    <div class="nav-right">
+      <div class="weather-chip">☀️ 21°</div>
+      <button class="admin-btn" id="adminBtn" title="Familie verwalten">🔒</button>
+    </div>
+  </nav>
+
+  <div class="content">
+    <div class="panel active" data-panel="pool">
+      <div class="p-icon">🗂️</div>
+      <h2>Aufgaben-Pool</h2>
+      <p>Hier liegt der Aufgaben-Pool-Screen mit den claimbaren Kacheln.</p>
+    </div>
+    <div class="panel" data-panel="kalender">
+      <div class="p-icon">📅</div>
+      <h2>Kalender</h2>
+      <p>Gemeinsame Familientermine — noch nicht ausgebaut.</p>
+    </div>
+    <div class="panel" data-panel="einkaufen">
+      <div class="p-icon">🛒</div>
+      <h2>Einkaufsliste</h2>
+      <p>7 Dinge fehlen noch — noch nicht ausgebaut.</p>
+    </div>
+    <div class="panel" data-panel="essen">
+      <div class="p-icon">🍝</div>
+      <h2>Essensplan</h2>
+      <p>Wochenplan fürs Kochen — noch nicht ausgebaut.</p>
+    </div>
+    <div class="panel" data-panel="familie">
+      <div class="p-icon">👪</div>
+      <h2>Familie verwalten</h2>
+      <p>Mitglieder hinzufügen, bearbeiten, entfernen — nur für Eltern.</p>
+    </div>
+  </div>
+
+  <div class="bottom-bar" id="bottomBar">
+    <button class="bottom-item active" data-target="pool">
+      <span class="ic">🗂️</span>Aufgaben
+      <span class="badge">6</span>
+    </button>
+    <button class="bottom-item" data-target="kalender">
+      <span class="ic">📅</span>Kalender
+    </button>
+    <button class="bottom-item" data-target="einkaufen">
+      <span class="ic">🛒</span>Einkaufen
+      <span class="badge">7</span>
+    </button>
+    <button class="bottom-item" data-target="essen">
+      <span class="ic">🍝</span>Essen
+    </button>
+  </div>
+
+</div>
+
+<script>
+  const pills = document.querySelectorAll('.nav-pill');
+  const bottomItems = document.querySelectorAll('.bottom-item');
+  const panels = document.querySelectorAll('.panel');
+  const adminBtn = document.getElementById('adminBtn');
+
+  function setActive(target) {
+    panels.forEach(p => p.classList.toggle('active', p.dataset.panel === target));
+    pills.forEach(p => p.classList.toggle('active', p.dataset.target === target));
+    bottomItems.forEach(p => p.classList.toggle('active', p.dataset.target === target));
+    adminBtn.classList.toggle('active', target === 'familie');
+    adminBtn.textContent = target === 'familie' ? '👪' : '🔒';
+  }
+
+  [...pills, ...bottomItems].forEach(el => {
+    el.addEventListener('click', () => setActive(el.dataset.target));
+  });
+
+  adminBtn.addEventListener('click', () => setActive('familie'));
+</script>
+
+</body>
+</html>

@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuxis Plan — Mias Fortschritt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FCEFE3;
+    --cream-deep: #F7E3CF;
+    --orange: #E8703C;
+    --orange-deep: #C85A2C;
+    --orange-light: #F6B393;
+    --amber: #F6B93B;
+    --brown: #5A3423;
+    --brown-soft: #8A6250;
+    --brown-muted: #B39C8C;
+    --mint: #B8E6C4;
+    --mint-deep: #4FA868;
+    --shadow-warm: rgba(90, 52, 35, 0.16);
+    --grid-line: #EADFCF;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(160deg, #FDF5EC 0%, var(--cream) 60%, var(--cream-deep) 100%);
+    color: var(--brown);
+  }
+
+  .board {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 30px 34px 50px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  /* TOP */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .back-link {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--brown-soft);
+    text-decoration: none;
+  }
+
+  .weather-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; padding: 10px 16px; border-radius: 16px;
+    font-weight: 600; font-size: 14px;
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+
+  /* PERSON HEADER */
+  .person-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .p-avatar {
+    width: 62px; height: 62px;
+    border-radius: 50%;
+    background: var(--mint);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+    box-shadow: 0 10px 20px var(--shadow-warm);
+    flex-shrink: 0;
+  }
+
+  .person-head h1 {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 25px;
+  }
+
+  .person-head p {
+    font-size: 13.5px;
+    color: var(--brown-soft);
+    margin-top: 2px;
+  }
+
+  /* STAT TILES */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .stat-tile {
+    background: #fff;
+    border-radius: 20px;
+    padding: 16px 18px;
+    box-shadow: 0 12px 26px -16px var(--shadow-warm);
+  }
+
+  .stat-tile .s-label {
+    font-size: 12.5px;
+    color: var(--brown-soft);
+    font-weight: 600;
+  }
+
+  .stat-tile .s-value {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 26px;
+    margin-top: 4px;
+  }
+
+  .stat-tile .s-value .unit {
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    color: var(--brown-soft);
+    margin-left: 3px;
+  }
+
+  /* CHART CARD */
+  .chart-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 22px 22px 8px;
+    box-shadow: 0 16px 32px -18px var(--shadow-warm);
+  }
+
+  .chart-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 4px;
+  }
+
+  .chart-head h2 {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+  }
+
+  .chart-head .range-toggle {
+    display: flex;
+    gap: 4px;
+    background: var(--cream);
+    padding: 4px;
+    border-radius: 12px;
+  }
+
+  .range-toggle button {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: 9px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--brown-soft);
+    cursor: pointer;
+  }
+
+  .range-toggle button.active {
+    background: var(--orange);
+    color: #fff;
+  }
+
+  .chart-wrap {
+    position: relative;
+    margin-top: 14px;
+  }
+
+  .bar-tooltip {
+    position: absolute;
+    background: var(--brown);
+    color: #fff;
+    padding: 7px 11px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -100%);
+    white-space: nowrap;
+    transition: opacity 0.1s ease;
+    z-index: 5;
+  }
+
+  .bar-tooltip .tt-sub {
+    font-weight: 500;
+    color: #F0DFD3;
+    font-size: 10.5px;
+    margin-top: 1px;
+  }
+
+  .bar {
+    fill: var(--orange);
+    cursor: pointer;
+    transition: fill 0.15s ease;
+  }
+
+  .bar:hover, .bar.hovered {
+    fill: var(--orange-deep);
+  }
+
+  .bar.empty {
+    fill: var(--cream-deep);
+  }
+
+  .grid-line {
+    stroke: var(--grid-line);
+    stroke-width: 1;
+  }
+
+  .axis-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    fill: var(--brown-muted);
+  }
+
+  .axis-label.today {
+    fill: var(--orange-deep);
+  }
+
+  .y-tick {
+    font-family: 'Inter', sans-serif;
+    font-size: 10.5px;
+    fill: var(--brown-muted);
+  }
+
+  /* TASK HISTORY */
+  .history-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .history-head h2 {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 19px;
+  }
+
+  .history-head span {
+    font-size: 13px;
+    color: var(--brown-soft);
+  }
+
+  .day-group {
+    margin-top: 4px;
+  }
+
+  .day-heading {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--brown-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin: 18px 0 8px 4px;
+  }
+
+  .day-heading:first-child { margin-top: 6px; }
+
+  .task-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    box-shadow: 0 8px 18px -14px var(--shadow-warm);
+  }
+
+  .task-row .t-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px;
+    background: var(--cream);
+    flex-shrink: 0;
+  }
+
+  .task-row .t-body { flex: 1; min-width: 0; }
+
+  .task-row .t-name {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 14.5px;
+  }
+
+  .task-row .t-time {
+    font-size: 12px;
+    color: var(--brown-soft);
+    margin-top: 1px;
+  }
+
+  .task-row .t-stars {
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--orange-deep);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 700px) {
+    .stat-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .stat-tile { padding: 12px 10px; }
+    .stat-tile .s-value { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="board">
+
+  <div class="topbar">
+    <a class="back-link" href="#">← Zurück zum Aufgaben-Pool</a>
+    <div class="weather-chip">☀️ 21°</div>
+  </div>
+
+  <div class="person-head">
+    <div class="p-avatar">🦊</div>
+    <div>
+      <h1>Mias Fortschritt</h1>
+      <p>Alle verdienten Sterne und erledigten Aufgaben im Überblick</p>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-tile">
+      <div class="s-label">Sterne diese Woche</div>
+      <div class="s-value">17 <span class="unit">⭐</span></div>
+    </div>
+    <div class="stat-tile">
+      <div class="s-label">Aufgaben erledigt</div>
+      <div class="s-value">23 <span class="unit">letzte 14 Tage</span></div>
+    </div>
+    <div class="stat-tile">
+      <div class="s-label">Bester Tag</div>
+      <div class="s-value">Sa <span class="unit">6 ⭐</span></div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-head">
+      <h2>Verdiente Sterne</h2>
+      <div class="range-toggle">
+        <button class="active" data-range="14">14 Tage</button>
+        <button data-range="30">30 Tage</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <svg id="chartSvg" width="100%" height="220" viewBox="0 0 900 220" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="bar-tooltip" id="tooltip"></div>
+    </div>
+  </div>
+
+  <div class="history">
+    <div class="history-head">
+      <h2>Erledigte Aufgaben</h2>
+      <span>neueste zuerst</span>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+</div>
+
+<script>
+  /* ---------- Demo data ---------- */
+  const today = new Date(2026, 8, 27); // 27.09.2026, matches conversation date
+
+  function fmtDay(d) {
+    return d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
+  }
+  function fmtDate(d) {
+    return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'long' });
+  }
+  function isoDay(d) {
+    return d.toISOString().slice(0, 10);
+  }
+
+  // deterministic pseudo-random per day so re-renders stay stable
+  function seeded(n) {
+    const x = Math.sin(n * 999) * 10000;
+    return x - Math.floor(x);
+  }
+
+  const days14 = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const stars = Math.round(seeded(i + 1) * 6);
+    days14.push({ date: d, stars });
+  }
+
+  const days30 = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const stars = Math.round(seeded(i + 50) * 6);
+    days30.push({ date: d, stars });
+  }
+
+  const taskIcons = {
+    'Zähne putzen': '🦷', 'Schultasche packen': '🎒', 'Zimmer aufräumen': '🧸',
+    'Hund füttern': '🐕', 'Tisch decken': '🍽️', 'Pflanzen gießen': '🌱',
+    'Hausaufgaben': '📚', 'Müll rausbringen': '🗑️'
+  };
+  const taskNames = Object.keys(taskIcons);
+  const taskRewards = { 'Zähne putzen': 2, 'Schultasche packen': 3, 'Zimmer aufräumen': 3, 'Hund füttern': 4, 'Tisch decken': 2, 'Pflanzen gießen': 2, 'Hausaufgaben': 4, 'Müll rausbringen': 2 };
+
+  // build a completed-task history consistent-ish with the 14-day bars
+  const history = [];
+  days14.forEach((day, di) => {
+    let remaining = day.stars;
+    let guard = 0;
+    while (remaining > 0 && guard < 5) {
+      const name = taskNames[Math.floor(seeded(di * 7 + guard) * taskNames.length)];
+      const reward = taskRewards[name];
+      if (reward <= remaining || guard === 4) {
+        const hour = 7 + Math.floor(seeded(di * 3 + guard) * 13);
+        const minute = Math.floor(seeded(di * 5 + guard) * 60);
+        const dt = new Date(day.date);
+        dt.setHours(hour, minute);
+        history.push({ name, reward: Math.min(reward, remaining) || reward, date: dt });
+        remaining -= reward;
+      }
+      guard++;
+    }
+  });
+  history.sort((a, b) => b.date - a.date);
+
+  /* ---------- Chart rendering ---------- */
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('chartSvg');
+  const tooltip = document.getElementById('tooltip');
+  const wrap = document.querySelector('.chart-wrap');
+
+  function renderChart(data) {
+    svg.innerHTML = '';
+    const W = 900, H = 220;
+    const padL = 28, padR = 10, padT = 14, padB = 26;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    const maxVal = Math.max(6, ...data.map(d => d.stars));
+    const niceMax = Math.ceil(maxVal / 2) * 2;
+
+    // gridlines + y ticks (0, mid, max)
+    [0, niceMax / 2, niceMax].forEach(val => {
+      const y = padT + plotH - (val / niceMax) * plotH;
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', padL); line.setAttribute('x2', W - padR);
+      line.setAttribute('y1', y); line.setAttribute('y2', y);
+      line.setAttribute('class', 'grid-line');
+      svg.appendChild(line);
+
+      const label = document.createElementNS(svgNS, 'text');
+      label.setAttribute('x', 4); label.setAttribute('y', y + 3);
+      label.setAttribute('class', 'y-tick');
+      label.textContent = val;
+      svg.appendChild(label);
+    });
+
+    const n = data.length;
+    const slot = plotW / n;
+    const barW = Math.min(24, slot * 0.55);
+
+    data.forEach((d, i) => {
+      const cx = padL + slot * i + slot / 2;
+      const h = niceMax === 0 ? 0 : (d.stars / niceMax) * plotH;
+      const y = padT + plotH - h;
+
+      const rect = document.createElementNS(svgNS, 'rect');
+      rect.setAttribute('x', cx - barW / 2);
+      rect.setAttribute('y', d.stars === 0 ? y - 3 : y);
+      rect.setAttribute('width', barW);
+      rect.setAttribute('height', d.stars === 0 ? 3 : h);
+      rect.setAttribute('rx', 4);
+      rect.setAttribute('class', 'bar' + (d.stars === 0 ? ' empty' : ''));
+      rect.dataset.index = i;
+
+      rect.addEventListener('mouseenter', () => showTooltip(rect, d, cx, y));
+      rect.addEventListener('mousemove', () => showTooltip(rect, d, cx, y));
+      rect.addEventListener('mouseleave', hideTooltip);
+
+      svg.appendChild(rect);
+
+      // sparse x labels: every day if <=14, every ~4th if 30
+      const showLabel = n <= 14 || i % 4 === 0 || i === n - 1;
+      if (showLabel) {
+        const isToday = isoDay(d.date) === isoDay(today);
+        const label = document.createElementNS(svgNS, 'text');
+        label.setAttribute('x', cx);
+        label.setAttribute('y', H - 8);
+        label.setAttribute('text-anchor', 'middle');
+        label.setAttribute('class', 'axis-label' + (isToday ? ' today' : ''));
+        label.textContent = fmtDay(d.date);
+        svg.appendChild(label);
+      }
+    });
+  }
+
+  function showTooltip(rect, d, cx, y) {
+    document.querySelectorAll('.bar').forEach(b => b.classList.remove('hovered'));
+    rect.classList.add('hovered');
+
+    const svgRect = svg.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    const scaleX = svgRect.width / 900;
+    const scaleY = svgRect.height / 220;
+
+    const left = (svgRect.left - wrapRect.left) + cx * scaleX;
+    const top = (svgRect.top - wrapRect.top) + y * scaleY - 8;
+
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+    tooltip.innerHTML = `${d.stars} ⭐<div class="tt-sub">${fmtDate(d.date)}</div>`;
+    tooltip.style.opacity = '1';
+  }
+
+  function hideTooltip() {
+    document.querySelectorAll('.bar').forEach(b => b.classList.remove('hovered'));
+    tooltip.style.opacity = '0';
+  }
+
+  /* ---------- Task history rendering ---------- */
+  function dayLabel(d) {
+    const diff = Math.round((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+    if (diff === 0) return 'Heute';
+    if (diff === 1) return 'Gestern';
+    return d.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long' });
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    list.innerHTML = '';
+    let lastKey = null;
+    let groupEl = null;
+
+    history.forEach(item => {
+      const key = isoDay(item.date);
+      if (key !== lastKey) {
+        lastKey = key;
+        const heading = document.createElement('div');
+        heading.className = 'day-heading';
+        heading.textContent = dayLabel(item.date);
+        list.appendChild(heading);
+      }
+      const row = document.createElement('div');
+      row.className = 'task-row';
+      const time = item.date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      row.innerHTML = `
+        <div class="t-icon">${taskIcons[item.name]}</div>
+        <div class="t-body">
+          <div class="t-name">${item.name}</div>
+          <div class="t-time">erledigt um ${time} Uhr</div>
+        </div>
+        <div class="t-stars">+${item.reward} ⭐</div>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  /* ---------- Range toggle ---------- */
+  document.querySelectorAll('.range-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.range-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderChart(btn.dataset.range === '30' ? days30 : days14);
+      hideTooltip();
+    });
+  });
+
+  renderChart(days14);
+  renderHistory();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,150 @@
+<div class="board">
+  <div class="page-head">
+    <div>
+      <h1>Familie verwalten</h1>
+      <p>Mitglieder hinzufügen, anpassen oder entfernen</p>
+    </div>
+    <div class="lock-note">🔒 Nur für Eltern sichtbar</div>
+  </div>
+
+  @if (errorMessage(); as message) {
+    <p class="message error">Konnte nicht speichern: {{ message }}</p>
+  }
+
+  @if (pool.data.error(); as error) {
+    <p class="message error">Konnte die Familie nicht laden: {{ error.message }}</p>
+  } @else if (!pool.data.hasValue()) {
+    <p class="message">Lade…</p>
+  } @else {
+    <div class="member-grid">
+      @for (member of pool.family(); track member.id) {
+        <div class="member-card">
+          @if (editing() === member.id) {
+            <ng-container
+              [ngTemplateOutlet]="memberForm"
+              [ngTemplateOutletContext]="{ submitLabel: 'Speichern', isMe: member.id === pool.me()?.id }"
+            />
+          } @else {
+            <div class="m-head">
+              <div class="m-avatar av-{{ member.color }}">{{ member.emoji }}</div>
+              <div>
+                <div class="m-name">{{ member.name }}</div>
+                <div class="m-role">
+                  {{ roleLabels[member.role] }}
+                  @if (member.id === pool.me()?.id) {
+                    · du
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="m-actions">
+              <button type="button" class="m-btn edit" (click)="edit(member)">Bearbeiten</button>
+              @if (member.id !== pool.me()?.id) {
+                <button
+                  type="button"
+                  class="m-btn del"
+                  [class.confirm]="deleteArmed() === member.id"
+                  (click)="remove(member)"
+                >
+                  {{ deleteArmed() === member.id ? 'Wirklich löschen?' : 'Entfernen' }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (editing() === 'new') {
+        <div class="member-card add-card editing">
+          <ng-container
+            [ngTemplateOutlet]="memberForm"
+            [ngTemplateOutletContext]="{ submitLabel: 'Hinzufügen', isMe: false }"
+          />
+        </div>
+      } @else {
+        <button type="button" class="member-card add-card" (click)="startAdd()">
+          <span class="plus">+</span>
+          Mitglied hinzufügen
+        </button>
+      }
+    </div>
+
+    <div class="fuxi-strip">
+      <div class="fuxi">🦊</div>
+      <div class="msg">
+        Aktuell sind <b>{{ pool.family().length }} {{ pool.family().length === 1 ? 'Person' : 'Personen' }}</b>
+        im Familien-Board.
+      </div>
+    </div>
+  }
+</div>
+
+<ng-template #memberForm let-submitLabel="submitLabel" let-isMe="isMe">
+  <form class="edit-panel" (submit)="$event.preventDefault(); save()">
+    <label>
+      Name
+      <input
+        type="text"
+        placeholder="z. B. Oma"
+        required
+        [value]="draft().name"
+        (input)="patch({ name: $any($event.target).value })"
+      />
+    </label>
+
+    <div>
+      <span class="field-label">Symbol</span>
+      <div class="swatch-row">
+        @for (icon of icons; track icon) {
+          <button
+            type="button"
+            class="icon-swatch av-{{ draft().color }}"
+            [class.active]="draft().emoji === icon"
+            [attr.aria-pressed]="draft().emoji === icon"
+            (click)="patch({ emoji: icon })"
+          >
+            {{ icon }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div>
+      <span class="field-label">Farbe</span>
+      <div class="swatch-row">
+        @for (color of colors; track color) {
+          <button
+            type="button"
+            class="color-swatch av-{{ color }}"
+            [class.active]="draft().color === color"
+            [attr.aria-pressed]="draft().color === color"
+            [attr.aria-label]="color"
+            (click)="patch({ color })"
+          ></button>
+        }
+      </div>
+    </div>
+
+    <!-- Parents can't demote themselves, so the family never loses its last admin by accident. -->
+    @if (!isMe) {
+      <div>
+        <span class="field-label">Rolle</span>
+        <div class="role-toggle">
+          <button type="button" [class.active]="draft().role === 'child'" (click)="patch({ role: 'child' })">
+            {{ roleLabels.child }}
+          </button>
+          <button type="button" [class.active]="draft().role === 'parent'" (click)="patch({ role: 'parent' })">
+            {{ roleLabels.parent }}
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="edit-actions">
+      <button type="submit" class="m-btn save" [disabled]="saving() || !draft().name.trim()">
+        {{ submitLabel }}
+      </button>
+      <button type="button" class="m-btn cancel" (click)="cancel()">Abbrechen</button>
+    </div>
+  </form>
+</ng-template>

@@ -5,7 +5,12 @@
 }
 
 <div class="tc-name">{{ task().title }}</div>
-<div class="tc-reward">+{{ task().reward }} ⭐</div>
+<div class="tc-reward">
+  +{{ task().reward }} ⭐
+  @if (task().schedule !== 'once') {
+    <span title="Wiederkehrende Aufgabe"> · 🔁</span>
+  }
+</div>
 
 @if (claimer(); as member) {
   <button type="button" class="done-toggle" [attr.aria-pressed]="task().is_done" (click)="toggleDone()">

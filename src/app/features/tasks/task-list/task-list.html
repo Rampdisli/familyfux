@@ -1,6 +1,4 @@
 <div class="page">
-  <a routerLink="/dashboard" class="back">← Zurück zum Dashboard</a>
-
   @if (pool.errorMessage(); as message) {
     <p class="message error">Konnte die Aufgabe nicht speichern: {{ message }}</p>
   }
@@ -17,20 +15,25 @@
   } @else {
     <div class="family-strip">
       @for (member of pool.family(); track member.id) {
-        <div class="fam-chip">
+        <a class="fam-chip" [routerLink]="['/fortschritt', member.id]" [title]="'Fortschritt von ' + member.name">
           <div class="av av-{{ member.color }}">{{ member.emoji }}</div>
           <div>
             <div class="name">{{ member.name }}</div>
             <div class="stars">{{ pool.stars()[member.id] ?? 0 }} ⭐ diese Woche</div>
           </div>
-        </div>
+        </a>
       }
     </div>
 
     <section>
       <div class="pool-head">
-        <h1>Aufgaben-Pool</h1>
-        <span>frei für alle — nimm dir, was dir liegt</span>
+        <div>
+          <h1>Aufgaben-Pool</h1>
+          <span>frei für alle — nimm dir, was dir liegt</span>
+        </div>
+        @if (pool.isParent()) {
+          <a routerLink="/tasks/neu" class="new-task">+ Neue Aufgabe</a>
+        }
       </div>
 
       @if (pool.tasks().length === 0) {

@@ -1,0 +1,290 @@
+<div class="board">
+  <a routerLink="/tasks" class="back-link">← Zurück zum Aufgaben-Pool</a>
+
+  <div class="page-head">
+    <h1>Neue Aufgabe erstellen</h1>
+    <p>Lege fest, wie die Aufgabe aussieht und ob sie sich wiederholt</p>
+  </div>
+
+  <div class="layout">
+    <form class="card" (submit)="$event.preventDefault(); save()">
+      <div class="field">
+        <label class="f-label" for="task-title">Name der Aufgabe</label>
+        <input
+          id="task-title"
+          type="text"
+          placeholder="z. B. Zimmer aufräumen"
+          required
+          [value]="title()"
+          (input)="title.set($any($event.target).value)"
+        />
+      </div>
+
+      <div class="field">
+        <span class="f-label">Symbol</span>
+        <div class="swatch-row">
+          @for (icon of icons; track icon) {
+            <button
+              type="button"
+              class="icon-swatch tile-{{ color() }}"
+              [class.active]="emoji() === icon"
+              [attr.aria-pressed]="emoji() === icon"
+              (click)="emoji.set(icon)"
+            >
+              {{ icon }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="f-label">Farbe</span>
+        <div class="swatch-row">
+          @for (c of colors; track c) {
+            <button
+              type="button"
+              class="color-swatch tile-{{ c }}"
+              [class.active]="color() === c"
+              [attr.aria-pressed]="color() === c"
+              [attr.aria-label]="c"
+              (click)="color.set(c)"
+            ></button>
+          }
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="f-label">Sterne-Belohnung</span>
+        <div class="stepper">
+          <button type="button" aria-label="Weniger Sterne" [disabled]="reward() <= 1" (click)="changeReward(-1)">−</button>
+          <div class="val">{{ reward() }} ⭐</div>
+          <button type="button" aria-label="Mehr Sterne" [disabled]="reward() >= 10" (click)="changeReward(1)">+</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="f-label">Aufgabentyp</span>
+        <div class="type-toggle">
+          <button
+            type="button"
+            class="type-btn"
+            [class.active]="!schedule().recurring"
+            (click)="patchSchedule({ recurring: false })"
+          >
+            <div class="tb-title">Einmalig</div>
+            <div class="tb-sub">taucht ein einziges Mal im Pool auf</div>
+          </button>
+          <button
+            type="button"
+            class="type-btn"
+            [class.active]="schedule().recurring"
+            (click)="patchSchedule({ recurring: true })"
+          >
+            <div class="tb-title">Wiederkehrend</div>
+            <div class="tb-sub">erscheint automatisch immer wieder</div>
+          </button>
+        </div>
+      </div>
+
+      @if (!schedule().recurring) {
+        <div class="field">
+          <label class="f-label" for="once-date">Datum</label>
+          <input
+            id="once-date"
+            type="date"
+            required
+            [value]="schedule().onceDate"
+            (change)="patchSchedule({ onceDate: $any($event.target).value || schedule().onceDate })"
+          />
+        </div>
+      } @else {
+        <div class="field">
+          <label class="f-label" for="recur-type">Wiederholung</label>
+          <select id="recur-type" [value]="schedule().schedule" (change)="setScheduleType($any($event.target).value)">
+            @for (option of recurringOptions; track option.value) {
+              <option [value]="option.value" [selected]="option.value === schedule().schedule">
+                {{ option.label }}
+              </option>
+            }
+          </select>
+
+          <div class="recur-panel">
+            @switch (schedule().schedule) {
+              @case ('daily') {
+                <div class="inline-fields">Wird jeden Tag im Pool angezeigt.</div>
+              }
+              @case ('weekly') {
+                <div class="inline-fields">Jede Woche am:</div>
+                <ng-container *ngTemplateOutlet="singleWeekday" />
+              }
+              @case ('weekdays') {
+                <div class="inline-fields">An diesen Wochentagen:</div>
+                <div class="weekday-row">
+                  @for (day of weekdays; track day; let i = $index) {
+                    <button
+                      type="button"
+                      class="weekday-chip"
+                      [class.active]="schedule().weekdays.includes(i + 1)"
+                      [attr.aria-pressed]="schedule().weekdays.includes(i + 1)"
+                      (click)="toggleWeekday(i + 1)"
+                    >
+                      {{ day }}
+                    </button>
+                  }
+                </div>
+              }
+              @case ('every_x_days') {
+                <div class="inline-fields">
+                  Alle
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    aria-label="Anzahl Tage"
+                    [value]="schedule().everyXDays"
+                    (input)="setNumber('everyXDays', $any($event.target).value, 1, 365)"
+                  />
+                  Tage
+                </div>
+              }
+              @case ('monthly') {
+                <div class="inline-fields">
+                  Am
+                  <ng-container *ngTemplateOutlet="monthDaySelect" />
+                  Tag jedes Monats
+                </div>
+              }
+              @case ('every_x_weeks') {
+                <div class="inline-fields">
+                  Alle
+                  <input
+                    type="number"
+                    min="1"
+                    max="52"
+                    aria-label="Anzahl Wochen"
+                    [value]="schedule().everyXWeeks"
+                    (input)="setNumber('everyXWeeks', $any($event.target).value, 1, 52)"
+                  />
+                  Wochen, am:
+                </div>
+                <ng-container *ngTemplateOutlet="singleWeekday" />
+              }
+              @case ('every_x_months') {
+                <div class="inline-fields">
+                  Alle
+                  <input
+                    type="number"
+                    min="1"
+                    max="24"
+                    aria-label="Anzahl Monate"
+                    [value]="schedule().everyXMonths"
+                    (input)="setNumber('everyXMonths', $any($event.target).value, 1, 24)"
+                  />
+                  Monate, am
+                  <ng-container *ngTemplateOutlet="monthDaySelect" />
+                  Tag
+                </div>
+              }
+              @case ('yearly') {
+                <div class="inline-fields">
+                  Jedes Jahr am
+                  <ng-container *ngTemplateOutlet="monthDaySelect" />
+                  <select aria-label="Monat" (change)="setNumber('month', $any($event.target).value, 1, 12)">
+                    @for (month of months; track month; let i = $index) {
+                      <option [value]="i + 1" [selected]="i + 1 === schedule().month">{{ month }}</option>
+                    }
+                  </select>
+                </div>
+              }
+              @case ('after_completion') {
+                <div class="inline-fields">
+                  Erscheint
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    aria-label="Anzahl Tage"
+                    [value]="schedule().daysAfterDone"
+                    (input)="setNumber('daysAfterDone', $any($event.target).value, 1, 365)"
+                  />
+                  Tage, nachdem sie zuletzt als erledigt markiert wurde
+                </div>
+                <div class="hint-note">
+                  Praktisch für Aufgaben ohne festen Rhythmus, z. B. „Blumen gießen“ oder „Auto waschen“ — der
+                  Countdown startet erst beim Abhaken, nicht an einem festen Datum.
+                </div>
+              }
+            }
+            @if (lateMonthDay()) {
+              <div class="hint-note">In kürzeren Monaten erscheint die Aufgabe am letzten Tag des Monats.</div>
+            }
+          </div>
+
+          <div class="field start-date">
+            <label class="f-label" for="start-date">Startdatum</label>
+            <input
+              id="start-date"
+              type="date"
+              required
+              [value]="schedule().startDate"
+              (change)="patchSchedule({ startDate: $any($event.target).value || schedule().startDate })"
+            />
+          </div>
+
+          <div class="recur-summary">🔁 {{ summary() }}</div>
+        </div>
+      }
+
+      @if (errorMessage(); as message) {
+        <p class="message error">Konnte die Aufgabe nicht speichern: {{ message }}</p>
+      }
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="!canSave()">
+          {{ saving() ? 'Speichere…' : 'Aufgabe erstellen' }}
+        </button>
+        <a routerLink="/tasks" class="btn btn-secondary">Abbrechen</a>
+      </div>
+    </form>
+
+    <aside class="preview-sticky">
+      <div class="preview-label">Vorschau im Pool</div>
+      <div class="preview-tile">
+        <div class="pt-icon tile-{{ color() }}">{{ emoji() }}</div>
+        <div class="pt-name">{{ title().trim() || 'Neue Aufgabe' }}</div>
+        <div class="pt-reward">+{{ reward() }} ⭐</div>
+        <div class="pt-claim">Ich mach’s!</div>
+      </div>
+      @if (schedule().recurring) {
+        <div class="preview-recur">
+          <b>Wiederholung</b>
+          {{ summary() }}
+        </div>
+      }
+    </aside>
+  </div>
+</div>
+
+<ng-template #singleWeekday>
+  <div class="weekday-row">
+    @for (day of weekdays; track day; let i = $index) {
+      <button
+        type="button"
+        class="weekday-chip"
+        [class.active]="schedule().weekday === i + 1"
+        [attr.aria-pressed]="schedule().weekday === i + 1"
+        (click)="patchSchedule({ weekday: i + 1 })"
+      >
+        {{ day }}
+      </button>
+    }
+  </div>
+</ng-template>
+
+<ng-template #monthDaySelect>
+  <select aria-label="Tag im Monat" (change)="setNumber('monthDay', $any($event.target).value, 1, 31)">
+    @for (day of monthDays(); track day) {
+      <option [value]="day" [selected]="day === schedule().monthDay">{{ day }}.</option>
+    }
+  </select>
+</ng-template>
