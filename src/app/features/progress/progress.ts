@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { supabase } from '../../core/supabase-client';
-import { PoolColor, TaskPool, formatStars } from '../tasks/task-pool';
+import { PoolClaim, PoolColor, TaskPool, formatStars } from '../tasks/task-pool';
 
 /** A finished occurrence with its task's title / emoji / colour. */
 interface DoneTask {
@@ -59,6 +59,21 @@ export class Progress {
   protected readonly hovered = signal<number | null>(null);
 
   protected readonly member = computed(() => this.pool.member(this.memberId()));
+
+  /** Pool entries the member takes part in but hasn't ticked off yet, with their stars for it. */
+  protected readonly openParts = computed(() =>
+    this.pool.tasks().flatMap((task) => {
+      const claim = task.claims.find((c) => c.member_id === this.memberId());
+      if (!claim || claim.is_done || task.is_done) {
+        return [];
+      }
+      const stars = task.reward_mode === 'split' ? task.reward / task.claims.length : task.reward;
+      return [{ task, claim, stars }];
+    }),
+  );
+
+  /** The card being ticked off fades out before the pool reloads without it. */
+  protected readonly leaving = signal<string | null>(null);
 
   /** "Mias", "Klaus'" — German genitive for the page title. */
   protected readonly possessive = computed(() => {
@@ -193,6 +208,13 @@ export class Progress {
       };
     });
   });
+
+  protected async finish(claim: PoolClaim): Promise<void> {
+    this.leaving.set(claim.id);
+    await new Promise((resolve) => setTimeout(resolve, 220));
+    await this.pool.toggleDone(claim);
+    this.leaving.set(null);
+  }
 
   protected setRange(range: Range): void {
     this.range.set(range);

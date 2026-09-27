@@ -124,42 +124,6 @@ select {
   }
 }
 
-/* Reward stepper */
-.stepper {
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  background: var(--cream);
-  border-radius: 14px;
-  padding: 6px 8px;
-
-  button {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 10px;
-    background: #fff;
-    font-size: 17px;
-    font-weight: 700;
-    color: var(--orange-deep);
-    cursor: pointer;
-    box-shadow: 0 4px 10px var(--shadow-warm);
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-  }
-
-  .val {
-    min-width: 46px;
-    text-align: center;
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 17px;
-  }
-}
-
 /* Einmalig / Wiederkehrend */
 .type-toggle {
   display: grid;

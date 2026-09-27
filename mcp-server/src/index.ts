@@ -207,9 +207,9 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
           .number()
           .int()
           .min(1)
-          .max(10)
+          .max(100)
           .optional()
-          .describe('Stars (1–10) earned for doing it. Leave out if the user did not say.'),
+          .describe('Stars (1–100) earned for doing it. Leave out if the user did not say.'),
         assign_to: z
           .array(z.string().min(1))
           .optional()
@@ -260,7 +260,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         }
       }
       if (reward === undefined) {
-        questions.push('How many stars (1–10) should it be worth?');
+        questions.push('How many stars (1–100) should it be worth?');
       }
 
       // Names (as spoken) or ids → member ids; unknown names become a question.

@@ -301,6 +301,8 @@
   --field-bg: #fff;
   --panel-bg: #fff;
   --segmented-bg: var(--cream-deep);
+  --stepper-bg: #fff;
+  --stepper-button-bg: var(--cream);
 
   display: flex;
   flex-direction: column;
@@ -385,39 +387,6 @@
       font-weight: 700;
       color: var(--brown);
     }
-  }
-}
-
-.stepper {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 5px 7px;
-
-  button {
-    width: 26px;
-    height: 26px;
-    border: none;
-    border-radius: 8px;
-    background: var(--cream);
-    font-weight: 700;
-    color: var(--orange-deep);
-    cursor: pointer;
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-  }
-
-  .val {
-    min-width: 40px;
-    text-align: center;
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 14px;
   }
 }
 

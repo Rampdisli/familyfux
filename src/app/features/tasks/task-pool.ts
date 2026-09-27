@@ -8,6 +8,14 @@ export type PoolColor = 'mint' | 'lilac' | 'sky' | 'rose' | 'peach' | 'lemon';
 
 export const POOL_COLORS: readonly PoolColor[] = ['mint', 'lilac', 'sky', 'rose', 'peach', 'lemon'];
 
+/** Stars a task can be worth (the DB only requires > 0). */
+export const MAX_REWARD = 100;
+
+/** Whole stars within 1…MAX_REWARD. */
+export function clampReward(stars: number): number {
+  return Math.min(MAX_REWARD, Math.max(1, Math.round(stars)));
+}
+
 /** Symbols offered when creating / editing a task. */
 export const TASK_ICONS = ['🧸', '🦷', '🎒', '🐕', '🍽️', '🧺', '🌱', '🗑️', '📚', '🧹', '🚲', '🛏️'];
 

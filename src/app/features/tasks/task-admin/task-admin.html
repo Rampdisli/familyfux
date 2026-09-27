@@ -44,15 +44,7 @@
                 </label>
                 <div class="edit-field">
                   <span class="f-label">Sterne-Belohnung</span>
-                  <div class="stepper">
-                    <button type="button" aria-label="Weniger Sterne" [disabled]="d.reward <= 1" (click)="changeReward(-1)">
-                      −
-                    </button>
-                    <div class="val">{{ d.reward }} ⭐</div>
-                    <button type="button" aria-label="Mehr Sterne" [disabled]="d.reward >= 10" (click)="changeReward(1)">
-                      +
-                    </button>
-                  </div>
+                  <app-reward-stepper [value]="d.reward" (valueChange)="patch({ reward: $event })" />
                 </div>
               </div>
 

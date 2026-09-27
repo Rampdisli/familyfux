@@ -18,6 +18,44 @@
       </div>
     </div>
 
+    <section class="assigned-block">
+      <div class="block-head">
+        <h2>Zugewiesene Aufgaben</h2>
+        <span>aus dem Aufgaben-Pool übernommen, noch nicht erledigt</span>
+      </div>
+      @if (pool.errorMessage(); as message) {
+        <p class="message error">Konnte nicht abhaken: {{ message }}</p>
+      }
+      <div class="assigned-row">
+        @for (part of openParts(); track part.claim.id) {
+          <div class="assigned-card" [class.leaving]="leaving() === part.claim.id">
+            <div class="a-icon tile-{{ part.task.color }}">{{ part.task.emoji }}</div>
+            <div class="a-body">
+              <div class="a-name">{{ part.task.title }}</div>
+              <div class="a-reward">+{{ stars(part.stars) }} ⭐</div>
+            </div>
+            <button
+              type="button"
+              class="a-check"
+              title="Als erledigt markieren"
+              [attr.aria-label]="part.task.title + ' als erledigt markieren'"
+              [disabled]="leaving() === part.claim.id"
+              (click)="finish(part.claim)"
+            >
+              ✓
+            </button>
+          </div>
+        } @empty {
+          <div class="assigned-empty">Gerade nichts übernommen — schau im Aufgaben-Pool vorbei 🦊</div>
+        }
+      </div>
+    </section>
+
+    <div class="block-head">
+      <h2>Statistik</h2>
+      <span>letzte {{ range() }} Tage</span>
+    </div>
+
     @if (done.error(); as error) {
       <p class="message error">Konnte den Fortschritt nicht laden: {{ error.message }}</p>
     }

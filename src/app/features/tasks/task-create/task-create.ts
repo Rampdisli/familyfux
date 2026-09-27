@@ -3,12 +3,13 @@ import { Router, RouterLink } from '@angular/router';
 import { ScheduleDraft, defaultScheduleDraft, scheduleSummary, toScheduleParams } from '../schedule';
 import { MemberPicker } from '../member-picker/member-picker';
 import { ScheduleEditor } from '../schedule-editor/schedule-editor';
+import { RewardStepper } from '../reward-stepper/reward-stepper';
 import { POOL_COLORS, PoolColor, RewardMode, TASK_ICONS, TaskPool } from '../task-pool';
 
 /** "Neue Aufgabe erstellen" — design/prototypes/fuxis-plan-aufgabe-erstellen.html */
 @Component({
   selector: 'app-task-create',
-  imports: [MemberPicker, RouterLink, ScheduleEditor],
+  imports: [MemberPicker, RewardStepper, RouterLink, ScheduleEditor],
   templateUrl: './task-create.html',
   styleUrl: './task-create.scss',
 })
@@ -40,10 +41,6 @@ export class TaskCreate {
   protected readonly summary = computed(() => scheduleSummary(this.schedule()));
 
   protected readonly canSave = computed(() => this.title().trim().length > 0 && !this.saving());
-
-  protected changeReward(delta: number): void {
-    this.reward.update((stars) => Math.min(10, Math.max(1, stars + delta)));
-  }
 
   protected patchSchedule(changes: Partial<ScheduleDraft>): void {
     this.schedule.update((draft) => ({ ...draft, ...changes }));

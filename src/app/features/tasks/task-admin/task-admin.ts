@@ -4,6 +4,7 @@ import { supabase } from '../../../core/supabase-client';
 import { ScheduleDraft, ScheduleParams, scheduleDraftFrom, scheduleLabel, toScheduleParams } from '../schedule';
 import { MemberPicker } from '../member-picker/member-picker';
 import { ScheduleEditor } from '../schedule-editor/schedule-editor';
+import { RewardStepper } from '../reward-stepper/reward-stepper';
 import { POOL_COLORS, PoolColor, RewardMode, TASK_ICONS, TaskPool, formatStars } from '../task-pool';
 
 /** A finished part of a pool entry: who, when, how many stars (a row of claim_rewards). */
@@ -52,7 +53,7 @@ interface EditDraft {
  */
 @Component({
   selector: 'app-task-admin',
-  imports: [MemberPicker, RouterLink, ScheduleEditor],
+  imports: [MemberPicker, RewardStepper, RouterLink, ScheduleEditor],
   templateUrl: './task-admin.html',
   styleUrl: './task-admin.scss',
 })
@@ -161,10 +162,6 @@ export class TaskAdmin {
 
   protected patch(changes: Partial<EditDraft>): void {
     this.draft.update((draft) => draft && { ...draft, ...changes });
-  }
-
-  protected changeReward(delta: number): void {
-    this.draft.update((draft) => draft && { ...draft, reward: Math.min(10, Math.max(1, draft.reward + delta)) });
   }
 
   protected setScheduleDraft(schedule: ScheduleDraft): void {
