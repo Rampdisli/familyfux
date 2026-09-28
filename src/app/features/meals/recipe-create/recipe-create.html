@@ -1,0 +1,110 @@
+<div class="board">
+  <a routerLink="/essen" class="back-link">← Zurück zu den Rezepten</a>
+
+  <div class="page-head">
+    <h1>Rezept importieren</h1>
+    <p>Link von Fooby oder Cookidoo einfügen – oder ein eigenes Rezept erfassen</p>
+  </div>
+
+  <div class="layout">
+    <form class="card" (submit)="$event.preventDefault(); save()">
+      <div class="field">
+        <label class="f-label" for="recipe-title">Name des Rezepts</label>
+        <input
+          id="recipe-title"
+          type="text"
+          placeholder="z. B. Spaghetti Bolognese"
+          required
+          [value]="title()"
+          (input)="title.set($any($event.target).value)"
+        />
+      </div>
+
+      <div class="field">
+        <label class="f-label" for="recipe-url">Link zum Rezept <span class="optional">optional</span></label>
+        <input
+          id="recipe-url"
+          type="url"
+          inputmode="url"
+          placeholder="https://fooby.ch/de/rezepte/…"
+          [class.invalid]="urlInvalid()"
+          [value]="url()"
+          (input)="url.set($any($event.target).value)"
+        />
+        @if (urlInvalid()) {
+          <p class="hint error">Bitte einen vollständigen Link mit https:// eingeben.</p>
+        }
+      </div>
+
+      <div class="field">
+        <label class="f-label" for="recipe-image">Bild-Link <span class="optional">optional</span></label>
+        <input
+          id="recipe-image"
+          type="url"
+          inputmode="url"
+          placeholder="https://…/bild.jpg"
+          [class.invalid]="imageInvalid()"
+          [value]="imageUrl()"
+          (input)="imageUrl.set($any($event.target).value)"
+        />
+        @if (imageInvalid()) {
+          <p class="hint error">Bitte einen vollständigen Link mit https:// eingeben.</p>
+        } @else {
+          <p class="hint">Rechtsklick bzw. langes Tippen aufs Rezeptbild → „Bildadresse kopieren“.</p>
+        }
+      </div>
+
+      <div class="field">
+        <label class="f-label" for="recipe-ingredients">Zutaten <span class="optional">eine pro Zeile</span></label>
+        <textarea
+          id="recipe-ingredients"
+          rows="6"
+          placeholder="Hackfleisch&#10;Tomaten&#10;Spaghetti"
+          [value]="ingredientsText()"
+          (input)="ingredientsText.set($any($event.target).value)"
+        ></textarea>
+      </div>
+
+      <div class="field">
+        <span class="f-label">Zutaten im Haus?</span>
+        <div class="segmented">
+          <button type="button" [class.active]="available()" (click)="available.set(true)">✓ Alles da</button>
+          <button type="button" [class.active]="!available()" (click)="available.set(false)">Fehlt was</button>
+        </div>
+      </div>
+
+      @if (errorMessage(); as message) {
+        <p class="message error">Konnte das Rezept nicht speichern: {{ message }}</p>
+      }
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="!canSave()">
+          {{ saving() ? 'Speichere…' : 'Rezept speichern' }}
+        </button>
+        <a routerLink="/essen" class="btn btn-secondary">Abbrechen</a>
+      </div>
+    </form>
+
+    <aside class="preview-sticky">
+      <div class="preview-label">Vorschau</div>
+      <div class="preview-card">
+        <div class="pc-image" [style.background-image]="background(image())">
+          @if (!image()) {
+            <span>🍲</span>
+          }
+          <span class="pc-source">{{ source() }}</span>
+        </div>
+        <div class="pc-body">
+          <div class="pc-title">{{ title().trim() || 'Neues Rezept' }}</div>
+          <div class="pc-ingredients">
+            @for (ingredient of ingredients(); track $index) {
+              <span class="ing-chip">{{ ingredient }}</span>
+            } @empty {
+              <span class="pc-empty">Noch keine Zutaten</span>
+            }
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>

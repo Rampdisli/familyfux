@@ -41,16 +41,24 @@ export const routes: Routes = [
     data: { icon: '📅', title: 'Kalender', text: 'Gemeinsame Familientermine — noch nicht ausgebaut.' },
   },
   {
-    path: 'einkaufen',
+    path: 'essen',
     canActivate: [authGuard],
-    loadComponent: comingSoon,
-    data: { icon: '🛒', title: 'Einkaufsliste', text: 'Was im Haus fehlt — noch nicht ausgebaut.' },
+    loadComponent: () => import('./features/meals/recipes/recipes').then((m) => m.Recipes),
   },
   {
-    path: 'essensplan',
+    path: 'essen/wochenplan',
     canActivate: [authGuard],
-    loadComponent: comingSoon,
-    data: { icon: '🍝', title: 'Essensplan', text: 'Wochenplan fürs Kochen — noch nicht ausgebaut.' },
+    loadComponent: () => import('./features/meals/week-plan/week-plan').then((m) => m.WeekPlan),
+  },
+  {
+    path: 'essen/neu',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/meals/recipe-create/recipe-create').then((m) => m.RecipeCreate),
+  },
+  {
+    // Old link from before "Essen" had recipes and a week plan.
+    path: 'essensplan',
+    redirectTo: 'essen/wochenplan',
   },
   {
     path: 'familie',
