@@ -18,9 +18,6 @@ export const DAYS_PER_WEEK = 7;
 /** How many weeks ahead the week plan goes. */
 export const MAX_WEEKS_AHEAD = 4;
 
-/** A recipe stops being suggested once this many members (or the whole family, if smaller) turned it down. */
-const HIDE_AFTER_DOWN_VOTES = 3;
-
 /** What "Rezept importieren" saves into `recipes`. */
 export interface RecipeInput {
   title: string;
@@ -150,8 +147,8 @@ export class Meals {
 
   readonly recipes = computed(() => this.recipesData.value() ?? []);
 
-  /** Down votes it takes to stop suggesting a recipe. */
-  readonly hideThreshold = computed(() => Math.max(1, Math.min(HIDE_AFTER_DOWN_VOTES, this.pool.family().length)));
+  /** A recipe stops being suggested once more than half of the family turned it down (4 members → 3 👎). */
+  readonly hideThreshold = computed(() => Math.floor(this.pool.family().length / 2) + 1);
 
   /** Recipes still suggested, and the ones the family turned down. */
   readonly suggested = computed(() => this.recipes().filter((r) => !this.isHidden(r)));
