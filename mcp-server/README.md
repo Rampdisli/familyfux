@@ -1,7 +1,7 @@
 # Familyfux Tasks MCP Server
 
-A minimal [MCP](https://modelcontextprotocol.io/) server for the family task pool ("Fuxis Plan")
-of the main Familyfux Supabase project:
+A minimal [MCP](https://modelcontextprotocol.io/) server for the family task pool and recipe
+collection ("Fuxis Plan") of the main Familyfux Supabase project:
 
 - `create_task` — new task with optional emoji, colour and reward (stars); one-off or recurring
   (daily, weekly, on certain weekdays, every X days/weeks/months, monthly, yearly, or X days after
@@ -13,6 +13,22 @@ of the main Familyfux Supabase project:
 - `set_task_done` — tick off a member's part (joins them first if needed); the entry is done once
   all participants are
 - `delete_task` — remove a task from the pool (recurring tasks stop; finished ones stay in the history)
+
+Repeatable tasks ("Immer wieder") show up in `list_tasks` with today's count; `set_task_done` with
+their `task_id` counts one more time (or takes the member's latest time today back).
+
+Recipe import ("Essen"):
+
+- `read_recipe_page` — reads title, ingredients and picture from a recipe link (schema.org recipe
+  data, else the page title / preview picture); saves nothing, so Claude shows it to the user and
+  lets them change it first
+- `save_recipe` — saves the confirmed recipe to `recipes`, copying the picture into the Supabase
+  storage bucket `recipe-images` (`<family_id>/<random>.<ext>`); refuses duplicates (same link or
+  title) unless asked
+- `list_recipes` — the family's recipes, to check for duplicates
+
+Pages and pictures are only fetched from public addresses (no private / local networks), with a
+10 s timeout, at most 3 MB per page and 5 MB per picture.
 
 It's a full **OAuth 2.1 authorization server** in front of these tools (using the
 `@modelcontextprotocol/sdk`'s built-in auth router): connecting a client (ChatGPT, Claude, ...)

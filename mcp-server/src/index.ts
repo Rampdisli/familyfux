@@ -12,6 +12,7 @@ import {
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import { createClient } from '@supabase/supabase-js';
 import { renderLoginPage, SupabaseOAuthProvider } from './oauth-provider.js';
+import { copyImage, isOwnImage, readRecipePage, RECIPE_IMAGES_BUCKET } from './recipes.js';
 
 const { SUPABASE_URL, SUPABASE_ANON_KEY, PUBLIC_URL, PORT } = process.env;
 
@@ -156,6 +157,21 @@ function formatRepeatableRow(row: RepeatableRow, members: MemberNames): string {
   return `- 🔁 ${row.emoji} ${row.title} (${row.reward} ★ per time, ${today}, task_id: ${row.id})`;
 }
 
+/** A row of `recipes` as the recipe tools read it. */
+interface RecipeRow {
+  id: string;
+  title: string;
+  url: string | null;
+  image_url: string | null;
+  ingredients: string[];
+}
+
+/** Same page, even if one link has a trailing slash or #anchor. */
+function sameRecipeUrl(a: string | null, b: string | null): boolean {
+  const normalize = (u: string) => u.replace(/#.*$/, '').replace(/\/+$/, '').toLowerCase();
+  return !!a && !!b && normalize(a) === normalize(b);
+}
+
 const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
 
 /**
@@ -165,10 +181,10 @@ const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
  */
 function createMcpServer(supabaseAccessToken: string, userId: string): McpServer {
   const server = new McpServer(
-    { name: 'familyfux-tasks', version: '0.4.0' },
+    { name: 'familyfux-tasks', version: '0.5.0' },
     {
       instructions:
-        'Family chore pool ("Fuxis Plan"). Users often talk to you by voice, mostly in German: keep replies ' +
+        'Family chore pool and recipe collection ("Fuxis Plan"). Users often talk to you by voice, mostly in German: keep replies ' +
         'and follow-up questions short and speakable, and never invent details they did not give — ask instead.',
     },
   );
@@ -709,6 +725,235 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       ],
     };
   }
+
+  /** The family the signed-in user belongs to (recipes are stored per family). */
+  async function ownFamilyId(): Promise<string | null> {
+    const { data } = await supabase
+      .from('family_members')
+      .select('family_id')
+      .eq('user_id', userId)
+      .order('created_at')
+      .limit(1)
+      .maybeSingle();
+    return (data?.family_id as string | undefined) ?? null;
+  }
+
+  async function familyRecipes() {
+    return supabase
+      .from('recipes')
+      .select('id, title, url, image_url, ingredients')
+      .order('title')
+      .returns<RecipeRow[]>();
+  }
+
+  server.registerTool(
+    'read_recipe_page',
+    {
+      title: 'Read recipe page',
+      description:
+        'Step 1 of importing a recipe from a link (Fooby, Cookidoo or any recipe site): reads its title, ingredients ' +
+        'and picture. Saves nothing. Then show the user what was found — title, the ingredients as a list, whether ' +
+        'there is a picture — and let them change it: rename, add, remove or replace ingredients, drop the picture. ' +
+        'Recipe pages are messy, so never save without their okay; call save_recipe only after they confirm.',
+      inputSchema: {
+        url: z.string().url().describe('Link to the recipe page'),
+      },
+    },
+    async ({ url }) => {
+      let draft;
+      try {
+        draft = await readRecipePage(url);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return fail('read_recipe_page', `Could not read the page: ${message} Ask the user for the recipe details instead.`, {
+          url,
+        });
+      }
+
+      const recipes = await familyRecipes();
+      const duplicate = (recipes.data ?? []).find(
+        (r) => sameRecipeUrl(r.url, draft.url) || sameRecipeUrl(r.url, url),
+      );
+
+      const missing = [
+        !draft.title && 'title',
+        draft.ingredients.length === 0 && 'ingredients',
+        !draft.image_url && 'picture',
+      ].filter(Boolean);
+
+      await logEvent({ type: 'tool_call', tool: 'read_recipe_page', userId, url, source: draft.source, missing });
+
+      const lines = [
+        `Found on ${draft.url}${draft.source === 'page' ? ' (no structured recipe data — only the page title / preview picture)' : ''}:`,
+        `Title: ${draft.title ?? '(none found)'}`,
+        draft.ingredients.length
+          ? `Ingredients (${draft.ingredients.length}):\n${draft.ingredients.map((i) => `- ${i}`).join('\n')}`
+          : 'Ingredients: (none found)',
+        `Picture: ${draft.image_url ?? '(none found)'}`,
+      ];
+      if (missing.length) {
+        lines.push(`Missing: ${missing.join(', ')} — ask the user to fill in what they want, or save without it.`);
+      }
+      if (duplicate) {
+        lines.push(`Note: this link is already saved as "${duplicate.title}" (id: ${duplicate.id}). Tell the user before saving it again.`);
+      }
+      lines.push(
+        'Nothing saved yet. Show this to the user, apply their changes, and call save_recipe with the final values once they confirm.',
+      );
+      return { content: [{ type: 'text', text: lines.join('\n') }] };
+    },
+  );
+
+  server.registerTool(
+    'save_recipe',
+    {
+      title: 'Save recipe',
+      description:
+        "Step 2: saves a recipe to the family's recipe collection (page \"Essen\" in the app) — only after the user " +
+        'confirmed title, ingredients and picture (see read_recipe_page), including any changes they made. ' +
+        'The picture is copied into the family\'s own storage so it stays even if the recipe site changes. ' +
+        'Refuses a recipe whose link or title is already saved unless allow_duplicate is true.',
+      inputSchema: {
+        title: z.string().trim().min(1).describe('Recipe title as confirmed by the user'),
+        ingredients: z
+          .array(z.string().trim().min(1))
+          .default([])
+          .describe('Ingredients as confirmed by the user, one entry per line, e.g. "200 g Spaghetti"'),
+        url: z.string().url().optional().describe('Link to the recipe page (leave out for own recipes)'),
+        image_url: z
+          .string()
+          .url()
+          .optional()
+          .describe('Picture to copy into our storage (from read_recipe_page); leave out for no picture'),
+        ingredients_available: z
+          .boolean()
+          .default(true)
+          .describe('Whether the ingredients are in the house (default true, as in the app)'),
+        allow_duplicate: z
+          .boolean()
+          .default(false)
+          .describe('true only if the user wants it saved although the same link or title already exists'),
+      },
+    },
+    async ({ title, ingredients, url, image_url, ingredients_available, allow_duplicate }) => {
+      const details = { title, url };
+
+      const familyId = await ownFamilyId();
+      if (!familyId) {
+        return fail('save_recipe', 'You are not a member of any family.', details);
+      }
+
+      if (!allow_duplicate) {
+        const recipes = await familyRecipes();
+        if (recipes.error) {
+          return fail('save_recipe', `Failed to check existing recipes: ${recipes.error.message}`, details);
+        }
+        const duplicate = recipes.data.find(
+          (r) => sameRecipeUrl(r.url, url ?? null) || r.title.trim().toLowerCase() === title.toLowerCase(),
+        );
+        if (duplicate) {
+          await logEvent({ type: 'tool_call', tool: 'save_recipe', userId, ...details, duplicateOf: duplicate.id });
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text:
+                  `Not saved: "${duplicate.title}" is already in the recipes (id: ${duplicate.id}${duplicate.url ? `, ${duplicate.url}` : ''}). ` +
+                  'Ask the user whether to save it anyway (then call again with allow_duplicate: true).',
+              },
+            ],
+          };
+        }
+      }
+
+      // Copy the picture; if that fails the recipe is still saved, just without one.
+      let storedImage: { publicUrl: string; path: string } | null = null;
+      let imageNote = '';
+      if (image_url && isOwnImage(image_url, supabaseUrl)) {
+        storedImage = { publicUrl: image_url, path: '' };
+      } else if (image_url) {
+        try {
+          storedImage = await copyImage(supabase, familyId, image_url);
+        } catch (error) {
+          imageNote = ` The picture could not be copied (${error instanceof Error ? error.message : String(error)}), so it was saved without one.`;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('recipes')
+        .insert({
+          family_id: familyId,
+          title,
+          url: url ?? null,
+          image_url: storedImage?.publicUrl ?? null,
+          ingredients,
+          ingredients_available,
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        if (storedImage?.path) {
+          await supabase.storage.from(RECIPE_IMAGES_BUCKET).remove([storedImage.path]);
+        }
+        return fail('save_recipe', `Failed to save the recipe: ${error.message}`, details);
+      }
+
+      await logEvent({
+        type: 'tool_call',
+        tool: 'save_recipe',
+        userId,
+        ...details,
+        recipeId: data.id,
+        image: storedImage?.path || null,
+        imageError: imageNote || undefined,
+      });
+      return {
+        content: [
+          {
+            type: 'text',
+            text:
+              `Saved recipe "${title}" with ${ingredients.length} ingredient${ingredients.length === 1 ? '' : 's'}` +
+              `${storedImage ? ' and its picture' : ''} (id: ${data.id}). It is on the "Essen" page now.${imageNote}`,
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    'list_recipes',
+    {
+      title: 'List recipes',
+      description:
+        "Lists the family's saved recipes (title, link, number of ingredients, picture yes/no). " +
+        'Use it to check whether a recipe is already there before importing it.',
+      inputSchema: {
+        query: z.string().trim().min(1).optional().describe('Only recipes whose title contains this text'),
+      },
+    },
+    async ({ query }) => {
+      const recipes = await familyRecipes();
+      if (recipes.error) {
+        return fail('list_recipes', `Failed to list recipes: ${recipes.error.message}`);
+      }
+
+      const rows = query
+        ? recipes.data.filter((r) => r.title.toLowerCase().includes(query.toLowerCase()))
+        : recipes.data;
+      await logEvent({ type: 'tool_call', tool: 'list_recipes', userId, query, count: rows.length });
+
+      if (rows.length === 0) {
+        return { content: [{ type: 'text', text: query ? `No recipe matches "${query}".` : 'No recipes saved yet.' }] };
+      }
+      const lines = rows.map(
+        (r) =>
+          `- ${r.title} (${r.ingredients.length} ingredients${r.image_url ? ', with picture' : ''}` +
+          `${r.url ? `, ${r.url}` : ''}, id: ${r.id})`,
+      );
+      return { content: [{ type: 'text', text: lines.join('\n') }] };
+    },
+  );
 
   /** Logs a successful claim change and answers with the entry's current state. */
   async function reportEntry(tool: string, id: string, details: Record<string, unknown>) {
