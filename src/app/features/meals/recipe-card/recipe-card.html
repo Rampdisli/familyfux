@@ -25,13 +25,34 @@
 
   @if (r.ingredients.length) {
     <div class="r-ingredients">
-      @for (ingredient of r.ingredients.slice(0, visibleIngredients); track $index) {
-        <span class="ing-chip">{{ ingredient }}</span>
+      @for (ingredient of r.ingredients.slice(0, visibleIngredients); track ingredient.id) {
+        <span class="ing-chip {{ ingredient.status }}" [title]="hint(ingredient)">
+          @switch (ingredient.status) {
+            @case ('changed') {
+              <span class="ing-mark" aria-hidden="true">✎</span>{{ label(ingredient) }}
+            }
+            @case ('added') {
+              <span class="ing-mark" aria-hidden="true">+</span>{{ label(ingredient) }}
+            }
+            @case ('removed') {
+              <s>{{ label(ingredient, true) }}</s>
+            }
+            @default {
+              @if (ingredient.quantity) {
+                <span class="ing-qty">{{ ingredient.quantity }}</span>
+              }
+              {{ ingredient.name }}
+            }
+          }
+        </span>
       }
       @if (r.ingredients.length > visibleIngredients) {
         <span class="ing-chip more">+{{ r.ingredients.length - visibleIngredients }} weitere</span>
       }
     </div>
+    @if (deviations(); as count) {
+      <div class="r-deviations">✎ {{ count }} {{ count === 1 ? 'Abweichung' : 'Abweichungen' }} vom Original</div>
+    }
   }
 
   <div class="r-social">

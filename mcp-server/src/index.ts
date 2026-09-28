@@ -157,14 +157,28 @@ function formatRepeatableRow(row: RepeatableRow, members: MemberNames): string {
   return `- 🔁 ${row.emoji} ${row.title} (${row.reward} ★ per time, ${today}, task_id: ${row.id})`;
 }
 
-/** A row of `recipes` as the recipe tools read it. */
+/** A row of `recipes` as the recipe tools read it, with its ingredients' status (recipe_ingredients). */
 interface RecipeRow {
   id: string;
   title: string;
   url: string | null;
   image_url: string | null;
-  ingredients: string[];
+  ingredients: { status: 'original' | 'changed' | 'added' | 'removed' }[];
 }
+
+/** One ingredient for save_recipe / create_recipe: the family's version and the original recipe's. */
+const INGREDIENT = z
+  .object({
+    quantity: z.string().trim().optional().describe('Quantity as the family cooks it, e.g. "200 g", "1 Prise"'),
+    name: z.string().trim().optional().describe('Ingredient as the family cooks it; leave out if they leave it out'),
+    original_quantity: z.string().trim().optional().describe('Quantity in the original recipe'),
+    original_name: z
+      .string()
+      .trim()
+      .optional()
+      .describe('Ingredient in the original recipe; leave out for one the family added'),
+  })
+  .refine((i) => !!i.name || !!i.original_name, 'Each ingredient needs a name or an original_name');
 
 /** Same page, even if one link has a trailing slash or #anchor. */
 function sameRecipeUrl(a: string | null, b: string | null): boolean {
@@ -181,7 +195,7 @@ const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
  */
 function createMcpServer(supabaseAccessToken: string, userId: string): McpServer {
   const server = new McpServer(
-    { name: 'familyfux-tasks', version: '0.5.0' },
+    { name: 'familyfux-tasks', version: '0.6.0' },
     {
       instructions:
         'Family chore pool and recipe collection ("Fuxis Plan"). Users often talk to you by voice, mostly in German: keep replies ' +
@@ -741,7 +755,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
   async function familyRecipes() {
     return supabase
       .from('recipes')
-      .select('id, title, url, image_url, ingredients')
+      .select('id, title, url, image_url, ingredients:recipe_ingredients(status)')
       .order('title')
       .returns<RecipeRow[]>();
   }
@@ -753,8 +767,9 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       description:
         'Step 1 of importing a recipe from a link (Fooby, Cookidoo or any recipe site): reads its title, ingredients ' +
         'and picture. Saves nothing. Then show the user what was found — title, the ingredients as a list, whether ' +
-        'there is a picture — and let them change it: rename, add, remove or replace ingredients, drop the picture. ' +
-        'Recipe pages are messy, so never save without their okay; call save_recipe only after they confirm.',
+        'there is a picture — and let them change it: rename, add, remove or replace ingredients, change quantities, ' +
+        'drop the picture. Each ingredient comes split into quantity and name. Recipe pages are messy, so never save ' +
+        'without their okay; call save_recipe only after they confirm, passing what was found here as the original.',
       inputSchema: {
         url: z.string().url().describe('Link to the recipe page'),
       },
@@ -769,6 +784,14 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
           url,
         });
       }
+
+      // Quantity and name apart, split the same way the database does it.
+      const split = draft.ingredients.length
+        ? await supabase.rpc('split_ingredients', { lines: draft.ingredients })
+        : { data: [], error: null };
+      const ingredients: { quantity: string | null; name: string }[] = split.error
+        ? draft.ingredients.map((name) => ({ quantity: null, name }))
+        : ((split.data ?? []) as { quantity: string | null; name: string }[]);
 
       const recipes = await familyRecipes();
       const duplicate = (recipes.data ?? []).find(
@@ -786,8 +809,9 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       const lines = [
         `Found on ${draft.url}${draft.source === 'page' ? ' (no structured recipe data — only the page title / preview picture)' : ''}:`,
         `Title: ${draft.title ?? '(none found)'}`,
-        draft.ingredients.length
-          ? `Ingredients (${draft.ingredients.length}):\n${draft.ingredients.map((i) => `- ${i}`).join('\n')}`
+        ingredients.length
+          ? `Ingredients (${ingredients.length}, quantity | name):\n` +
+            ingredients.map((i) => `- ${i.quantity ?? '—'} | ${i.name}`).join('\n')
           : 'Ingredients: (none found)',
         `Picture: ${draft.image_url ?? '(none found)'}`,
       ];
@@ -811,14 +835,18 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       description:
         "Step 2: saves a recipe to the family's recipe collection (page \"Essen\" in the app) — only after the user " +
         'confirmed title, ingredients and picture (see read_recipe_page), including any changes they made. ' +
+        'Pass every ingredient with quantity and name apart, and the original from read_recipe_page next to it, so ' +
+        'the app can show where the family differs from the original: unchanged → same values in both; changed ' +
+        '(e.g. Milch instead of Rahm, other amount) → new quantity/name plus original_quantity/original_name; added ' +
+        'by the family → no original_*; left out → only original_quantity/original_name. ' +
         'The picture is copied into the family\'s own storage so it stays even if the recipe site changes. ' +
         'Refuses a recipe whose link or title is already saved unless allow_duplicate is true.',
       inputSchema: {
         title: z.string().trim().min(1).describe('Recipe title as confirmed by the user'),
         ingredients: z
-          .array(z.string().trim().min(1))
+          .array(INGREDIENT)
           .default([])
-          .describe('Ingredients as confirmed by the user, one entry per line, e.g. "200 g Spaghetti"'),
+          .describe('Ingredients in recipe order, including left-out ones (see above)'),
         url: z.string().url().optional().describe('Link to the recipe page (leave out for own recipes)'),
         image_url: z
           .string()
@@ -879,18 +907,21 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         }
       }
 
-      const { data, error } = await supabase
-        .from('recipes')
-        .insert({
-          family_id: familyId,
-          title,
-          url: url ?? null,
-          image_url: storedImage?.publicUrl ?? null,
-          ingredients,
-          ingredients_available,
-        })
-        .select('id')
-        .single();
+      // An own recipe typed in without any originals: what was entered is its original (as in the app).
+      const ownWithoutOriginal = !url && ingredients.every((i) => !i.original_name);
+      const rows = ingredients.map((i) =>
+        ownWithoutOriginal ? { ...i, original_quantity: i.quantity, original_name: i.name } : i,
+      );
+
+      // Recipe and ingredients in one transaction (the family comes from the signed-in user).
+      const { data: recipeId, error } = await supabase.rpc('create_recipe', {
+        p_title: title,
+        p_url: url ?? null,
+        p_image_url: storedImage?.publicUrl ?? null,
+        p_ingredients_available: ingredients_available,
+        p_ingredients: rows,
+      });
+      const data = { id: recipeId as string };
 
       if (error) {
         if (storedImage?.path) {
@@ -908,12 +939,17 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         image: storedImage?.path || null,
         imageError: imageNote || undefined,
       });
+      const used = rows.filter((i) => i.name).length;
+      const deviations = rows.filter(
+        (i) => !i.original_name || !i.name || i.name !== i.original_name || (i.quantity || null) !== (i.original_quantity || null),
+      ).length;
       return {
         content: [
           {
             type: 'text',
             text:
-              `Saved recipe "${title}" with ${ingredients.length} ingredient${ingredients.length === 1 ? '' : 's'}` +
+              `Saved recipe "${title}" with ${used} ingredient${used === 1 ? '' : 's'}` +
+              `${deviations ? ` (${deviations} differ from the original)` : ''}` +
               `${storedImage ? ' and its picture' : ''} (id: ${data.id}). It is on the "Essen" page now.${imageNote}`,
           },
         ],
@@ -926,7 +962,8 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     {
       title: 'List recipes',
       description:
-        "Lists the family's saved recipes (title, link, number of ingredients, picture yes/no). " +
+        "Lists the family's saved recipes (title, link, number of ingredients and how many differ from the original, " +
+        'picture yes/no). ' +
         'Use it to check whether a recipe is already there before importing it.',
       inputSchema: {
         query: z.string().trim().min(1).optional().describe('Only recipes whose title contains this text'),
@@ -946,11 +983,14 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       if (rows.length === 0) {
         return { content: [{ type: 'text', text: query ? `No recipe matches "${query}".` : 'No recipes saved yet.' }] };
       }
-      const lines = rows.map(
-        (r) =>
-          `- ${r.title} (${r.ingredients.length} ingredients${r.image_url ? ', with picture' : ''}` +
-          `${r.url ? `, ${r.url}` : ''}, id: ${r.id})`,
-      );
+      const lines = rows.map((r) => {
+        const used = r.ingredients.filter((i) => i.status !== 'removed').length;
+        const differ = r.ingredients.filter((i) => i.status !== 'original').length;
+        return (
+          `- ${r.title} (${used} ingredients${differ ? `, ${differ} differ from the original` : ''}` +
+          `${r.image_url ? ', with picture' : ''}${r.url ? `, ${r.url}` : ''}, id: ${r.id})`
+        );
+      });
       return { content: [{ type: 'text', text: lines.join('\n') }] };
     },
   );

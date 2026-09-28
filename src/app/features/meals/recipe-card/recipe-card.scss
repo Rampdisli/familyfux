@@ -120,11 +120,40 @@
   font-weight: 600;
   color: var(--brown-soft);
 
+  /* Differs from the original recipe: amber like other "your own" marks. */
+  &.changed,
+  &.added {
+    background: #fff3d6;
+    color: #8a5a06;
+    box-shadow: inset 0 0 0 1.5px rgba(246, 185, 59, 0.7);
+  }
+
+  &.removed {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--cream-deep);
+    opacity: 0.75;
+  }
+
   &.more {
     background: transparent;
     color: var(--brown-soft);
     padding-left: 2px;
   }
+}
+
+.ing-qty {
+  color: var(--brown);
+}
+
+.ing-mark {
+  margin-right: 3px;
+}
+
+.r-deviations {
+  margin-top: -4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a5a06;
 }
 
 .r-social {

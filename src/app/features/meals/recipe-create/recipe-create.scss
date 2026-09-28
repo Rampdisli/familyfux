@@ -72,8 +72,7 @@
   }
 }
 
-input,
-textarea {
+input {
   width: 100%;
   border: 2px solid var(--cream-deep);
   background: var(--cream);
@@ -94,9 +93,48 @@ textarea {
   }
 }
 
-textarea {
-  resize: vertical;
-  line-height: 1.5;
+/* Ingredient rows: quantity | name | × */
+.ing-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ing-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.35fr) minmax(0, 1fr) 40px;
+  gap: 8px;
+}
+
+.ing-remove {
+  border: none;
+  border-radius: 13px;
+  background: var(--cream);
+  color: var(--brown-soft);
+  font-size: 18px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--cream-deep);
+  }
+}
+
+.ing-add {
+  margin-top: 8px;
+  padding: 8px 14px;
+  border: 2px dashed rgba(90, 52, 35, 0.22);
+  border-radius: 13px;
+  background: transparent;
+  color: var(--brown-soft);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--orange);
+    color: var(--orange-deep);
+  }
 }
 
 .hint {

@@ -7,6 +7,12 @@ Offene Punkte aus der Arbeit am Bereich „Essen“ (Branch `Essen`).
 - [ ] **Rezepte bearbeiten und löschen** — zurückgestellt. Braucht ein Bearbeiten-Formular
       (Basis: `/essen/neu`) und in Supabase eine Delete-Policy samt Grant für `recipes`.
 
+- [ ] **Alte Zutaten-Spalte entfernen,** sobald App 0.3.0 und MCP-Server 0.6.0 auf dem NAS laufen:
+      `recipes.ingredients` ist nur noch eine automatisch gepflegte Kopie von `recipe_ingredients`
+      (siehe `supabase/migrations/20260929120000_recipe_ingredients.sql`). Eine neue Migration
+      entfernt dann die Spalte und die Trigger `recipe_ingredients_sync_text` /
+      `recipes_split_text_ingredients`.
+
 ## Erledigt
 
 - [x] Designs Navigation, Rezepte und Wochenplan unter `design/prototypes/` abgelegt
@@ -22,3 +28,5 @@ Offene Punkte aus der Arbeit am Bereich „Essen“ (Branch `Essen`).
 - [x] Rezept-Import über den MCP-Server (`read_recipe_page`, `save_recipe`, `list_recipes`);
       Bilder im Supabase-Bucket `recipe-images`, Migration
       `supabase/migrations/20260929110000_recipe_images.sql` ausgeführt
+- [x] Zutaten mit Menge und Zutat in getrennten Feldern (`recipe_ingredients`) und Abweichungen vom
+      Originalrezept (geändert / ergänzt / weggelassen)

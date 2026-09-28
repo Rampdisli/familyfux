@@ -3,8 +3,8 @@ services:
     build:
       context: .
       args:
-        VERSION: "0.5.0"
-    image: ghcr.io/rampdisli/familyfux-mcp:0.5.0
+        VERSION: "0.6.0"
+    image: ghcr.io/rampdisli/familyfux-mcp:0.6.0
     ports:
       - "3001:3000"
     env_file:

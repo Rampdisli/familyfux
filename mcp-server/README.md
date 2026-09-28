@@ -19,13 +19,15 @@ their `task_id` counts one more time (or takes the member's latest time today ba
 
 Recipe import ("Essen"):
 
-- `read_recipe_page` — reads title, ingredients and picture from a recipe link (schema.org recipe
-  data, else the page title / preview picture); saves nothing, so Claude shows it to the user and
-  lets them change it first
-- `save_recipe` — saves the confirmed recipe to `recipes`, copying the picture into the Supabase
-  storage bucket `recipe-images` (`<family_id>/<random>.<ext>`); refuses duplicates (same link or
-  title) unless asked
-- `list_recipes` — the family's recipes, to check for duplicates
+- `read_recipe_page` — reads title, ingredients (split into quantity and name) and picture from a
+  recipe link (schema.org recipe data, else the page title / preview picture); saves nothing, so
+  Claude shows it to the user and lets them change it first
+- `save_recipe` — saves the confirmed recipe (`create_recipe`): every ingredient with quantity and
+  name, next to the original recipe's, so the app marks what the family changed, added or left out
+  (`recipe_ingredients.status`); copies the picture into the Supabase storage bucket
+  `recipe-images` (`<family_id>/<random>.<ext>`); refuses duplicates (same link or title) unless asked
+- `list_recipes` — the family's recipes with how many ingredients differ from the original, to
+  check for duplicates
 
 Pages and pictures are only fetched from public addresses (no private / local networks), with a
 10 s timeout, at most 3 MB per page and 5 MB per picture.
