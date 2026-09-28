@@ -4,9 +4,17 @@
 @let wishedBy = wishers();
 
 <div class="r-image" [style.background-image]="background(r.image_url)">
-  @if (!r.image_url) {
-    <span class="r-placeholder">🍲</span>
-  }
+  <!-- Opens the details; sits under the badges and buttons on the picture. -->
+  <a
+    class="r-image-link"
+    [routerLink]="detailLink()"
+    [state]="fromList"
+    [attr.aria-label]="'Details zu ' + r.title + ' öffnen'"
+  >
+    @if (!r.image_url) {
+      <span class="r-placeholder" aria-hidden="true">🍲</span>
+    }
+  </a>
   <span class="source-badge">{{ source(r.url) }}</span>
   <button
     type="button"
@@ -21,12 +29,20 @@
 </div>
 
 <div class="r-body">
-  <h2 class="r-title">{{ r.title }}</h2>
+  <h2 class="r-title">
+    <a [routerLink]="detailLink()" [state]="fromList" [attr.aria-label]="'Details zu ' + r.title + ' öffnen'">{{ r.title }}</a>
+  </h2>
 
   @if (r.ingredients.length) {
     <div class="r-ingredients">
       @for (ingredient of r.ingredients.slice(0, visibleIngredients); track ingredient.id) {
-        <span class="ing-chip {{ ingredient.status }}" [title]="hint(ingredient)">
+        <a
+          class="ing-chip {{ ingredient.status }}"
+          [routerLink]="detailLink()"
+          [queryParams]="{ zutat: ingredient.id }"
+          [state]="fromList"
+          [title]="hint(ingredient) || 'Details zu ' + r.title + ' öffnen'"
+        >
           @switch (ingredient.status) {
             @case ('changed') {
               <span class="ing-mark" aria-hidden="true">✎</span>{{ label(ingredient) }}
@@ -44,10 +60,12 @@
               {{ ingredient.name }}
             }
           }
-        </span>
+        </a>
       }
       @if (r.ingredients.length > visibleIngredients) {
-        <span class="ing-chip more">+{{ r.ingredients.length - visibleIngredients }} weitere</span>
+        <a class="ing-chip more" [routerLink]="detailLink()" [state]="fromList">
+          +{{ r.ingredients.length - visibleIngredients }} weitere
+        </a>
       }
     </div>
     @if (deviations(); as count) {

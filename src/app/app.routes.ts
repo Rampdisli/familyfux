@@ -44,6 +44,14 @@ export const routes: Routes = [
     path: 'essen',
     canActivate: [authGuard],
     loadComponent: () => import('./features/meals/recipes/recipes').then((m) => m.Recipes),
+    children: [
+      { path: '', children: [] },
+      // Recipe details, over the recipe list (which stays as it was underneath).
+      {
+        path: 'rezept/:id',
+        loadComponent: () => import('./features/meals/recipe-detail/recipe-detail').then((m) => m.RecipeDetail),
+      },
+    ],
   },
   {
     path: 'essen/wochenplan',

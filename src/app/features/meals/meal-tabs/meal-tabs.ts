@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter, map } from 'rxjs';
 
 /** "🍽️ Rezepte | 📅 Wochenplan" — the sub-navigation of "Essen". */
 @Component({
@@ -7,7 +9,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   imports: [RouterLink, RouterLinkActive],
   template: `
     <nav class="subnav" aria-label="Essen">
-      <a routerLink="/essen" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">🍽️ Rezepte</a>
+      <a routerLink="/essen" [class.active]="recipesActive()" [attr.aria-current]="recipesActive() ? 'page' : null">
+        🍽️ Rezepte
+      </a>
       <a routerLink="/essen/wochenplan" routerLinkActive="active">📅 Wochenplan</a>
     </nav>
   `,
@@ -40,4 +44,17 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     }
   `,
 })
-export class MealTabs {}
+export class MealTabs {
+  private readonly router = inject(Router);
+
+  private readonly path = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map(() => this.router.url.split(/[?#]/)[0]),
+    ),
+    { initialValue: this.router.url.split(/[?#]/)[0] },
+  );
+
+  /** "Rezepte" stays active with a recipe's details open (/essen/rezept/…), but not on the week plan. */
+  protected readonly recipesActive = computed(() => this.path() === '/essen' || this.path().startsWith('/essen/rezept/'));
+}

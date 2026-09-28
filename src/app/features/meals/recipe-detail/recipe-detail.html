@@ -1,0 +1,276 @@
+<div class="backdrop" (click)="onBackdrop($event)">
+  <div
+    #dialog
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="recipe-detail-title"
+    (keydown)="trapFocus($event)"
+  >
+    <button #closeButton type="button" class="rbtn close" aria-label="Schliessen" (click)="close()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+    </button>
+
+    @if (recipe(); as r) {
+      <!-- Left column on tablet / desktop: photo, head, actions. On phones its parts line up with the rest. -->
+      <div class="left">
+        <div class="hero">
+          @if (r.image_url) {
+            <img [src]="r.image_url" alt="" />
+          } @else {
+            <div class="ph" aria-hidden="true">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></svg>
+              Kein Foto
+            </div>
+          }
+          @if (me(); as m) {
+            <button
+              type="button"
+              class="rbtn like"
+              [class.on]="liked()"
+              [attr.aria-pressed]="liked()"
+              [attr.aria-label]="m.name + ' mag das'"
+              [title]="liked() ? m.name + ' mag das — nochmal tippen zum Zurücknehmen' : 'Als ' + m.name + ' liken'"
+              (click)="toggleLike()"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" [attr.fill]="liked() ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M7 11v9H4v-9h3zM7 11l4-8c1.7 0 2.6 1.2 2.2 2.8L12.5 9H19a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 17.8 20H7" /></svg>
+            </button>
+          }
+        </div>
+
+        <div class="head">
+          <div class="grip" aria-hidden="true"></div>
+          <div class="chips">
+            <span class="chip src">
+              @if (r.url) {
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8703C" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>
+              }
+              {{ source(r.url) }}
+            </span>
+            @if (r.ingredients_available) {
+              <span class="chip ok-chip">✓ Zutaten da</span>
+            } @else {
+              <span class="chip warn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14l-1.5 10h-11L5 9z" /><path d="M9 9l3-5 3 5" /></svg>
+                Zutaten fehlen
+              </span>
+            }
+          </div>
+          <h1 id="recipe-detail-title">{{ r.title }}</h1>
+          <div class="stats">
+            <div class="stat"><b>{{ details.hasValue() ? cooked().length : '–' }}×</b><span>gekocht</span></div>
+            <div class="stat"><b>{{ details.hasValue() ? planned().length : '–' }}</b><span>geplant</span></div>
+            <div class="stat"><b>{{ likes() }}/{{ pool.family().length }}</b><span>mögen es</span></div>
+          </div>
+          @if (r.url) {
+            <a class="origin-link" [href]="r.url" target="_blank" rel="noopener">Originalrezept auf {{ host(r.url).split('/')[0] }} öffnen ↗</a>
+          }
+        </div>
+
+        <div class="actions">
+          @if (actionError(); as message) {
+            <p class="action-error">Konnte nicht speichern: {{ message }}</p>
+          }
+          @if (cookOpen()) {
+            <div class="cook-panel" role="group" aria-label="Heute gekocht">
+              <div class="segmented" role="radiogroup" aria-label="Mahlzeit">
+                <button type="button" role="radio" [attr.aria-checked]="cookSlot() === 'lunch'" [class.active]="cookSlot() === 'lunch'" (click)="cookSlot.set('lunch')">☀️ Mittag</button>
+                <button type="button" role="radio" [attr.aria-checked]="cookSlot() === 'dinner'" [class.active]="cookSlot() === 'dinner'" (click)="cookSlot.set('dinner')">🌙 Abend</button>
+              </div>
+              @if (replaces(); as other) {
+                <p class="cook-note">Ersetzt „{{ other }}“ im heutigen {{ mealLabel[cookSlot()] }}.</p>
+              }
+              <div class="cook-buttons">
+                <button type="button" class="primary small" [disabled]="saving()" (click)="saveCooked()">{{ saving() ? 'Speichere…' : 'Speichern' }}</button>
+                <button type="button" class="secondary small" (click)="cookOpen.set(false)">Abbrechen</button>
+              </div>
+            </div>
+          }
+          <div class="action-buttons">
+            <button type="button" class="primary" (click)="plan()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3" /><path d="M4 10h16M9 3v4M15 3v4M12 13v5M9.5 15.5h5" /></svg>
+              Einplanen
+            </button>
+            <button type="button" class="secondary" [disabled]="plannedToday() || !details.hasValue()" (click)="openCook()">
+              {{ plannedToday() ? 'Heute eingeplant' : 'Heute gekocht' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="right">
+        <section class="ingredients-section">
+          <div class="sec-head">
+            <h2>Zutaten</h2>
+            <span class="muted">{{ ingredientCount() }} {{ ingredientCount() === 1 ? 'Zutat' : 'Zutaten' }}</span>
+          </div>
+          @if (r.ingredients.length) {
+            @if (deviations(); as summary) {
+              <div class="banner changed-banner">✎ {{ summary }}</div>
+            } @else {
+              <div class="banner ok">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 12l3 3 5-6" /></svg>
+                Alle Zutaten wie im Original
+              </div>
+            }
+            <div class="card">
+              <ul class="ing-list">
+                @for (i of r.ingredients; track i.id) {
+                  <li class="ing {{ i.status }}" [id]="'zutat-' + i.id" [class.flash]="highlighted() === i.id">
+                    @if (i.status === 'removed') {
+                      <span class="q"><s>{{ i.original_quantity }}</s></span>
+                      <span class="n">
+                        <s>{{ i.original_name }}</s>
+                        <small class="tag">weggelassen</small>
+                      </span>
+                    } @else {
+                      <span class="q">{{ i.quantity }}</span>
+                      <span class="n">
+                        @if (i.status !== 'original') {
+                          <i class="dot" aria-hidden="true"></i>
+                        }
+                        {{ i.name }}
+                        @if (i.status === 'added') {
+                          <small class="tag">ergänzt</small>
+                        }
+                        @if (i.status === 'changed') {
+                          <small class="was">statt <s>{{ label(i, true) }}</s></small>
+                        }
+                      </span>
+                    }
+                  </li>
+                }
+              </ul>
+              @if (deviations()) {
+                <div class="legend">
+                  <span><i class="lg changed"></i>angepasst</span>
+                  <span><i class="lg added"></i>ergänzt</span>
+                  <span><i class="lg removed"></i>weggelassen</span>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="empty">Noch keine Zutaten erfasst.</p>
+          }
+        </section>
+
+        <section class="plan-section">
+          <h2 class="plan-title">Auf dem Menüplan</h2>
+          @if (details.error(); as error) {
+            <p class="empty">Konnte die Termine nicht laden: {{ error.message }}</p>
+          } @else {
+            <div class="plan-grid">
+              <div class="plan-col">
+                <span class="label">Geplant</span>
+                @for (m of planned(); track m.day + m.meal) {
+                  @let c = calendarDay(m.day);
+                  <div class="plan">
+                    <div class="cal"><b>{{ c.day }}</b><small>{{ c.month }}</small></div>
+                    <div class="t">
+                      <strong>{{ c.weekday }} · {{ mealLabel[m.meal] }}</strong>
+                      <span class="muted">{{ relative(m.day) }}</span>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="empty-box">
+                    {{ details.hasValue() ? 'Noch nicht eingeplant' : 'Lade…' }}
+                    @if (details.hasValue()) {
+                      <button type="button" class="link-btn" (click)="plan()">Einplanen</button>
+                    }
+                  </div>
+                }
+              </div>
+              <div class="plan-col">
+                <span class="label">Gekocht</span>
+                <div class="card">
+                  @for (m of cooked(); track m.day + m.meal) {
+                    <div class="done">
+                      <span class="tick" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12l4 4 8-9" /></svg>
+                      </span>
+                      <span class="d">{{ date(m.day) }}</span>
+                      <span class="muted">{{ mealLabel[m.meal] }}</span>
+                    </div>
+                  } @empty {
+                    <p class="empty in-card">{{ details.hasValue() ? 'Noch nie gekocht' : 'Lade…' }}</p>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </section>
+
+        <section class="people-section">
+          <h2>Wer mag's?</h2>
+          <ul class="people">
+            @for (p of people(); track p.member.id) {
+              <li class="person">
+                <span class="av av-{{ p.member.color }}">{{ p.member.emoji }}</span>
+                <div class="who">
+                  <strong>{{ p.member.name }}</strong>
+                  <span class="muted">
+                    @switch (p.rating?.rating) {
+                      @case ('up') {
+                        {{ p.rating?.rated_at ? 'seit ' + since(p.rating!.rated_at!) : 'mag es' }}
+                      }
+                      @case ('down') {
+                        {{ p.rating?.rated_at ? 'seit ' + since(p.rating!.rated_at!) : 'mag es nicht' }}
+                      }
+                      @default {
+                        noch nicht bewertet
+                      }
+                    }
+                  </span>
+                </div>
+                @switch (p.rating?.rating) {
+                  @case ('up') {
+                    <span class="pill-like">👍 Mag ich</span>
+                  }
+                  @case ('down') {
+                    <span class="pill-dislike">👎 Mag ich nicht</span>
+                  }
+                  @default {
+                    <span class="pill-open">offen</span>
+                  }
+                }
+              </li>
+            }
+          </ul>
+        </section>
+
+        <section class="origin-section">
+          <h2>Herkunft</h2>
+          <div class="origin">
+            <div class="row">
+              <span class="globe" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" /></svg>
+              </span>
+              <div class="origin-text">
+                <strong>{{ source(r.url) }}</strong>
+                @if (r.url) {
+                  <span class="url">{{ host(r.url) }}</span>
+                }
+                <span class="muted">gespeichert am {{ since(r.created_at) }}</span>
+              </div>
+            </div>
+            @if (r.url) {
+              <a class="outline" [href]="r.url" target="_blank" rel="noopener">
+                Originalrezept öffnen
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
+              </a>
+            }
+          </div>
+        </section>
+      </div>
+    } @else {
+      <div class="not-found">
+        @if (meals.recipesData.isLoading()) {
+          <p>Lade…</p>
+        } @else {
+          <h1 id="recipe-detail-title">Rezept nicht gefunden</h1>
+          <p>Vielleicht wurde es gelöscht.</p>
+        }
+      </div>
+    }
+  </div>
+</div>
