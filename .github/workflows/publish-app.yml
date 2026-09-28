@@ -2,6 +2,8 @@ name: Publish app image
 
 # Builds the Angular app image and pushes it to GitHub Container Registry.
 # No PAT needed — the job's GITHUB_TOKEN can write packages of this repo.
+# The image version comes from package.json (like the MCP server's); a v* tag
+# additionally produces its semver tags.
 
 on:
   push:
@@ -33,6 +35,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - id: version
+        run: echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+
       # arm64 is emulated, so it can be dropped from `platforms` below if the
       # NAS is the only target and CI time matters.
       - uses: docker/setup-qemu-action@v3
@@ -48,11 +53,12 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE }}
-          # `latest` + short SHA on every main push; v1.2.3 tags additionally
-          # produce 1.2.3 and 1.2.
+          # `latest` + short SHA + the package.json version (e.g. 0.2.0) on every
+          # main push; v1.2.3 tags additionally produce 1.2.3 and 1.2.
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
+            type=raw,value=${{ steps.version.outputs.version }},enable={{is_default_branch}}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 
@@ -64,6 +70,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VERSION=${{ steps.meta.outputs.version }}
+            VERSION=${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
