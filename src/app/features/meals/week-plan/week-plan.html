@@ -1,0 +1,123 @@
+<div class="board">
+  <div class="topbar">
+    <div class="page-head">
+      <h1>Wochenplan</h1>
+      <p>Mittag- und Abendessen für die nächsten Tage</p>
+    </div>
+    <app-meal-tabs />
+  </div>
+
+  @if (meals.errorMessage(); as message) {
+    <p class="message error">Konnte nicht speichern: {{ message }}</p>
+  }
+
+  <div class="controls-row">
+    <div class="week-nav">
+      <button type="button" title="Eine Woche zurück" aria-label="Eine Woche zurück" [disabled]="meals.weekOffset() <= minOffset()" (click)="page(-1)">‹</button>
+      <span class="week-label">{{ weekLabel() }}</span>
+      <button type="button" title="Eine Woche vor" aria-label="Eine Woche vor" [disabled]="meals.weekOffset() >= maxOffset" (click)="page(1)">›</button>
+    </div>
+    @if (meals.weekOffset() !== 0) {
+      <button type="button" class="today-btn" (click)="meals.weekOffset.set(0)">Heute</button>
+    }
+  </div>
+
+  @if (meals.weekData.error(); as error) {
+    <p class="message error">Konnte den Wochenplan nicht laden: {{ error.message }}</p>
+  } @else if (!meals.weekData.hasValue() || !pool.data.hasValue()) {
+    <p class="message">Lade…</p>
+  } @else if (pool.family().length === 0) {
+    <p class="message">Du gehörst noch zu keiner Familie.</p>
+  } @else {
+    <app-who-picker [(selected)]="meals.activeMemberId" />
+
+    <div class="week-table">
+      <div class="meal-header">
+        <div></div>
+        @for (s of slots; track s.slot) {
+          <div class="mh-label">{{ s.icon }} {{ s.label }}</div>
+        }
+      </div>
+
+      @for (day of days(); track day.iso) {
+        <div class="day-row" [class.today]="day.isToday">
+          <div class="day-cell">
+            <div class="dc-name">{{ day.isToday ? 'Heute' : weekday(day.date) }}</div>
+            <div class="dc-date">{{ short(day.date) }}</div>
+          </div>
+
+          @for (cell of day.meals; track cell.slot) {
+            @if (cell.planned; as planned) {
+              @let recipe = meals.recipe(planned.recipe_id);
+              <div
+                class="meal-slot"
+                role="button"
+                tabindex="0"
+                [attr.aria-label]="slotLabel(cell.slot) + ': ' + (recipe?.title ?? 'Rezept') + ' — ändern'"
+                (click)="openPicker(day, cell.slot, planned)"
+                (keydown.enter)="openPicker(day, cell.slot, planned)"
+              >
+                <div class="slot-image" [style.background-image]="background(recipe?.image_url ?? null)">
+                  {{ recipe?.image_url ? '' : '🍲' }}
+                </div>
+                <div class="slot-body">
+                  <div class="slot-title">{{ recipe?.title ?? '…' }}</div>
+                  <div class="slot-wishers">
+                    @for (m of wishers(planned); track m.id) {
+                      <span class="slot-wisher av-{{ m.color }}" [title]="m.name">{{ m.emoji }}</span>
+                    }
+                  </div>
+                  <button type="button" class="slot-wish" (click)="toggleWish($event, planned)">
+                    {{ iWish(planned) ? 'Nicht mehr ich' : '+ Ich auch' }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <button type="button" class="meal-slot empty" (click)="openPicker(day, cell.slot, undefined)">
+                <span class="plus">+</span>Rezept wählen
+              </button>
+            }
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (picker(); as target) {
+  <div class="modal-backdrop" (click)="picker.set(null)">
+    <div class="modal" role="dialog" aria-modal="true" [attr.aria-label]="target.title" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <h3>{{ target.title }} — Rezept wählen</h3>
+        <button type="button" class="modal-close" aria-label="Schließen" (click)="picker.set(null)">✕</button>
+      </div>
+      <div class="modal-list">
+        @for (recipe of choices(); track recipe.id) {
+          <button
+            type="button"
+            class="modal-recipe"
+            [class.current]="recipe.id === target.planned?.recipe_id"
+            (click)="choose(recipe.id)"
+          >
+            <span class="mr-image" [style.background-image]="background(recipe.image_url)">
+              {{ recipe.image_url ? '' : '🍲' }}
+            </span>
+            <span class="mr-name">{{ recipe.title }}</span>
+            <span class="mr-tag" [class.ok]="recipe.ingredients_available">
+              {{ recipe.ingredients_available ? 'Zutaten da' : 'Fehlt was' }}
+            </span>
+          </button>
+        } @empty {
+          <p class="message">
+            Noch keine Rezepte. <a routerLink="/essen/neu" (click)="picker.set(null)">Rezept importieren</a>
+          </p>
+        }
+      </div>
+      @if (target.planned) {
+        <div class="modal-foot">
+          <button type="button" class="clear-btn" (click)="clear()">Nichts planen</button>
+        </div>
+      }
+    </div>
+  </div>
+}

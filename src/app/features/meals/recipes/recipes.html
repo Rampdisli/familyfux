@@ -1,0 +1,95 @@
+<div class="board">
+  <div class="topbar">
+    <div class="page-head">
+      <h1>Was gibt's zu essen?</h1>
+      <p>Wähle aus den Rezepten, auf die du Lust hast</p>
+    </div>
+    <app-meal-tabs />
+  </div>
+
+  @if (meals.errorMessage(); as message) {
+    <p class="message error">Konnte nicht speichern: {{ message }}</p>
+  }
+
+  @if (meals.recipesData.error(); as error) {
+    <p class="message error">Konnte die Rezepte nicht laden: {{ error.message }}</p>
+  } @else if (!meals.recipesData.hasValue() || !pool.data.hasValue()) {
+    <p class="message">Lade…</p>
+  } @else if (pool.family().length === 0) {
+    <p class="message">Du gehörst noch zu keiner Familie.</p>
+  } @else {
+    <app-who-picker [(selected)]="meals.activeMemberId" />
+
+    <div class="filter-row">
+      <div class="segmented filter-tabs">
+        <button type="button" [class.active]="filter() === 'all'" (click)="filter.set('all')">Alle Rezepte</button>
+        <button type="button" [class.active]="filter() === 'available'" (click)="filter.set('available')">
+          Zutaten vorhanden
+        </button>
+      </div>
+      <div class="right-controls">
+        <select class="sort-select" aria-label="Sortierung" [value]="sort()" (change)="setSort($event)">
+          <option value="smart">Verfügbarkeit + Beliebtheit</option>
+          <option value="cooked">Am längsten nicht gekocht</option>
+          <option value="alpha">Alphabetisch</option>
+        </select>
+        <a class="import-link" routerLink="/essen/neu">+ Rezept importieren</a>
+      </div>
+    </div>
+
+    <div class="recipe-grid">
+      @for (recipe of visible(); track recipe.id) {
+        <app-recipe-card [recipe]="recipe" />
+      }
+
+      <a class="add-card" routerLink="/essen/neu">
+        <span class="plus">+</span>
+        Rezept importieren<br />(Fooby-Link, Cookidoo-Link oder eigenes Rezept)
+      </a>
+    </div>
+
+    @if (!visible().length && meals.recipes().length) {
+      <p class="message">
+        {{ filter() === 'available' ? 'Für kein Rezept sind gerade alle Zutaten da.' : 'Alle Rezepte sind ausgeblendet.' }}
+      </p>
+    }
+
+    <section class="hidden-section" [class.open]="hiddenOpen()">
+      <button type="button" class="hidden-toggle" [attr.aria-expanded]="hiddenOpen()" (click)="hiddenOpen.set(!hiddenOpen())">
+        <span>Nicht mehr vorgeschlagen ({{ meals.hidden().length }})</span>
+        <span class="chevron">▾</span>
+      </button>
+      @if (hiddenOpen()) {
+        <div class="hidden-list">
+          @for (recipe of meals.hidden(); track recipe.id) {
+            <div class="hidden-item">
+              <div class="hi-icon" [style.background-image]="background(recipe.image_url)">
+                {{ recipe.image_url ? '' : '🍲' }}
+              </div>
+              <div class="hi-name">{{ recipe.title }}</div>
+              <div class="hi-votes">{{ meals.downVotes(recipe) }} von {{ pool.family().length }} wollen das nicht mehr</div>
+              <button type="button" class="hi-restore" (click)="meals.restore(recipe)">Wieder vorschlagen</button>
+            </div>
+          } @empty {
+            <span class="hi-empty">Aktuell nichts ausgeblendet.</span>
+          }
+        </div>
+      }
+    </section>
+
+    <div class="wishes-strip">
+      <div class="fuxi">🦊</div>
+      <div class="msg">
+        @if (wished().length) {
+          Heutige Wünsche:
+          @for (recipe of wished(); track recipe.id) {
+            <b>{{ recipe.title }}</b>
+            ({{ wisherEmojis(recipe) }}){{ $last ? '' : ' · ' }}
+          }
+        } @else {
+          Noch niemand hat sich heute etwas gewünscht.
+        }
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,110 @@
+@let r = recipe();
+@let rating = myRating();
+@let likedBy = likers();
+@let wishedBy = wishers();
+
+<div class="r-image" [style.background-image]="background(r.image_url)">
+  @if (!r.image_url) {
+    <span class="r-placeholder">🍲</span>
+  }
+  <span class="source-badge">{{ source(r.url) }}</span>
+  <button
+    type="button"
+    class="avail-toggle"
+    [class.on]="r.ingredients_available"
+    [attr.aria-pressed]="r.ingredients_available"
+    (click)="meals.setAvailable(r, !r.ingredients_available)"
+  >
+    <span class="dot">✓</span> {{ r.ingredients_available ? 'Zutaten da' : 'Fehlt was' }}
+  </button>
+  <span class="cook-count">{{ r.cook_count }}× gekocht</span>
+</div>
+
+<div class="r-body">
+  <h2 class="r-title">{{ r.title }}</h2>
+
+  @if (r.ingredients.length) {
+    <div class="r-ingredients">
+      @for (ingredient of r.ingredients.slice(0, visibleIngredients); track $index) {
+        <span class="ing-chip">{{ ingredient }}</span>
+      }
+      @if (r.ingredients.length > visibleIngredients) {
+        <span class="ing-chip more">+{{ r.ingredients.length - visibleIngredients }} weitere</span>
+      }
+    </div>
+  }
+
+  <div class="r-social">
+    @if (likedBy.length) {
+      <div class="avatars">
+        @for (m of likedBy; track m.id) {
+          <span class="mini-av av-{{ m.color }}" [title]="m.name + ' mag das'">{{ m.emoji }}</span>
+        }
+      </div>
+    } @else {
+      <span class="no-votes">Noch keine Bewertung</span>
+    }
+    <div class="rate-btns">
+      <button
+        type="button"
+        class="rate-btn up"
+        [class.selected]="rating === 'up'"
+        [attr.aria-pressed]="rating === 'up'"
+        title="Gefällt mir"
+        aria-label="Gefällt mir"
+        (click)="rate('up')"
+      >
+        👍
+      </button>
+      <button
+        type="button"
+        class="rate-btn down"
+        [class.selected]="rating === 'down'"
+        [attr.aria-pressed]="rating === 'down'"
+        title="Gefällt mir nicht"
+        aria-label="Gefällt mir nicht"
+        (click)="rate('down')"
+      >
+        👎
+      </button>
+    </div>
+  </div>
+
+  @if (wishedBy.length) {
+    <div class="avatars">
+      @for (m of wishedBy; track m.id) {
+        <span class="mini-av av-{{ m.color }}" [title]="m.name + ' wünscht sich das'">{{ m.emoji }}</span>
+      }
+    </div>
+  }
+
+  @if (pickerOpen()) {
+    <div class="picker-panel">
+      <span class="p-title">Wer wünscht sich das?</span>
+      @for (m of pool.family(); track m.id) {
+        <button
+          type="button"
+          class="picker-opt"
+          [class.active]="r.wishers.includes(m.id)"
+          [attr.aria-pressed]="r.wishers.includes(m.id)"
+          (click)="meals.toggleWish(r, m.id)"
+        >
+          <span class="mini-av av-{{ m.color }}">{{ m.emoji }}</span>{{ m.name }}
+        </button>
+      }
+    </div>
+  }
+
+  <div class="r-footer">
+    @if (r.url) {
+      <a class="r-link" [href]="r.url" target="_blank" rel="noopener" title="Rezept ansehen" aria-label="Rezept ansehen">↗</a>
+    }
+    @if (r.ingredients_available) {
+      <button type="button" class="want-btn" [class.wished]="wishedBy.length" (click)="pickerOpen.set(!pickerOpen())">
+        {{ wishedBy.length ? wishedBy.length + ' wünschen sich das' : 'Das will ich!' }}
+      </button>
+    } @else {
+      <button type="button" class="want-btn" disabled>Zutaten fehlen</button>
+    }
+  </div>
+</div>

@@ -1,0 +1,288 @@
+/* "Was gibt's zu essen?" — design/prototypes/fuxis-plan-mahlzeiten.html */
+
+:host {
+  display: block;
+}
+
+.board {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 34px 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.page-head {
+  h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 26px;
+  }
+
+  p {
+    margin: 4px 0 0;
+    font-size: 13.5px;
+    color: var(--brown-soft);
+  }
+}
+
+/* FILTER / SORT ROW */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.filter-tabs {
+  --segmented-bg: #fff;
+  box-shadow: 0 8px 18px var(--shadow-warm);
+  border-radius: 14px;
+
+  button {
+    padding: 9px 16px;
+
+    &.active {
+      background: var(--orange);
+      color: #fff;
+    }
+  }
+}
+
+.right-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sort-select {
+  border: none;
+  background: #fff;
+  padding: 11px 14px;
+  border-radius: 14px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--brown);
+  box-shadow: 0 8px 18px var(--shadow-warm);
+  cursor: pointer;
+}
+
+.import-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--orange);
+  color: #fff;
+  padding: 11px 18px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 14px 26px -12px rgba(232, 112, 60, 0.55);
+
+  &:hover {
+    background: var(--orange-deep);
+  }
+}
+
+/* RECIPE GRID */
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.add-card {
+  border: 2.5px dashed rgba(90, 52, 35, 0.25);
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 260px;
+  padding: 20px;
+  color: var(--brown-soft);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  text-align: center;
+
+  .plus {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: var(--orange);
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+}
+
+/* NOT SUGGESTED ANYMORE */
+.hidden-section {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 12px 26px -18px var(--shadow-warm);
+  overflow: hidden;
+
+  &.open .chevron {
+    transform: rotate(180deg);
+  }
+}
+
+.hidden-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--brown-soft);
+
+  .chevron {
+    transition: transform 0.2s ease;
+    font-size: 12px;
+  }
+}
+
+.hidden-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 18px 18px;
+}
+
+.hidden-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  background: var(--cream);
+  border-radius: 14px;
+  padding: 10px 12px;
+
+  .hi-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: var(--cream-deep) center / cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .hi-name {
+    flex: 1;
+    font-weight: 600;
+    font-size: 13.5px;
+  }
+
+  .hi-votes {
+    font-size: 11.5px;
+    color: var(--brown-soft);
+  }
+
+  .hi-restore {
+    border: none;
+    background: #fff;
+    padding: 7px 12px;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 700;
+    font-size: 11.5px;
+    color: var(--orange-deep);
+    cursor: pointer;
+  }
+}
+
+.hi-empty {
+  font-size: 11.5px;
+  color: var(--brown-soft);
+}
+
+/* FUXI STRIP */
+.wishes-strip {
+  background: #fff;
+  border-radius: 24px;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 16px 32px -18px var(--shadow-warm);
+
+  .fuxi {
+    font-size: 36px;
+    flex-shrink: 0;
+  }
+
+  .msg {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+
+    b {
+      font-family: var(--font-display);
+      color: var(--orange-deep);
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .recipe-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .board {
+    padding-inline: 18px;
+  }
+
+  .recipe-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-tabs button {
+    flex: 1;
+  }
+
+  .right-controls {
+    flex-wrap: wrap;
+  }
+
+  .sort-select,
+  .import-link {
+    flex: 1 1 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+}

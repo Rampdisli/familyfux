@@ -1,0 +1,273 @@
+/* Recipe card — design/prototypes/fuxis-plan-mahlzeiten.html */
+
+:host {
+  background: #fff;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 16px 32px -18px var(--shadow-warm);
+  display: flex;
+  flex-direction: column;
+}
+
+:host(.missing) .r-image {
+  filter: saturate(0.5) brightness(1.05);
+}
+
+.r-image {
+  position: relative;
+  height: 140px;
+  background: var(--cream-deep) center / cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.r-placeholder {
+  font-size: 44px;
+}
+
+.source-badge,
+.avail-toggle,
+.cook-count {
+  position: absolute;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.source-badge {
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 5px 10px;
+  border-radius: 9px;
+  color: var(--brown-soft);
+}
+
+.avail-toggle {
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 6px 10px 6px 8px;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--brown-soft);
+  cursor: pointer;
+
+  .dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--cream-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: transparent;
+  }
+
+  &.on {
+    color: var(--mint-deep);
+
+    .dot {
+      background: var(--mint-deep);
+      color: #fff;
+    }
+  }
+}
+
+.cook-count {
+  bottom: 10px;
+  left: 10px;
+  background: rgba(90, 52, 35, 0.55);
+  color: #fff;
+  padding: 4px 9px;
+  border-radius: 8px;
+  backdrop-filter: blur(2px);
+}
+
+.r-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.r-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+  line-height: 1.25;
+}
+
+.r-ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.ing-chip {
+  background: var(--cream);
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--brown-soft);
+
+  &.more {
+    background: transparent;
+    color: var(--brown-soft);
+    padding-left: 2px;
+  }
+}
+
+.r-social {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 26px;
+}
+
+.avatars {
+  display: flex;
+  align-items: center;
+}
+
+.mini-av {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.5px;
+  border: 2px solid #fff;
+  flex-shrink: 0;
+
+  .avatars & + & {
+    margin-left: -8px;
+  }
+}
+
+.no-votes {
+  font-size: 11.5px;
+  color: var(--brown-soft);
+}
+
+.rate-btns {
+  display: flex;
+  gap: 5px;
+}
+
+.rate-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: none;
+  background: var(--cream);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.up.selected {
+    background: var(--mint-deep);
+  }
+
+  &.down.selected {
+    background: var(--danger);
+  }
+}
+
+.picker-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--cream);
+  border-radius: 12px;
+  padding: 10px;
+
+  .p-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--brown-soft);
+    text-transform: uppercase;
+  }
+}
+
+.picker-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: none;
+  padding: 7px 9px;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--brown);
+  cursor: pointer;
+  text-align: left;
+
+  .mini-av {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+    border: none;
+  }
+
+  &.active {
+    outline: 2px solid var(--mint-deep);
+  }
+}
+
+.r-footer {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.r-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--cream);
+  color: var(--brown-soft);
+  text-decoration: none;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.want-btn {
+  flex: 1;
+  min-height: 38px;
+  border: none;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--orange);
+  color: #fff;
+
+  &.wished {
+    background: var(--mint-deep);
+  }
+
+  &:disabled {
+    background: var(--cream);
+    color: var(--brown-soft);
+    cursor: not-allowed;
+  }
+}
