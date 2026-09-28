@@ -140,16 +140,34 @@
         <span>neueste zuerst</span>
       </div>
 
+      @if (removeError(); as message) {
+        <p class="message error">Konnte nicht löschen: {{ message }}</p>
+      }
+
       @for (group of history(); track group.label) {
         <div class="day-heading">{{ group.label }}</div>
         @for (task of group.tasks; track task.id) {
-          <div class="task-row">
+          <div class="task-row" [class.removing]="removing() === task.id">
             <div class="t-icon tile-{{ task.color }}">{{ task.emoji }}</div>
             <div class="t-body">
               <div class="t-name">{{ task.title }}</div>
               <div class="t-time">erledigt um {{ time(task.done_at) }} Uhr</div>
             </div>
             <div class="t-stars">+{{ stars(task.stars) }} ⭐</div>
+            @if (pool.isParent()) {
+              <button
+                type="button"
+                class="t-remove"
+                [class.confirm]="removeArmed() === task.id"
+                [disabled]="removing() === task.id"
+                [title]="removeArmed() === task.id ? 'Wirklich löschen? Die Sterne werden abgezogen.' : 'Aus dem Verlauf löschen'"
+                [attr.aria-label]="(removeArmed() === task.id ? 'Wirklich löschen: ' : 'Löschen: ') + task.title + ' um ' + time(task.done_at)"
+                (click)="remove(task)"
+                (blur)="removeArmed() === task.id && removeArmed.set(null)"
+              >
+                {{ removeArmed() === task.id ? 'Löschen?' : '🗑️' }}
+              </button>
+            }
           </div>
         }
       } @empty {

@@ -195,7 +195,7 @@ const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
  */
 function createMcpServer(supabaseAccessToken: string, userId: string): McpServer {
   const server = new McpServer(
-    { name: 'familyfux-tasks', version: '0.6.0' },
+    { name: 'familyfux-tasks', version: '0.7.0' },
     {
       instructions:
         'Family chore pool and recipe collection ("Fuxis Plan"). Users often talk to you by voice, mostly in German: keep replies ' +
@@ -223,6 +223,8 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       .from('task_claims')
       .select('occurrence_id, member_id, is_done')
       .in('occurrence_id', rows.map((r) => r.id))
+      // Parts a parent removed from the history.
+      .is('removed_at', null)
       .order('claimed_at');
     return rows.map((row) => ({
       ...row,

@@ -145,6 +145,8 @@ export class TaskPool {
             .from('task_claims')
             .select('id, occurrence_id, member_id, is_done')
             .in('occurrence_id', pool.data.map((t) => t.id))
+            // Parts a parent removed from the history (remove_done_entry).
+            .is('removed_at', null)
             .order('claimed_at')
         : { data: [], error: null };
 
