@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { TaskPool } from '../../tasks/task-pool';
-import { Meals, Rating, Recipe, cssImage, recipeSource } from '../meals';
+import { Ingredient, Meals, Rating, Recipe, cssImage, ingredientLabel, recipeSource } from '../meals';
 
 /** Ingredient chips shown on a card; the rest are counted. */
 const VISIBLE_INGREDIENTS = 3;
@@ -23,6 +23,12 @@ export class RecipeCard {
   protected readonly visibleIngredients = VISIBLE_INGREDIENTS;
   protected readonly source = recipeSource;
   protected readonly background = cssImage;
+  protected readonly label = ingredientLabel;
+
+  /** Ingredients that differ from the original recipe (changed, added, left out). */
+  protected readonly deviations = computed(
+    () => this.recipe().ingredients.filter((i) => i.status !== 'original').length,
+  );
 
   /** "Wer wünscht sich das?" */
   protected readonly pickerOpen = signal(false);
@@ -35,6 +41,20 @@ export class RecipeCard {
     const me = this.meals.activeMemberId();
     return me ? this.recipe().ratings[me] : undefined;
   });
+
+  /** Tooltip: what the original recipe said. */
+  protected hint(ingredient: Ingredient): string {
+    switch (ingredient.status) {
+      case 'changed':
+        return `Angepasst — im Original: ${ingredientLabel(ingredient, true)}`;
+      case 'added':
+        return 'Ergänzt — nicht im Original';
+      case 'removed':
+        return 'Weggelassen — steht im Original';
+      default:
+        return '';
+    }
+  }
 
   protected rate(value: Rating): void {
     const me = this.meals.activeMemberId();

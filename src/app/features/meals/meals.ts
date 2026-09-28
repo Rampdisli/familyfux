@@ -18,17 +18,52 @@ export const DAYS_PER_WEEK = 7;
 /** How many weeks ahead the week plan goes. */
 export const MAX_WEEKS_AHEAD = 4;
 
-/** What "Rezept importieren" saves into `recipes`. */
+/**
+ * How an ingredient relates to the original recipe (recipe_ingredients.status):
+ * as in the original, changed ("Milch" instead of "Rahm"), added, or left out.
+ */
+export type IngredientStatus = 'original' | 'changed' | 'added' | 'removed';
+
+/** One ingredient of a recipe (a row of recipe_ingredients). */
+export interface Ingredient {
+  id: string;
+  position: number;
+  /** "200 g", "1 Prise"; null for e.g. "Salz". */
+  quantity: string | null;
+  /** How the family cooks it; null = left out. */
+  name: string | null;
+  original_quantity: string | null;
+  /** As in the original recipe; null = added by the family. */
+  original_name: string | null;
+  status: IngredientStatus;
+}
+
+/** An ingredient as typed into "Rezept importieren". */
+export interface IngredientInput {
+  quantity: string | null;
+  name: string;
+}
+
+/** What "Rezept importieren" saves (create_recipe). */
 export interface RecipeInput {
   title: string;
   url: string | null;
   image_url: string | null;
-  ingredients: string[];
+  ingredients: IngredientInput[];
   ingredients_available: boolean;
 }
 
-export interface Recipe extends RecipeInput {
+/** "200 g Spaghetti" — the family's version, or the original one. */
+export function ingredientLabel(ingredient: Ingredient, original = false): string {
+  const quantity = original ? ingredient.original_quantity : ingredient.quantity;
+  const name = original ? ingredient.original_name : ingredient.name;
+  return [quantity, name].filter(Boolean).join(' ');
+}
+
+export interface Recipe extends Omit<RecipeInput, 'ingredients'> {
   id: string;
+  /** In recipe order, left-out ones included. */
+  ingredients: Ingredient[];
   /** Planned meals up to today (recipe_stats). */
   cook_count: number;
   /** ISO date of the last planned meal up to today, if any. */
@@ -113,8 +148,12 @@ export class Meals {
       const [recipes, stats, ratings, wishes] = await Promise.all([
         supabase
           .from('recipes')
-          .select('id, title, url, image_url, ingredients, ingredients_available')
-          .order('title'),
+          .select(
+            'id, title, url, image_url, ingredients_available, ' +
+              'recipe_ingredients(id, position, quantity, name, original_quantity, original_name, status)',
+          )
+          .order('title')
+          .order('position', { referencedTable: 'recipe_ingredients' }),
         supabase.from('recipe_stats').select('recipe_id, cook_count, last_cooked_on'),
         supabase.from('recipe_ratings').select('recipe_id, member_id, rating'),
         supabase.from('recipe_wishes_today').select('recipe_id, member_id, wish_date'),
@@ -130,9 +169,11 @@ export class Meals {
       const ratingRows = ratings.data ?? [];
       const wishRows = wishes.data ?? [];
 
-      return ((recipes.data ?? []) as (RecipeInput & { id: string })[]).map(
-        (r): Recipe => ({
+      type RecipeRow = Omit<RecipeInput, 'ingredients'> & { id: string; recipe_ingredients: Ingredient[] };
+      return ((recipes.data ?? []) as unknown as RecipeRow[]).map(
+        ({ recipe_ingredients, ...r }): Recipe => ({
           ...r,
+          ingredients: recipe_ingredients,
           cook_count: statsById.get(r.id)?.cook_count ?? 0,
           last_cooked_on: statsById.get(r.id)?.last_cooked_on ?? null,
           ratings: Object.fromEntries(
@@ -229,13 +270,23 @@ export class Meals {
     return this.downVotes(recipe) >= this.hideThreshold();
   }
 
-  /** Adds a recipe to the family's collection. Resolves to an error message, if any. */
+  /**
+   * Adds a recipe to the family's collection. Resolves to an error message, if any.
+   * Typed in by hand, the ingredients as entered are its original.
+   */
   async createRecipe(input: RecipeInput): Promise<string | null> {
-    const familyId = this.pool.me()?.family_id;
-    if (!familyId) {
-      return 'Du gehörst zu keiner Familie.';
-    }
-    const { error } = await supabase.from('recipes').insert({ ...input, family_id: familyId });
+    const { error } = await supabase.rpc('create_recipe', {
+      p_title: input.title,
+      p_url: input.url,
+      p_image_url: input.image_url,
+      p_ingredients_available: input.ingredients_available,
+      p_ingredients: input.ingredients.map((i) => ({
+        quantity: i.quantity,
+        name: i.name,
+        original_quantity: i.quantity,
+        original_name: i.name,
+      })),
+    });
     this.recipesData.reload();
     return error?.message ?? null;
   }

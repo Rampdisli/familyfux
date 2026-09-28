@@ -55,14 +55,34 @@
       </div>
 
       <div class="field">
-        <label class="f-label" for="recipe-ingredients">Zutaten <span class="optional">eine pro Zeile</span></label>
-        <textarea
-          id="recipe-ingredients"
-          rows="6"
-          placeholder="Hackfleisch&#10;Tomaten&#10;Spaghetti"
-          [value]="ingredientsText()"
-          (input)="ingredientsText.set($any($event.target).value)"
-        ></textarea>
+        <span class="f-label">Zutaten <span class="optional">Menge und Zutat</span></span>
+        <div class="ing-rows">
+          @for (row of rows(); track $index; let i = $index) {
+            <div class="ing-row">
+              <input
+                class="ing-qty-input"
+                type="text"
+                [placeholder]="i === 0 ? '200 g' : 'Menge'"
+                [attr.aria-label]="'Menge ' + (i + 1)"
+                [value]="row.quantity"
+                (input)="setRow(i, 'quantity', $any($event.target).value)"
+              />
+              <input
+                type="text"
+                [placeholder]="i === 0 ? 'Spaghetti' : 'Zutat'"
+                [attr.aria-label]="'Zutat ' + (i + 1)"
+                [value]="row.name"
+                (input)="setRow(i, 'name', $any($event.target).value)"
+                (keydown.enter)="$event.preventDefault(); addRow()"
+              />
+              <button type="button" class="ing-remove" [attr.aria-label]="'Zutat ' + (i + 1) + ' entfernen'" (click)="removeRow(i)">
+                ×
+              </button>
+            </div>
+          }
+        </div>
+        <button type="button" class="ing-add" (click)="addRow()">+ Zutat</button>
+        <p class="hint">Menge leer lassen, wenn es keine gibt (z. B. Salz).</p>
       </div>
 
       <div class="field">
@@ -98,7 +118,12 @@
           <div class="pc-title">{{ title().trim() || 'Neues Rezept' }}</div>
           <div class="pc-ingredients">
             @for (ingredient of ingredients(); track $index) {
-              <span class="ing-chip">{{ ingredient }}</span>
+              <span class="ing-chip">
+                @if (ingredient.quantity) {
+                  <b>{{ ingredient.quantity }}</b>
+                }
+                {{ ingredient.name }}
+              </span>
             } @empty {
               <span class="pc-empty">Noch keine Zutaten</span>
             }
