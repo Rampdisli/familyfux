@@ -139,6 +139,23 @@ function formatPoolRow(row: PoolRow, members: MemberNames): string {
   );
 }
 
+/** A repeatable task ("Immer wieder") with today's completions, oldest first. */
+interface RepeatableRow {
+  id: string;
+  title: string;
+  emoji: string;
+  reward: number;
+  today: { member_id: string | null }[];
+}
+
+/** `- 🔁 🐈 Katze füttern (2 ★ per time, 3× today: 🦊 Mia, 🦊 Mia, 🐻 Ben, task_id: …)`. */
+function formatRepeatableRow(row: RepeatableRow, members: MemberNames): string {
+  const today = row.today.length
+    ? `${row.today.length}× today: ${row.today.map((c) => members.get(c.member_id ?? '') ?? 'former member').join(', ')}`
+    : 'not done today yet';
+  return `- 🔁 ${row.emoji} ${row.title} (${row.reward} ★ per time, ${today}, task_id: ${row.id})`;
+}
+
 const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
 
 /**
@@ -148,7 +165,7 @@ const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
  */
 function createMcpServer(supabaseAccessToken: string, userId: string): McpServer {
   const server = new McpServer(
-    { name: 'familyfux-tasks', version: '0.3.0' },
+    { name: 'familyfux-tasks', version: '0.4.0' },
     {
       instructions:
         'Family chore pool ("Fuxis Plan"). Users often talk to you by voice, mostly in German: keep replies ' +
@@ -183,6 +200,31 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     }));
   }
 
+  /** Active repeatable tasks with today's completions (family time zone). */
+  async function repeatableTasks(taskId?: string) {
+    let tasks = supabase
+      .from('tasks')
+      .select('id, title, emoji, reward')
+      .eq('is_repeatable', true)
+      .is('archived_at', null)
+      .order('title');
+    if (taskId) {
+      tasks = tasks.eq('id', taskId);
+    }
+    const [repeatable, today] = await Promise.all([
+      tasks.returns<Omit<RepeatableRow, 'today'>[]>(),
+      supabase
+        .from('task_completions_today')
+        .select('task_id, member_id')
+        .order('completed_at')
+        .returns<{ task_id: string; member_id: string | null }[]>(),
+    ]);
+    return {
+      error: repeatable.error ?? today.error,
+      rows: (repeatable.data ?? []).map((t) => ({ ...t, today: (today.data ?? []).filter((c) => c.task_id === t.id) })),
+    };
+  }
+
   /** "🦊 Ramona" per member id, for the pool listings. */
   async function memberNames(): Promise<MemberNames> {
     const { data } = await supabase.from('family_members').select('id, name, emoji');
@@ -194,8 +236,10 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     {
       title: 'Create task',
       description:
-        "Creates a task in the family's task pool (Fuxis Plan): one-off or recurring. " +
+        "Creates a task in the family's task pool (Fuxis Plan): one-off, recurring or repeatable. " +
         'Recurring tasks reappear in the pool automatically according to their schedule. ' +
+        'Repeatable tasks ("Immer wieder", e.g. feeding the cat) are always there and can be done any number of ' +
+        'times a day; every time, the member who did it earns the stars. ' +
         'Only pass schedule and reward if the user actually said them — do not guess. ' +
         'If something is missing, the tool creates nothing and tells you what to ask the user; ' +
         'ask, then call it again with the answers.',
@@ -221,11 +265,18 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
           .enum(['each', 'split'])
           .default('each')
           .describe('When several members do it together: each earns the full reward, or they split it (default each)'),
+        repeatable: z
+          .boolean()
+          .optional()
+          .describe(
+            'true for a task that comes up several times a day and can be ticked off any number of times ' +
+              '(no schedule needed then; assign_to and reward_mode do not apply).',
+          ),
         schedule: z
           .enum(SCHEDULES)
           .optional()
           .describe(
-            'Leave out if the user did not say whether it is one-off or recurring. ' +
+            'Leave out if the user did not say whether it is one-off or recurring, or for repeatable tasks. ' +
               'once: appears on start_date. daily. weekly: on weekdays[0]. weekdays: on each of weekdays. ' +
               'every_x_days: every repeat_every days from start_date. monthly: on month_day. ' +
               'every_x_weeks: every repeat_every weeks on weekdays[0]. every_x_months: every repeat_every months on month_day. ' +
@@ -246,12 +297,17 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         month: z.number().int().min(1).max(12).optional().describe('Month for yearly tasks'),
       },
     },
-    async ({ title, emoji, color, reward, reward_mode, assign_to, schedule, start_date, repeat_every, weekdays, month_day, month }) => {
+    async ({ title, emoji, color, reward, reward_mode, assign_to, repeatable, schedule, start_date, repeat_every, weekdays, month_day, month }) => {
       const params = { repeat_every, weekdays, month_day, month };
 
       // Follow-up questions instead of defaults: Claude asks the user (by voice) and calls again.
       const questions: string[] = [];
-      if (!schedule) {
+      if (repeatable) {
+        // Always there, no schedule; done by one member at a time.
+        schedule = undefined;
+        assign_to = undefined;
+        reward_mode = 'each';
+      } else if (!schedule) {
         questions.push('Is it a one-off task or a recurring one? If recurring: how often (e.g. daily, every Monday, every 3 days)?');
       } else {
         const missing = (REQUIRED_PARAMS[schedule] ?? []).filter((key) => params[key] === undefined);
@@ -302,12 +358,35 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       // family_id comes from the tasks_before_write trigger, the first occurrence from tasks_after_insert.
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ title, emoji, color, reward, reward_mode, schedule, start_date, ...params, user_id: userId })
+        .insert({
+          title,
+          emoji,
+          color,
+          reward,
+          reward_mode,
+          is_repeatable: repeatable ?? false,
+          ...(repeatable ? {} : { schedule, start_date, ...params }),
+          user_id: userId,
+        })
         .select('id, title, schedule, start_date, repeat_every, weekdays, month_day, month')
         .single<TaskSchedule & { id: string; title: string }>();
 
       if (error) {
         return fail('create_task', `Failed to create task: ${error.message}`, { title, schedule });
+      }
+
+      if (repeatable) {
+        await logEvent({ type: 'tool_call', tool: 'create_task', userId, title, repeatable, taskId: data.id });
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                `Created repeatable task "${data.title}" (task_id: ${data.id}). It is always in the "Immer wieder" ` +
+                'section and can be ticked off any number of times a day with set_task_done (id = task_id).',
+            },
+          ],
+        };
       }
 
       // Assignees join the task's open occurrence right away (DB trigger).
@@ -354,7 +433,10 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         "Lists the family's task pool: every task that is currently due (open, or finished today) with its reward, " +
         'schedule and who takes part (✓ = their part is done). Several members can do a task together; ' +
         'it is done once all of them are. Open tasks come first. ' +
-        'Use `id` for claim_task / leave_task / set_task_done, `task_id` for delete_task.',
+        'Below them, the repeatable tasks ("Immer wieder", 🔁): always there, done any number of times a day, ' +
+        'with how often and by whom they were done today. ' +
+        'Use `id` for claim_task / leave_task / set_task_done, `task_id` for delete_task; ' +
+        'for repeatable tasks pass their `task_id` to set_task_done.',
       inputSchema: {},
     },
     async () => {
@@ -364,7 +446,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
         return fail('list_tasks', `Failed to refresh the pool: ${refresh.error.message}`);
       }
 
-      const [pool, members] = await Promise.all([
+      const [pool, repeatable, members] = await Promise.all([
         supabase
           .from('task_pool')
           .select(POOL_COLUMNS)
@@ -372,21 +454,33 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
           .order('due_date')
           .order('title')
           .returns<Omit<PoolRow, 'claims'>[]>(),
+        repeatableTasks(),
         memberNames(),
       ]);
 
-      if (pool.error) {
-        return fail('list_tasks', `Failed to list tasks: ${pool.error.message}`);
+      const error = pool.error ?? repeatable.error;
+      if (error) {
+        return fail('list_tasks', `Failed to list tasks: ${error.message}`);
       }
 
-      await logEvent({ type: 'tool_call', tool: 'list_tasks', userId, count: pool.data.length });
+      await logEvent({
+        type: 'tool_call',
+        tool: 'list_tasks',
+        userId,
+        count: pool.data?.length ?? 0,
+        repeatable: repeatable.rows.length,
+      });
 
-      if (pool.data.length === 0) {
-        return { content: [{ type: 'text', text: 'The task pool is empty.' }] };
+      const rows = await withClaims(pool.data ?? []);
+      const sections = [
+        rows.length ? rows.map((row) => formatPoolRow(row, members)).join('\n') : 'The task pool is empty.',
+      ];
+      if (repeatable.rows.length) {
+        sections.push(
+          'Repeatable ("Immer wieder"):\n' + repeatable.rows.map((row) => formatRepeatableRow(row, members)).join('\n'),
+        );
       }
-
-      const rows = await withClaims(pool.data);
-      return { content: [{ type: 'text', text: rows.map((row) => formatPoolRow(row, members)).join('\n') }] };
+      return { content: [{ type: 'text', text: sections.join('\n\n') }] };
     },
   );
 
@@ -491,14 +585,29 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       description:
         "Ticks off a member's part of a pool entry (or opens it again with done=false). " +
         'If the member does not take part yet, they are added — so "Mia brushed her teeth" is a single call. ' +
-        'The entry is done once all participants are; each earns the full reward or a share, depending on the task.',
+        'The entry is done once all participants are; each earns the full reward or a share, depending on the task. ' +
+        'Repeatable tasks (🔁, pass their task_id): every call with done=true counts one more time for the member ' +
+        "and earns them the stars; done=false takes back that member's latest time today (a mistake).",
       inputSchema: {
-        id: z.string().uuid().describe('The `id` of the pool entry from list_tasks (not the task_id)'),
+        id: z
+          .string()
+          .uuid()
+          .describe('The `id` of the pool entry from list_tasks (not the task_id) — or the `task_id` of a repeatable task'),
         member_id: z.string().uuid().describe('The family member who did it'),
-        done: z.boolean().default(true).describe('true = done, false = open again'),
+        done: z.boolean().default(true).describe('true = done, false = open again / take back'),
       },
     },
     async ({ id, member_id, done }) => {
+      const { data: repeatable } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('id', id)
+        .eq('is_repeatable', true)
+        .maybeSingle();
+      if (repeatable) {
+        return completeRepeatable(id, member_id, done);
+      }
+
       const updated = await supabase
         .from('task_claims')
         .update({ is_done: done })
@@ -560,6 +669,46 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       };
     },
   );
+
+  /** One more time (done) or the member's latest time today taken back (not done) of a repeatable task. */
+  async function completeRepeatable(taskId: string, memberId: string, done: boolean) {
+    const details = { taskId, memberId, done };
+
+    if (done) {
+      // The DB trigger rejects archived tasks and members of other families.
+      const { error } = await supabase.from('task_completions').insert({ task_id: taskId, member_id: memberId });
+      if (error) {
+        return fail('set_task_done', `Failed to tick off the task: ${error.message}`, details);
+      }
+    } else {
+      const { data: latest } = await supabase
+        .from('task_completions_today')
+        .select('id')
+        .eq('task_id', taskId)
+        .eq('member_id', memberId)
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!latest) {
+        return fail('set_task_done', 'This member has not done the task today.', details);
+      }
+      const { error } = await supabase.from('task_completions').delete().eq('id', latest.id);
+      if (error) {
+        return fail('set_task_done', `Failed to take it back: ${error.message}`, details);
+      }
+    }
+
+    await logEvent({ type: 'tool_call', tool: 'set_task_done', userId, ...details });
+    const { rows } = await repeatableTasks(taskId);
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: rows.length ? `Updated task:\n${formatRepeatableRow(rows[0], await memberNames())}` : 'Done.',
+        },
+      ],
+    };
+  }
 
   /** Logs a successful claim change and answers with the entry's current state. */
   async function reportEntry(tool: string, id: string, details: Record<string, unknown>) {

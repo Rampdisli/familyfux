@@ -124,10 +124,10 @@ select {
   }
 }
 
-/* Einmalig / Wiederkehrend */
+/* Einmalig / Wiederkehrend / Immer wieder */
 .type-toggle {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
 
@@ -282,6 +282,17 @@ select {
   color: var(--brown-soft);
 }
 
+/* "0× heute" on a repeatable task. */
+.pt-counter {
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--cream);
+  color: var(--brown-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .pt-claim {
   margin-top: auto;
   padding: 9px 0;
@@ -324,5 +335,9 @@ select {
 @media (max-width: 560px) {
   .board {
     padding-inline: 18px;
+  }
+
+  .type-toggle {
+    grid-template-columns: 1fr;
   }
 }

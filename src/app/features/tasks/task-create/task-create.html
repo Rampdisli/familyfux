@@ -58,25 +58,27 @@
         <app-reward-stepper [(value)]="reward" />
       </div>
 
-      <div class="field">
-        <span class="f-label">Wenn mehrere mitmachen</span>
-        <div class="segmented" role="group" aria-label="Sterne verteilen">
-          <button type="button" [class.active]="rewardMode() === 'each'" (click)="rewardMode.set('each')">
-            Jeder bekommt {{ reward() }} ⭐
-          </button>
-          <button type="button" [class.active]="rewardMode() === 'split'" (click)="rewardMode.set('split')">
-            {{ reward() }} ⭐ werden geteilt
-          </button>
+      @if (!repeatable()) {
+        <div class="field">
+          <span class="f-label">Wenn mehrere mitmachen</span>
+          <div class="segmented" role="group" aria-label="Sterne verteilen">
+            <button type="button" [class.active]="rewardMode() === 'each'" (click)="rewardMode.set('each')">
+              Jeder bekommt {{ reward() }} ⭐
+            </button>
+            <button type="button" [class.active]="rewardMode() === 'split'" (click)="rewardMode.set('split')">
+              {{ reward() }} ⭐ werden geteilt
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div class="field">
-        <span class="f-label">Zuweisen <span class="optional">(optional)</span></span>
-        <app-member-picker [(selected)]="assignees" />
-        <p class="hint">
-          {{ assignees().length ? 'Andere können trotzdem mitmachen.' : 'Ohne Auswahl nimmt sie sich im Pool, wer will.' }}
-        </p>
-      </div>
+        <div class="field">
+          <span class="f-label">Zuweisen <span class="optional">(optional)</span></span>
+          <app-member-picker [(selected)]="assignees" />
+          <p class="hint">
+            {{ assignees().length ? 'Andere können trotzdem mitmachen.' : 'Ohne Auswahl nimmt sie sich im Pool, wer will.' }}
+          </p>
+        </div>
+      }
 
       <div class="field">
         <span class="f-label">Aufgabentyp</span>
@@ -84,8 +86,8 @@
           <button
             type="button"
             class="type-btn"
-            [class.active]="!schedule().recurring"
-            (click)="patchSchedule({ recurring: false })"
+            [class.active]="!repeatable() && !schedule().recurring"
+            (click)="setType('once')"
           >
             <div class="tb-title">Einmalig</div>
             <div class="tb-sub">taucht ein einziges Mal im Pool auf</div>
@@ -93,16 +95,27 @@
           <button
             type="button"
             class="type-btn"
-            [class.active]="schedule().recurring"
-            (click)="patchSchedule({ recurring: true })"
+            [class.active]="!repeatable() && schedule().recurring"
+            (click)="setType('recurring')"
           >
             <div class="tb-title">Wiederkehrend</div>
             <div class="tb-sub">erscheint automatisch immer wieder</div>
           </button>
+          <button type="button" class="type-btn" [class.active]="repeatable()" (click)="setType('repeatable')">
+            <div class="tb-title">🔁 Immer wieder</div>
+            <div class="tb-sub">beliebig oft am Tag, jedes Mal Sterne</div>
+          </button>
         </div>
       </div>
 
-      <app-schedule-editor [(draft)]="schedule" />
+      @if (repeatable()) {
+        <p class="hint">
+          Steht immer im Bereich „Immer wieder“. Bei jedem Abhaken wählt ihr, wer es gemacht hat — diese Person
+          bekommt {{ reward() }} ⭐. Der Zähler beginnt jeden Tag um Mitternacht wieder bei 0.
+        </p>
+      } @else {
+        <app-schedule-editor [(draft)]="schedule" />
+      }
 
       @if (errorMessage(); as message) {
         <p class="message error">Konnte die Aufgabe nicht speichern: {{ message }}</p>
@@ -121,10 +134,19 @@
       <div class="preview-tile">
         <div class="pt-icon tile-{{ color() }}">{{ emoji() }}</div>
         <div class="pt-name">{{ title().trim() || 'Neue Aufgabe' }}</div>
+        @if (repeatable()) {
+          <div class="pt-counter">0× heute</div>
+        }
         <div class="pt-reward">
-          {{ rewardMode() === 'each' ? '+' + reward() + ' ⭐ für jeden' : reward() + ' ⭐ zum Teilen' }}
+          @if (repeatable()) {
+            +{{ reward() }} ⭐ pro Mal
+          } @else {
+            {{ rewardMode() === 'each' ? '+' + reward() + ' ⭐ für jeden' : reward() + ' ⭐ zum Teilen' }}
+          }
         </div>
-        @if (assignedMembers().length) {
+        @if (repeatable()) {
+          <div class="pt-claim">✓ Erledigt!</div>
+        } @else if (assignedMembers().length) {
           <div class="pt-assigned">
             @for (m of assignedMembers(); track m.id) {
               <span class="av av-{{ m.color }}">{{ m.emoji }}</span>
@@ -135,7 +157,12 @@
           <div class="pt-claim">Ich mach’s!</div>
         }
       </div>
-      @if (schedule().recurring) {
+      @if (repeatable()) {
+        <div class="preview-recur">
+          <b>Immer wieder</b>
+          Kann beliebig oft am Tag abgehakt werden
+        </div>
+      } @else if (schedule().recurring) {
         <div class="preview-recur">
           <b>Wiederholung</b>
           {{ summary() }}

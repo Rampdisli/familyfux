@@ -39,7 +39,8 @@ export type MemberDraft = Pick<FamilyMember, 'name' | 'emoji' | 'color' | 'role'
 export type RewardMode = 'each' | 'split';
 
 /** What the "Neue Aufgabe" / "Aufgaben verwalten" pages save into `tasks`. */
-export type TaskInput = Pick<PoolTask, 'title' | 'emoji' | 'color' | 'reward' | 'reward_mode'> & ScheduleParams;
+export type TaskInput = Pick<PoolTask, 'title' | 'emoji' | 'color' | 'reward' | 'reward_mode'> &
+  ScheduleParams & { is_repeatable: boolean };
 
 /** One participant of a pool entry (a row of task_claims); everybody ticks off their own part. */
 export interface PoolClaim {
@@ -64,6 +65,28 @@ export interface PoolTask {
   /** When the last participant finished. */
   done_at: string | null;
   claims: PoolClaim[];
+}
+
+/** One "done" of a repeatable task today (a row of the task_completions_today view). */
+export interface TodayCompletion {
+  id: string;
+  member_id: string | null;
+  completed_at: string;
+}
+
+/**
+ * A repeatable task ("Immer wieder"): always in its own section of the pool,
+ * ticked off any number of times a day, each time for one member.
+ */
+export interface RepeatableTask {
+  id: string;
+  title: string;
+  emoji: string;
+  color: PoolColor;
+  /** Stars per completion. */
+  reward: number;
+  /** Today's completions (family time zone), oldest first — the "3× heute" counter. */
+  today: TodayCompletion[];
 }
 
 /** Stars can be fractional when shared: 1.5 → "1,5". */
@@ -94,7 +117,7 @@ export class TaskPool {
         throw new Error(refresh.error.message, { cause: refresh.error });
       }
 
-      const [members, pool, stars] = await Promise.all([
+      const [members, pool, stars, repeatable, completions] = await Promise.all([
         supabase
           .from('family_members')
           .select('id, family_id, user_id, name, emoji, color, role')
@@ -107,6 +130,13 @@ export class TaskPool {
           .order('due_date')
           .order('title'),
         supabase.from('member_week_stars').select('member_id, stars'),
+        supabase
+          .from('tasks')
+          .select('id, title, emoji, color, reward')
+          .eq('is_repeatable', true)
+          .is('archived_at', null)
+          .order('title'),
+        supabase.from('task_completions_today').select('id, task_id, member_id, completed_at').order('completed_at'),
       ]);
 
       // Participants of the entries currently in the pool.
@@ -118,7 +148,8 @@ export class TaskPool {
             .order('claimed_at')
         : { data: [], error: null };
 
-      const error = members.error ?? pool.error ?? stars.error ?? claims.error;
+      const error =
+        members.error ?? pool.error ?? stars.error ?? repeatable.error ?? completions.error ?? claims.error;
       if (error) {
         // PostgrestError is a plain object; resource() needs an Error to expose its message.
         throw new Error(error.message, { cause: error });
@@ -129,11 +160,20 @@ export class TaskPool {
         claimsByOccurrence.set(occurrence_id, [...(claimsByOccurrence.get(occurrence_id) ?? []), claim]);
       }
 
+      const todayByTask = new Map<string, TodayCompletion[]>();
+      for (const { task_id, ...completion } of (completions.data ?? []) as (TodayCompletion & { task_id: string })[]) {
+        todayByTask.set(task_id, [...(todayByTask.get(task_id) ?? []), completion]);
+      }
+
       return {
         family: members.data as FamilyMember[],
         tasks: (pool.data as Omit<PoolTask, 'claims'>[]).map((t) => ({
           ...t,
           claims: claimsByOccurrence.get(t.id) ?? [],
+        })),
+        repeatable: (repeatable.data as Omit<RepeatableTask, 'today'>[]).map((t) => ({
+          ...t,
+          today: todayByTask.get(t.id) ?? [],
         })),
         stars: Object.fromEntries(
           (stars.data ?? []).map((s) => [s.member_id, Number(s.stars)]),
@@ -144,6 +184,7 @@ export class TaskPool {
 
   readonly family = computed(() => this.data.value()?.family ?? []);
   readonly tasks = computed(() => this.data.value()?.tasks ?? []);
+  readonly repeatable = computed(() => this.data.value()?.repeatable ?? []);
   readonly stars = computed(() => this.data.value()?.stars ?? {});
 
   /** The signed-in user's own member entry. */
@@ -173,7 +214,17 @@ export class TaskPool {
     return this.writeClaim(supabase.from('task_claims').update({ is_done: !claim.is_done }).eq('id', claim.id));
   }
 
-  /** Creates a task (one-off or recurring), optionally assigned to members. Resolves to an error message, if any. */
+  /** One more "done" of a repeatable task, for the member who did it (earns them its stars). */
+  complete(taskId: string, memberId: string): Promise<void> {
+    return this.writeClaim(supabase.from('task_completions').insert({ task_id: taskId, member_id: memberId }));
+  }
+
+  /** "Rückgängig": removes a completion again (only today's; the DB refuses older ones). */
+  undoCompletion(completion: TodayCompletion): Promise<void> {
+    return this.writeClaim(supabase.from('task_completions').delete().eq('id', completion.id));
+  }
+
+  /** Creates a task (one-off, recurring or repeatable), optionally assigned to members. Resolves to an error message, if any. */
   async createTask(input: TaskInput, assignees: string[] = []): Promise<string | null> {
     const userId = this.auth.user()?.id;
     if (!userId) {

@@ -34,6 +34,8 @@ export class TaskCreate {
   );
   protected readonly assignedNames = computed(() => this.assignedMembers().map((m) => m.name).join(', '));
   protected readonly schedule = signal<ScheduleDraft>(defaultScheduleDraft());
+  /** "Immer wieder": can be ticked off any number of times a day, no schedule. */
+  protected readonly repeatable = signal(false);
 
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -46,6 +48,13 @@ export class TaskCreate {
     this.schedule.update((draft) => ({ ...draft, ...changes }));
   }
 
+  protected setType(type: 'once' | 'recurring' | 'repeatable'): void {
+    this.repeatable.set(type === 'repeatable');
+    if (type !== 'repeatable') {
+      this.patchSchedule({ recurring: type === 'recurring' });
+    }
+  }
+
   protected async save(): Promise<void> {
     if (!this.canSave()) {
       return;
@@ -54,14 +63,17 @@ export class TaskCreate {
     this.saving.set(true);
     this.errorMessage.set(null);
 
+    // Repeatable tasks are done by one member at a time: no sharing, no assignees.
+    const repeatable = this.repeatable();
     const error = await this.pool.createTask({
       title: this.title().trim(),
       emoji: this.emoji(),
       color: this.color(),
       reward: this.reward(),
-      reward_mode: this.rewardMode(),
+      reward_mode: repeatable ? 'each' : this.rewardMode(),
+      is_repeatable: repeatable,
       ...toScheduleParams(this.schedule()),
-    }, this.assignees());
+    }, repeatable ? [] : this.assignees());
 
     this.saving.set(false);
 

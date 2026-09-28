@@ -7,10 +7,14 @@ import { ScheduleEditor } from '../schedule-editor/schedule-editor';
 import { RewardStepper } from '../reward-stepper/reward-stepper';
 import { POOL_COLORS, PoolColor, RewardMode, TASK_ICONS, TaskPool, formatStars } from '../task-pool';
 
-/** A finished part of a pool entry: who, when, how many stars (a row of claim_rewards). */
+/**
+ * A finished part of a pool entry, or one completion of a repeatable task:
+ * who, when, how many stars (a row of claim_rewards).
+ */
 interface DoneClaim {
   id: string;
-  occurrence_id: string;
+  /** Null for completions of repeatable tasks. */
+  occurrence_id: string | null;
   member_id: string | null;
   done_at: string;
   stars: number;
@@ -24,11 +28,13 @@ interface ManagedTask extends ScheduleParams {
   color: PoolColor;
   reward: number;
   reward_mode: RewardMode;
+  /** "Immer wieder": ticked off any number of times a day. */
+  is_repeatable: boolean;
   archived_at: string | null;
   /** Assigned member ids (empty = up for grabs). */
   assignees: string[];
   done: DoneClaim[];
-  /** Pool entries somebody finished a part of. */
+  /** Pool entries somebody finished a part of, or completions of a repeatable task. */
   doneCount: number;
 }
 
@@ -40,9 +46,12 @@ interface EditDraft {
   color: PoolColor;
   reward: number;
   reward_mode: RewardMode;
+  is_repeatable: boolean;
   assignees: string[];
   schedule: ScheduleDraft;
 }
+
+type TaskType = 'once' | 'recurring' | 'repeatable';
 
 /**
  * "Aufgaben verwalten" (parents only) — design/prototypes/fuxis-plan-aufgabenverwaltung.html
@@ -78,7 +87,7 @@ export class TaskAdmin {
         supabase
           .from('tasks')
           .select(
-            'id, title, emoji, color, reward, reward_mode, schedule, start_date, repeat_every, weekdays, month_day, month, archived_at',
+            'id, title, emoji, color, reward, reward_mode, is_repeatable, schedule, start_date, repeat_every, weekdays, month_day, month, archived_at',
           )
           .order('created_at', { ascending: false }),
         supabase
@@ -105,7 +114,7 @@ export class TaskAdmin {
           ...task,
           assignees: (assignees.data ?? []).filter((a) => a.task_id === task.id).map((a) => a.member_id),
           done,
-          doneCount: new Set(done.map((c) => c.occurrence_id)).size,
+          doneCount: new Set(done.map((c) => c.occurrence_id ?? c.id)).size,
         };
       }) satisfies ManagedTask[];
     },
@@ -150,6 +159,7 @@ export class TaskAdmin {
       color: task.color,
       reward: task.reward,
       reward_mode: task.reward_mode,
+      is_repeatable: task.is_repeatable,
       assignees: [...task.assignees],
       schedule: scheduleDraftFrom(task),
     });
@@ -168,21 +178,42 @@ export class TaskAdmin {
     this.patch({ schedule });
   }
 
+  protected setType(draft: EditDraft, type: TaskType): void {
+    this.patch({
+      is_repeatable: type === 'repeatable',
+      // A repeatable task keeps its schedule, in case it's switched back later.
+      schedule: type === 'repeatable' ? draft.schedule : { ...draft.schedule, recurring: type === 'recurring' },
+    });
+  }
+
+  protected type(task: ManagedTask): TaskType {
+    if (task.is_repeatable) {
+      return 'repeatable';
+    }
+    return task.schedule === 'once' ? 'once' : 'recurring';
+  }
+
+  protected draftType(draft: EditDraft): TaskType {
+    return draft.is_repeatable ? 'repeatable' : draft.schedule.recurring ? 'recurring' : 'once';
+  }
+
   protected async save(task: ManagedTask): Promise<void> {
     const draft = this.draft();
     if (!draft || !draft.title.trim()) {
       return;
     }
 
+    // Repeatable tasks are done by one member at a time: no sharing; assignees are left as they were.
     this.saving.set(true);
     const error = await this.pool.updateTask(task.id, {
       title: draft.title.trim(),
       emoji: draft.emoji,
       color: draft.color,
       reward: draft.reward,
-      reward_mode: draft.reward_mode,
+      reward_mode: draft.is_repeatable ? 'each' : draft.reward_mode,
+      is_repeatable: draft.is_repeatable,
       ...toScheduleParams(draft.schedule),
-    }, {
+    }, draft.is_repeatable ? { add: [], remove: [] } : {
       add: draft.assignees.filter((id) => !task.assignees.includes(id)),
       remove: task.assignees.filter((id) => !draft.assignees.includes(id)),
     });
@@ -210,7 +241,7 @@ export class TaskAdmin {
   }
 
   protected label(task: ManagedTask): string {
-    return scheduleLabel(task);
+    return task.is_repeatable ? 'Beliebig oft am Tag' : scheduleLabel(task);
   }
 
   /** "Mia, Ben" in family order. */

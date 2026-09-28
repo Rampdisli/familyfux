@@ -4,6 +4,10 @@ Offene Punkte aus der Arbeit am Bereich „Essen“ (Branch `Essen`).
 
 ## Offen
 
+- [ ] **Migration auf Supabase ausführen:** `supabase/migrations/20260929100000_repeatable_tasks.sql`
+      (wiederholbare Aufgaben „Immer wieder“, Branch `feature/wiederholbare-aufgaben`). Ohne sie
+      lädt der Aufgaben-Pool nicht. Rückwärtskompatibel: die bisherige App läuft damit weiter.
+
 - [ ] **Rezepte bearbeiten und löschen** — zurückgestellt. Braucht ein Bearbeiten-Formular
       (Basis: `/essen/neu`) und in Supabase eine Delete-Policy samt Grant für `recipes`.
 - [ ] **Idee (nicht beauftragt):** Rezept-Import liest Titel, Bild und Zutaten automatisch aus

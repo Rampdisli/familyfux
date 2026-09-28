@@ -1,0 +1,57 @@
+<div class="tc-head">
+  <div class="tc-icon tile-{{ task().color }}">{{ task().emoji }}</div>
+  <div class="counter" [class.zero]="task().today.length === 0" aria-live="polite">
+    <b>{{ task().today.length }}×</b> heute
+  </div>
+</div>
+
+<div class="tc-name">{{ task().title }}</div>
+<div class="tc-reward">+{{ task().reward }} ⭐ pro Mal</div>
+
+@if (doers().length) {
+  <div class="doers" [attr.aria-label]="'Heute erledigt von ' + doers().length + ' Mal'">
+    @for (d of doers(); track d.completion.id) {
+      <span class="doer av-{{ d.member?.color ?? 'peach' }}" [title]="d.member?.name ?? 'Ehemaliges Mitglied'">
+        {{ d.member?.emoji ?? '❔' }}
+      </span>
+    }
+  </div>
+}
+
+<div class="actions">
+  <button type="button" class="done-btn" (click)="pickerOpen.set(true)">
+    @if (cheer(); as name) {
+      +{{ task().reward }} ⭐ für {{ name }}!
+    } @else {
+      ✓ Erledigt!
+    }
+  </button>
+  @if (last(); as l) {
+    <button
+      type="button"
+      class="undo"
+      [title]="'Letzte Erledigung (' + (l.member?.name ?? 'Ehemaliges Mitglied') + ') rückgängig machen'"
+      [attr.aria-label]="'Letzte Erledigung von ' + (l.member?.name ?? 'Ehemaliges Mitglied') + ' rückgängig machen'"
+      (click)="undo()"
+    >
+      ↩︎
+    </button>
+  }
+</div>
+
+@if (pickerOpen()) {
+  <div class="picker">
+    <div class="p-head">
+      <span class="p-title">Wer hat’s gemacht?</span>
+      <button type="button" class="p-close" aria-label="Schließen" (click)="pickerOpen.set(false)">×</button>
+    </div>
+    <div class="p-list">
+      @for (member of pool.family(); track member.id) {
+        <button type="button" class="p-opt" (click)="complete(member.id)">
+          <span class="av av-{{ member.color }}">{{ member.emoji }}</span>
+          {{ member.name }}
+        </button>
+      }
+    </div>
+  </div>
+}

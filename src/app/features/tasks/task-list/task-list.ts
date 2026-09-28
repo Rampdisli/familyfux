@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { RepeatableCard } from '../repeatable-card/repeatable-card';
 import { TaskCard } from '../task-card/task-card';
 import { TaskPool, formatStars } from '../task-pool';
 
@@ -8,7 +9,7 @@ const DONE_VISIBLE_MS = 60_000;
 
 @Component({
   selector: 'app-task-list',
-  imports: [RouterLink, TaskCard],
+  imports: [RepeatableCard, RouterLink, TaskCard],
   templateUrl: './task-list.html',
   styleUrl: './task-list.scss',
 })
@@ -37,6 +38,20 @@ export class TaskList {
         onCleanup(() => clearTimeout(timer));
       }
     });
+
+    // The "3× heute" counters start again at midnight: reload then if the page is still open.
+    effect((onCleanup) => {
+      this.pool.repeatable();
+      const now = new Date();
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const timer = setTimeout(() => this.pool.data.reload(), midnight.getTime() - now.getTime() + 1000);
+      onCleanup(() => clearTimeout(timer));
+    });
+  }
+
+  /** "Immer wieder" button: jumps down to the repeatable tasks. */
+  protected jumpToRepeatable(section: HTMLElement): void {
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   protected stars(stars: number): string {
