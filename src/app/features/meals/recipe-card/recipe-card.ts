@@ -1,4 +1,5 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TaskPool } from '../../tasks/task-pool';
 import { Ingredient, Meals, Rating, Recipe, cssImage, ingredientLabel, recipeSource } from '../meals';
 
@@ -8,6 +9,7 @@ const VISIBLE_INGREDIENTS = 3;
 /** One recipe on "Was gibt's zu essen?": availability, 👍 / 👎 and "Das will ich!". */
 @Component({
   selector: 'app-recipe-card',
+  imports: [RouterLink],
   templateUrl: './recipe-card.html',
   styleUrl: './recipe-card.scss',
   host: {
@@ -24,6 +26,11 @@ export class RecipeCard {
   protected readonly source = recipeSource;
   protected readonly background = cssImage;
   protected readonly label = ingredientLabel;
+
+  /** Recipe details (image, name and ingredients open them). */
+  protected readonly detailLink = computed(() => ['/essen/rezept', this.recipe().id]);
+  /** Tells the details they were opened from the list, so closing goes back in the history. */
+  protected readonly fromList = { fromList: true };
 
   /** Ingredients that differ from the original recipe (changed, added, left out). */
   protected readonly deviations = computed(

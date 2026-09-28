@@ -62,6 +62,7 @@ export function ingredientLabel(ingredient: Ingredient, original = false): strin
 
 export interface Recipe extends Omit<RecipeInput, 'ingredients'> {
   id: string;
+  created_at: string;
   /** In recipe order, left-out ones included. */
   ingredients: Ingredient[];
   /** Planned meals up to today (recipe_stats). */
@@ -149,7 +150,7 @@ export class Meals {
         supabase
           .from('recipes')
           .select(
-            'id, title, url, image_url, ingredients_available, ' +
+            'id, title, url, image_url, ingredients_available, created_at, ' +
               'recipe_ingredients(id, position, quantity, name, original_quantity, original_name, status)',
           )
           .order('title')
@@ -169,7 +170,7 @@ export class Meals {
       const ratingRows = ratings.data ?? [];
       const wishRows = wishes.data ?? [];
 
-      type RecipeRow = Omit<RecipeInput, 'ingredients'> & { id: string; recipe_ingredients: Ingredient[] };
+      type RecipeRow = Omit<RecipeInput, 'ingredients'> & { id: string; created_at: string; recipe_ingredients: Ingredient[] };
       return ((recipes.data ?? []) as unknown as RecipeRow[]).map(
         ({ recipe_ingredients, ...r }): Recipe => ({
           ...r,
@@ -312,6 +313,16 @@ export class Meals {
     );
   }
 
+  /**
+   * "Heute gekocht" in the recipe details: puts the recipe on today's lunch or
+   * dinner (replacing what was planned there), without a wisher.
+   */
+  cookedToday(day: string, meal: MealSlot, recipeId: string): Promise<string | null> {
+    return this.writeResult(
+      supabase.rpc('plan_meal', { p_day: day, p_meal: meal, p_recipe_id: recipeId, p_member_id: null }),
+    );
+  }
+
   removeMeal(meal: PlannedMeal): Promise<void> {
     return this.write(supabase.from('meals').delete().eq('id', meal.id), true);
   }
@@ -325,6 +336,14 @@ export class Meals {
         : wishers.insert({ meal_id: meal.id, member_id: memberId }),
       true,
     );
+  }
+
+  /** Like write(), for a dialog that shows the error itself: resolves to the error message, if any. */
+  private async writeResult(query: PromiseLike<{ error: { message: string } | null }>): Promise<string | null> {
+    const { error } = await query;
+    this.weekData.reload();
+    this.recipesData.reload();
+    return error?.message ?? null;
   }
 
   /** Runs a write, shows its error above the page and reloads what it touched. */

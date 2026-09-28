@@ -32,3 +32,6 @@ Offene Punkte aus der Arbeit am Bereich „Essen“ (Branch `Essen`).
       Originalrezept (geändert / ergänzt / weggelassen)
 - [x] Eltern können erledigte Aufgaben aus dem Verlauf einer Person löschen (Fortschrittsseite);
       Migration `supabase/migrations/20260929130000_remove_done_entries.sql`
+- [x] Rezept-Detailansicht (`/essen/rezept/:id`): Handy Vollbild, Tablet/Desktop Overlay; Zutaten
+      mit Abweichungen, geplante und gekochte Termine, wer's mag (seit wann); Migration
+      `supabase/migrations/20260929140000_recipe_ratings_rated_at.sql` ausgeführt

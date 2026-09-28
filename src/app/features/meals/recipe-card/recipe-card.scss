@@ -22,6 +22,21 @@
   justify-content: center;
 }
 
+/* The whole picture opens the details; badges and buttons sit on top of it. */
+.r-image-link {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 3px solid var(--orange);
+    outline-offset: -3px;
+  }
+}
+
 .r-placeholder {
   font-size: 44px;
 }
@@ -32,6 +47,12 @@
   position: absolute;
   font-size: 10.5px;
   font-weight: 700;
+}
+
+/* Labels on the picture let clicks through to the details link underneath. */
+.source-badge,
+.cook-count {
+  pointer-events: none;
 }
 
 .source-badge {
@@ -104,6 +125,15 @@
   font-weight: 600;
   font-size: 15.5px;
   line-height: 1.25;
+
+  a {
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+      color: var(--orange-deep);
+    }
+  }
 }
 
 .r-ingredients {
@@ -113,6 +143,7 @@
 }
 
 .ing-chip {
+  text-decoration: none;
   background: var(--cream);
   padding: 4px 9px;
   border-radius: 8px;
