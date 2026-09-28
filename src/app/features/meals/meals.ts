@@ -12,7 +12,7 @@ export const MEAL_SLOTS: readonly { slot: MealSlot; icon: string; label: string 
   { slot: 'dinner', icon: '🌙', label: 'Abend' },
 ];
 
-/** Meals per day × days shown in the week plan (and counted for the nav badge). */
+/** Days shown per week in the week plan. */
 export const DAYS_PER_WEEK = 7;
 
 /** How many weeks ahead the week plan goes. */
@@ -234,30 +234,6 @@ export class Meals {
     },
   });
 
-  /** Meals planned from today on for the next seven days (nav badge: the rest is still open). */
-  private readonly upcoming = resource({
-    params: () => ({ userId: this.auth.user()?.id }),
-    loader: async ({ params }) => {
-      if (!params.userId) {
-        return 0;
-      }
-      const { count, error } = await supabase
-        .from('meals')
-        .select('id', { count: 'exact', head: true })
-        .gte('day', isoDate(today()))
-        .lte('day', isoDate(addDays(today(), DAYS_PER_WEEK - 1)));
-      if (error) {
-        throw new Error(error.message, { cause: error });
-      }
-      return count ?? 0;
-    },
-  });
-
-  /** Lunches and dinners of the coming seven days nobody has planned yet. */
-  readonly openMealCount = computed(() =>
-    this.upcoming.hasValue() ? DAYS_PER_WEEK * MEAL_SLOTS.length - this.upcoming.value() : 0,
-  );
-
   recipe(id: string): Recipe | undefined {
     return this.recipes().find((r) => r.id === id);
   }
@@ -363,7 +339,6 @@ export class Meals {
     // Reload in any case: shows the change, or reverts it on error.
     if (plan) {
       this.weekData.reload();
-      this.upcoming.reload();
     }
     // Planned meals change how often a recipe was cooked.
     this.recipesData.reload();
