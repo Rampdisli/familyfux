@@ -3,9 +3,9 @@ import { RouterLink } from '@angular/router';
 import { supabase } from '../../core/supabase-client';
 import { PoolClaim, PoolColor, TaskPool, formatStars } from '../tasks/task-pool';
 
-/** A finished occurrence with its task's title / emoji / colour. */
+/** A finished entry (claim_rewards row) with its task's title / emoji / colour. */
 interface DoneTask {
-  /** Occurrence id. */
+  /** The finished part (task_claims) or completion of a repeatable task (task_completions). */
   id: string;
   title: string;
   emoji: string;
@@ -75,6 +75,11 @@ export class Progress {
   /** The card being ticked off fades out before the pool reloads without it. */
   protected readonly leaving = signal<string | null>(null);
 
+  /** History entry whose delete button was clicked once (the second click removes it). */
+  protected readonly removeArmed = signal<string | null>(null);
+  protected readonly removing = signal<string | null>(null);
+  protected readonly removeError = signal<string | null>(null);
+
   /** "Mias", "Klaus'" — German genitive for the page title. */
   protected readonly possessive = computed(() => {
     const name = this.member()?.name ?? '';
@@ -115,7 +120,8 @@ export class Progress {
       }
 
       const byId = new Map((tasks.data as (Pick<DoneTask, 'title' | 'emoji' | 'color'> & { id: string })[]).map((t) => [t.id, t]));
-      return rows.map(({ task_id, stars, ...claim }) => ({ ...claim, ...byId.get(task_id)!, stars: Number(stars) }));
+      // Task fields first: the entry's own id must win over the task's.
+      return rows.map(({ task_id, stars, ...claim }) => ({ ...byId.get(task_id)!, ...claim, stars: Number(stars) }));
     },
   });
 
@@ -214,6 +220,30 @@ export class Progress {
     await new Promise((resolve) => setTimeout(resolve, 220));
     await this.pool.toggleDone(claim);
     this.leaving.set(null);
+  }
+
+  /**
+   * Parents only: first click arms the button, the second removes the entry
+   * from the history (and its stars); the task itself stays done.
+   */
+  protected async remove(task: DoneTask): Promise<void> {
+    if (this.removeArmed() !== task.id) {
+      this.removeArmed.set(task.id);
+      return;
+    }
+
+    this.removeArmed.set(null);
+    this.removing.set(task.id);
+    this.removeError.set(null);
+
+    const { data, error } = await supabase.rpc('remove_done_entry', { p_id: task.id });
+    if (error || !data) {
+      this.removeError.set(error?.message ?? 'Der Eintrag ist schon weg, oder du darfst ihn nicht löschen.');
+    }
+
+    // Reloads the week stars, and this page's history with them.
+    this.pool.data.reload();
+    this.removing.set(null);
   }
 
   protected setRange(range: Range): void {

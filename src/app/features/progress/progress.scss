@@ -406,6 +406,35 @@
   white-space: nowrap;
 }
 
+.task-row.removing {
+  opacity: 0.5;
+}
+
+/* Parents only; first click turns it into "Löschen?", the second removes. */
+.t-remove {
+  flex-shrink: 0;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 12px;
+  background: var(--cream);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--cream-deep);
+  }
+
+  &.confirm {
+    background: var(--danger);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+}
+
 @media (max-width: 700px) {
   .stat-row {
     gap: 8px;

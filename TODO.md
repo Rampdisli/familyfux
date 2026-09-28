@@ -30,3 +30,5 @@ Offene Punkte aus der Arbeit am Bereich „Essen“ (Branch `Essen`).
       `supabase/migrations/20260929110000_recipe_images.sql` ausgeführt
 - [x] Zutaten mit Menge und Zutat in getrennten Feldern (`recipe_ingredients`) und Abweichungen vom
       Originalrezept (geändert / ergänzt / weggelassen)
+- [x] Eltern können erledigte Aufgaben aus dem Verlauf einer Person löschen (Fortschrittsseite);
+      Migration `supabase/migrations/20260929130000_remove_done_entries.sql`
