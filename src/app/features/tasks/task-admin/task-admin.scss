@@ -168,6 +168,11 @@
     color: var(--mint-deep);
   }
 
+  &.repeatable {
+    background: #fff3d6;
+    color: #a0680a;
+  }
+
   &.deleted-badge {
     background: #fbe4df;
     color: var(--danger);

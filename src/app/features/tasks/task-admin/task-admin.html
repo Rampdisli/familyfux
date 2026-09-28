@@ -48,17 +48,19 @@
                 </div>
               </div>
 
-              <div class="edit-field">
-                <span class="f-label">Wenn mehrere mitmachen</span>
-                <div class="segmented" role="group" aria-label="Sterne verteilen">
-                  <button type="button" [class.active]="d.reward_mode === 'each'" (click)="patch({ reward_mode: 'each' })">
-                    Jeder bekommt {{ d.reward }} ⭐
-                  </button>
-                  <button type="button" [class.active]="d.reward_mode === 'split'" (click)="patch({ reward_mode: 'split' })">
-                    {{ d.reward }} ⭐ werden geteilt
-                  </button>
+              @if (!d.is_repeatable) {
+                <div class="edit-field">
+                  <span class="f-label">Wenn mehrere mitmachen</span>
+                  <div class="segmented" role="group" aria-label="Sterne verteilen">
+                    <button type="button" [class.active]="d.reward_mode === 'each'" (click)="patch({ reward_mode: 'each' })">
+                      Jeder bekommt {{ d.reward }} ⭐
+                    </button>
+                    <button type="button" [class.active]="d.reward_mode === 'split'" (click)="patch({ reward_mode: 'split' })">
+                      {{ d.reward }} ⭐ werden geteilt
+                    </button>
+                  </div>
                 </div>
-              </div>
+              }
 
               <div class="edit-field">
                 <span class="f-label">Symbol</span>
@@ -93,24 +95,35 @@
                 </div>
               </div>
 
-              <div class="edit-field">
-                <span class="f-label">Zuweisen (optional)</span>
-                <app-member-picker [selected]="d.assignees" (selectedChange)="patch({ assignees: $event })" />
-              </div>
+              @if (!d.is_repeatable) {
+                <div class="edit-field">
+                  <span class="f-label">Zuweisen (optional)</span>
+                  <app-member-picker [selected]="d.assignees" (selectedChange)="patch({ assignees: $event })" />
+                </div>
+              }
 
               <label class="edit-field">
                 <span class="f-label">Aufgabentyp</span>
-                <select
-                  (change)="setScheduleDraft({ ...d.schedule, recurring: $any($event.target).value === 'recurring' })"
-                >
-                  <option value="once" [selected]="!d.schedule.recurring">Einmalig</option>
-                  <option value="recurring" [selected]="d.schedule.recurring">Wiederkehrend</option>
+                <select (change)="setType(d, $any($event.target).value)">
+                  <option value="once" [selected]="draftType(d) === 'once'">Einmalig</option>
+                  <option value="recurring" [selected]="draftType(d) === 'recurring'">Wiederkehrend</option>
+                  <option value="repeatable" [selected]="draftType(d) === 'repeatable'">Immer wieder (beliebig oft am Tag)</option>
                 </select>
               </label>
 
-              <app-schedule-editor [draft]="d.schedule" (draftChange)="setScheduleDraft($event)" />
+              @if (d.is_repeatable) {
+                <p class="edit-note">
+                  Steht immer im Bereich „Immer wieder“ und kann beliebig oft am Tag abgehakt werden — jedes Mal bekommt
+                  die gewählte Person {{ d.reward }} ⭐.
+                  @if (type(task) !== 'repeatable') {
+                    Ein offener Eintrag im Pool verschwindet dabei.
+                  }
+                </p>
+              } @else {
+                <app-schedule-editor [draft]="d.schedule" (draftChange)="setScheduleDraft($event)" />
+              }
 
-              @if (d.schedule.recurring) {
+              @if (!d.is_repeatable && d.schedule.recurring) {
                 <p class="edit-note">
                   Ein offener Eintrag im Pool richtet sich sofort nach der neuen Wiederholung. Bereits erledigte
                   bleiben im Verlauf, wie sie waren.
@@ -130,9 +143,17 @@
               <div class="t-main">
                 <div class="t-name">
                   {{ task.title }}
-                  <span class="t-badge" [class.recurring]="task.schedule !== 'once'">
-                    {{ task.schedule === 'once' ? 'Einmalig' : 'Wiederkehrend' }}
-                  </span>
+                  @switch (type(task)) {
+                    @case ('repeatable') {
+                      <span class="t-badge repeatable">🔁 Immer wieder</span>
+                    }
+                    @case ('recurring') {
+                      <span class="t-badge recurring">Wiederkehrend</span>
+                    }
+                    @default {
+                      <span class="t-badge">Einmalig</span>
+                    }
+                  }
                   @if (task.archived_at) {
                     <span class="t-badge deleted-badge">Gelöscht</span>
                   }
@@ -147,7 +168,9 @@
               </div>
               <div class="t-reward">
                 +{{ task.reward }} ⭐
-                <span class="t-mode">{{ task.reward_mode === 'split' ? 'geteilt' : 'für jeden' }}</span>
+                <span class="t-mode">
+                  {{ task.is_repeatable ? 'pro Mal' : task.reward_mode === 'split' ? 'geteilt' : 'für jeden' }}
+                </span>
               </div>
               <div class="t-actions">
                 @if (task.archived_at) {

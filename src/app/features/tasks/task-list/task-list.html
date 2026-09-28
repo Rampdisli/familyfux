@@ -31,12 +31,17 @@
           <h1>Aufgaben-Pool</h1>
           <span>frei für alle — nimm dir, was dir liegt</span>
         </div>
-        @if (pool.isParent()) {
-          <div class="pool-actions">
+        <div class="pool-actions">
+          @if (pool.repeatable().length) {
+            <button type="button" class="jump-repeatable" (click)="jumpToRepeatable(repeatableSection)">
+              🔁 Immer wieder
+            </button>
+          }
+          @if (pool.isParent()) {
             <a routerLink="/aufgaben" class="manage-tasks">Verwalten</a>
             <a routerLink="/tasks/neu" class="new-task">+ Neue Aufgabe</a>
-          </div>
-        }
+          }
+        </div>
       </div>
 
       @if (visibleTasks().length === 0) {
@@ -50,6 +55,24 @@
           }
         </div>
       }
+    </section>
+
+    <section id="immer-wieder" class="repeatable-section" #repeatableSection [hidden]="!pool.repeatable().length">
+      <div class="pool-head">
+        <div class="section-title">
+          <div class="section-icon" aria-hidden="true">🔁</div>
+          <div>
+            <h2>Immer wieder</h2>
+            <span>so oft es anfällt — jedes Mal gibt’s Sterne</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pool-grid">
+        @for (task of pool.repeatable(); track task.id) {
+          <app-repeatable-card [task]="task" />
+        }
+      </div>
     </section>
   }
 </div>

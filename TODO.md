@@ -18,3 +18,6 @@ Offene Punkte aus der Arbeit am Bereich „Essen“ (Branch `Essen`).
 - [x] Rezepte werden erst ausgeblendet, wenn mehr als die Hälfte der Familie 👎 gibt
 - [x] Migration `supabase/migrations/20260929090000_meals.sql` auf Supabase (Projekt `familyfux`)
       ausgeführt, als Version `20260929090000` registriert
+- [x] Wiederholbare Aufgaben „Immer wieder“ umgesetzt; Migration
+      `supabase/migrations/20260929100000_repeatable_tasks.sql` auf Supabase ausgeführt,
+      als Version `20260929100000` registriert
