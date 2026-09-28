@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuxis Plan — Rezepte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FCEFE3;
+    --cream-deep: #F7E3CF;
+    --orange: #E8703C;
+    --orange-deep: #C85A2C;
+    --amber: #F6B93B;
+    --brown: #5A3423;
+    --brown-soft: #8A6250;
+    --brown-muted: #B39C8C;
+    --mint: #B8E6C4;
+    --mint-deep: #4FA868;
+    --lilac: #DCC6F2;
+    --sky: #BFE3F5;
+    --rose: #F5C6CE;
+    --shadow-warm: rgba(90, 52, 35, 0.16);
+    --danger: #D2543E;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(160deg, #FDF5EC 0%, var(--cream) 60%, var(--cream-deep) 100%);
+    color: var(--brown);
+  }
+
+  .board {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 30px 34px 50px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; }
+  .back-link { font-size: 13.5px; font-weight: 600; color: var(--brown-soft); text-decoration: none; }
+
+  .subnav {
+    display: flex; gap: 4px;
+    background: #fff; padding: 5px; border-radius: 14px;
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+
+  .subnav a {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 16px; border-radius: 10px;
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13px;
+    color: var(--brown-soft); text-decoration: none;
+  }
+
+  .subnav a.active { background: var(--orange); color: #fff; }
+
+  .page-head h1 { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 26px; }
+  .page-head p { font-size: 13.5px; color: var(--brown-soft); margin-top: 4px; }
+
+  /* ACTIVE PERSON SWITCHER */
+  .who-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    padding: 8px 8px 8px 14px;
+    border-radius: 16px;
+    box-shadow: 0 8px 18px var(--shadow-warm);
+    width: fit-content;
+  }
+
+  .who-row .who-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brown-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .who-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    cursor: pointer;
+    border: 2.5px solid transparent;
+    opacity: 0.55;
+  }
+
+  .who-avatar.active {
+    border-color: var(--brown);
+    opacity: 1;
+    transform: scale(1.06);
+  }
+
+  /* FILTER / SORT ROW */
+  .filter-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+  .filter-tabs {
+    display: flex; gap: 4px;
+    background: #fff; padding: 5px; border-radius: 14px;
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+
+  .filter-tabs button {
+    border: none; background: transparent;
+    padding: 9px 16px; border-radius: 10px;
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13px;
+    color: var(--brown-soft); cursor: pointer;
+  }
+
+  .filter-tabs button.active { background: var(--orange); color: #fff; }
+
+  .right-controls { display: flex; align-items: center; gap: 10px; }
+
+  .sort-select {
+    border: none;
+    background: #fff;
+    padding: 11px 14px;
+    border-radius: 14px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--brown);
+    box-shadow: 0 8px 18px var(--shadow-warm);
+    cursor: pointer;
+  }
+
+  .import-link {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--orange); color: #fff;
+    padding: 11px 18px; border-radius: 14px;
+    font-weight: 700; font-size: 13.5px;
+    text-decoration: none;
+    box-shadow: 0 14px 26px -12px rgba(232,112,60,0.55);
+    white-space: nowrap;
+  }
+
+  /* RECIPE GRID */
+  .recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+
+  .recipe-card {
+    background: #fff;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 16px 32px -18px var(--shadow-warm);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .recipe-card.missing .r-image { filter: saturate(0.5) brightness(1.05); }
+
+  .r-image {
+    position: relative;
+    height: 140px;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .source-badge {
+    position: absolute;
+    top: 10px; left: 10px;
+    background: rgba(255,255,255,0.92);
+    padding: 5px 10px;
+    border-radius: 9px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--brown-soft);
+  }
+
+  .avail-toggle {
+    position: absolute;
+    top: 10px; right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.92);
+    padding: 6px 10px 6px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--brown-soft);
+  }
+
+  .avail-toggle .dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--cream-deep);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    color: transparent;
+  }
+
+  .avail-toggle.on { color: var(--mint-deep); }
+  .avail-toggle.on .dot { background: var(--mint-deep); color: #fff; }
+
+  .cook-count {
+    position: absolute;
+    bottom: 10px; left: 10px;
+    background: rgba(90,52,35,0.55);
+    color: #fff;
+    padding: 4px 9px;
+    border-radius: 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+    backdrop-filter: blur(2px);
+  }
+
+  .r-body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .r-title {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 15.5px;
+    line-height: 1.25;
+  }
+
+  .r-ingredients { display: flex; flex-wrap: wrap; gap: 5px; }
+
+  .ing-chip {
+    background: var(--cream);
+    padding: 4px 9px;
+    border-radius: 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--brown-soft);
+  }
+
+  .ing-chip.more { background: transparent; color: var(--brown-muted); padding-left: 2px; }
+
+  .r-social {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 26px;
+  }
+
+  .up-avatars { display: flex; align-items: center; }
+
+  .up-avatar {
+    width: 25px; height: 25px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12.5px;
+    border: 2px solid #fff;
+    margin-left: -8px;
+  }
+  .up-avatar:first-child { margin-left: 0; }
+
+  .no-votes { font-size: 11.5px; color: var(--brown-muted); }
+
+  .rate-btns { display: flex; gap: 5px; }
+
+  .rate-btn {
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    border: none;
+    background: var(--cream);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .rate-btn.up.selected { background: var(--mint-deep); }
+  .rate-btn.down.selected { background: var(--danger); }
+
+  .r-wishers { display: flex; align-items: center; gap: 6px; min-height: 22px; }
+  .wisher-avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; border: 2px solid #fff; margin-left: -8px;
+  }
+  .wisher-avatar:first-child { margin-left: 0; }
+
+  .picker-panel {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--cream);
+    border-radius: 12px;
+    padding: 10px;
+  }
+  .picker-panel.open { display: flex; }
+  .picker-panel .p-title { font-size: 10.5px; font-weight: 700; color: var(--brown-soft); text-transform: uppercase; }
+  .picker-opt {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; border: none;
+    padding: 7px 9px; border-radius: 10px;
+    font-weight: 600; font-size: 12.5px;
+    cursor: pointer; text-align: left;
+  }
+  .picker-opt .av { width: 22px; height: 22px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size: 11px; }
+  .picker-opt.active { outline: 2px solid var(--mint-deep); }
+
+  .r-footer { margin-top: auto; display: flex; gap: 8px; }
+
+  .r-link {
+    display: flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px; border-radius: 12px;
+    background: var(--cream); color: var(--brown-soft);
+    text-decoration: none; font-size: 14px; flex-shrink: 0;
+  }
+
+  .want-btn {
+    flex: 1; border: none; border-radius: 12px;
+    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 13px;
+    cursor: pointer; background: var(--orange); color: #fff;
+  }
+  .want-btn.disabled { background: var(--cream); color: var(--brown-muted); cursor: not-allowed; }
+  .want-btn.wished { background: var(--mint-deep); color: #fff; }
+
+  .add-card {
+    border: 2.5px dashed rgba(90,52,35,0.25);
+    border-radius: 22px;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    gap: 8px; min-height: 260px;
+    color: var(--brown-soft); font-weight: 600; font-size: 14px;
+    text-decoration: none; text-align: center; padding: 20px;
+  }
+  .add-card .plus {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--orange);
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+
+  /* HIDDEN / NOT SUGGESTED SECTION */
+  .hidden-section {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 12px 26px -18px var(--shadow-warm);
+    overflow: hidden;
+  }
+
+  .hidden-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px;
+    cursor: pointer;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 14.5px;
+    color: var(--brown-soft);
+  }
+
+  .hidden-toggle .chevron { transition: transform 0.2s ease; font-size: 12px; }
+  .hidden-section.open .chevron { transform: rotate(180deg); }
+
+  .hidden-list { display: none; padding: 0 18px 18px; flex-direction: column; gap: 10px; }
+  .hidden-section.open .hidden-list { display: flex; }
+
+  .hidden-item {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--cream);
+    border-radius: 14px;
+    padding: 10px 12px;
+  }
+
+  .hidden-item .hi-icon { width: 38px; height: 38px; border-radius: 11px; background-size: cover; background-position: center; flex-shrink: 0; }
+  .hidden-item .hi-name { font-weight: 600; font-size: 13.5px; flex: 1; }
+  .hidden-item .hi-votes { font-size: 11.5px; color: var(--brown-soft); }
+  .hidden-item .hi-restore {
+    border: none; background: #fff; padding: 7px 12px; border-radius: 10px;
+    font-weight: 700; font-size: 11.5px; color: var(--orange-deep); cursor: pointer;
+  }
+
+  /* FUXI STRIP */
+  .wishes-strip {
+    background: #fff; border-radius: 24px; padding: 16px 22px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 16px 32px -18px var(--shadow-warm);
+  }
+  .wishes-strip img { width: 46px; height: 46px; object-fit: contain; }
+  .wishes-strip .msg { font-size: 14px; font-weight: 500; line-height: 1.4; flex: 1; }
+  .wishes-strip .msg b { font-family: 'Fredoka', sans-serif; color: var(--orange-deep); }
+
+  @media (max-width: 900px) {
+    .recipe-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .recipe-grid { grid-template-columns: 1fr; }
+    .filter-row { flex-direction: column; align-items: stretch; }
+    .right-controls { justify-content: space-between; }
+  }
+</style>
+</head>
+<body>
+
+<div class="board">
+
+  <div class="topbar">
+    <a class="back-link" href="#">← Zurück zum Familien-Board</a>
+    <div class="subnav">
+      <a href="fuxis-plan-mahlzeiten.html" class="active">🍽️ Rezepte</a>
+      <a href="fuxis-plan-wochenplan.html">📅 Wochenplan</a>
+    </div>
+  </div>
+
+  <div class="page-head">
+    <h1>Was gibt's zu essen?</h1>
+    <p>Wähle aus den Rezepten, auf die du Lust hast</p>
+  </div>
+
+  <div class="who-row" id="whoRow">
+    <div class="who-label">Ich bin:</div>
+  </div>
+
+  <div class="filter-row">
+    <div class="filter-tabs" id="filterTabs">
+      <button class="active" data-filter="alle">Alle Rezepte</button>
+      <button data-filter="vorhanden">Zutaten vorhanden</button>
+    </div>
+    <div class="right-controls">
+      <select class="sort-select" id="sortSelect">
+        <option value="smart">Verfügbarkeit + Beliebtheit</option>
+        <option value="cooked">Zuletzt gekocht</option>
+        <option value="alpha">Alphabetisch</option>
+      </select>
+      <a class="import-link" href="#">+ Rezept importieren</a>
+    </div>
+  </div>
+
+  <div class="recipe-grid" id="recipeGrid"></div>
+
+  <div class="hidden-section" id="hiddenSection">
+    <div class="hidden-toggle" id="hiddenToggle">
+      <span id="hiddenTitle">Nicht mehr vorgeschlagen (0)</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="hidden-list" id="hiddenList"></div>
+  </div>
+
+  <div class="wishes-strip">
+    <img src="fuxi-mascot.png" alt="Fuxi">
+    <div class="msg" id="wishesMsg">Noch niemand hat sich heute etwas gewünscht.</div>
+  </div>
+
+</div>
+
+<script>
+  const people = {
+    mia: { name: 'Mia', icon: '🦊', bg: 'var(--mint)' },
+    ben: { name: 'Ben', icon: '🐻', bg: 'var(--lilac)' },
+    papa: { name: 'Papa', icon: '🦉', bg: 'var(--sky)' },
+    mama: { name: 'Mama', icon: '🐰', bg: 'var(--rose)' },
+  };
+
+  let activePerson = 'mia';
+
+  let recipes = [
+    {
+      id: 'r1', title: 'Spaghetti Bolognese', source: 'Fooby',
+      image: 'https://recipecontent.fooby.ch/16042_3-2_1200-800.jpg',
+      link: 'https://fooby.ch/de/rezepte/16042/spaghetti-bolognese',
+      ingredients: ['Hackfleisch', 'Tomaten', 'Zwiebel', 'Spaghetti', 'Olivenöl', 'Karotte'],
+      available: true, wishers: [], cookCount: 12, lastCookedDaysAgo: 6,
+      ratings: { mia: 'up', ben: 'up', papa: 'up', mama: 'up' },
+    },
+    {
+      id: 'r2', title: 'Paprikacremesuppe', source: 'Cookidoo',
+      image: 'https://assets.tmecosys.com/image/upload/t_web_rdp_recipe_584x480/img/recipe/ras/Assets/45280123-BB6A-4FA2-BD47-339BDE6F5C5D/Derivates/728B4558-1C0B-4982-94AA-2452FAED173A.jpg',
+      link: 'https://cookidoo.ch/recipes/recipe/de-CH/r51857',
+      ingredients: ['Parmesan', 'Butter', 'Mehl', 'Paprika', 'Sahne'],
+      available: true, wishers: [], cookCount: 2, lastCookedDaysAgo: 18,
+      ratings: { mama: 'up', papa: 'up' },
+    },
+    {
+      id: 'r3', title: 'Griechischer Salat mit Pouletspiessen', source: 'Fooby',
+      image: 'https://recipecontent.fooby.ch/13210_3-2_1200-800.jpg',
+      link: '#',
+      ingredients: ['Pouletbrust', 'Gurke', 'Tomaten', 'Feta', 'Oliven', 'Peperoni'],
+      available: false, wishers: [], cookCount: 5, lastCookedDaysAgo: 30,
+      ratings: { mama: 'up', papa: 'up' },
+    },
+    {
+      id: 'r4', title: 'Kürbisrisotto', source: 'Cookidoo',
+      image: 'https://recipecontent.fooby.ch/22715_3-2_1200-800.jpg',
+      link: '#',
+      ingredients: ['Risotto-Reis', 'Kürbis', 'Zwiebel', 'Bouillon', 'Parmesan'],
+      available: true, wishers: [], cookCount: 3, lastCookedDaysAgo: 4,
+      ratings: { papa: 'up', mia: 'down', ben: 'down' },
+    },
+    {
+      id: 'r5', title: 'Chicken Nuggets mit Ofenpommes', source: 'Eigenes Rezept',
+      image: 'https://recipecontent.fooby.ch/23103_3-2_1200-800.jpg',
+      link: '#',
+      ingredients: ['Pouletbrust', 'Paniermehl', 'Kartoffeln', 'Ei'],
+      available: true, wishers: [], cookCount: 9, lastCookedDaysAgo: 2,
+      ratings: { mia: 'up', ben: 'up' },
+    },
+    {
+      id: 'r6', title: 'Käsespätzle', source: 'Fooby',
+      image: 'https://recipecontent.fooby.ch/19842_3-2_1200-800.jpg',
+      link: '#',
+      ingredients: ['Spätzle', 'Bergkäse', 'Zwiebel', 'Butter'],
+      available: false, wishers: [], cookCount: 1, lastCookedDaysAgo: 60,
+      ratings: { mia: 'up' },
+    },
+    {
+      id: 'r7', title: 'Linseneintopf', source: 'Eigenes Rezept',
+      image: 'https://recipecontent.fooby.ch/24439_3-2_1200-800.jpg',
+      link: '#',
+      ingredients: ['Linsen', 'Karotten', 'Sellerie', 'Bouillon'],
+      available: true, wishers: [], cookCount: 4, lastCookedDaysAgo: 40,
+      ratings: { mia: 'down', ben: 'down', papa: 'down' },
+    },
+  ];
+
+  let openPickerId = null;
+  let activeFilter = 'alle';
+  let sortMode = 'smart';
+
+  const grid = document.getElementById('recipeGrid');
+  const wishesMsg = document.getElementById('wishesMsg');
+  const whoRow = document.getElementById('whoRow');
+
+  function downCount(r) { return Object.values(r.ratings).filter(v => v === 'down').length; }
+  function upList(r) { return Object.entries(r.ratings).filter(([, v]) => v === 'up').map(([id]) => id); }
+  function isHidden(r) { return downCount(r) >= 3; }
+
+  function renderWhoRow() {
+    Object.entries(people).forEach(([id, p]) => {
+      if (whoRow.querySelector(`[data-who="${id}"]`)) return;
+      const el = document.createElement('div');
+      el.className = 'who-avatar' + (activePerson === id ? ' active' : '');
+      el.dataset.who = id;
+      el.style.background = p.bg;
+      el.textContent = p.icon;
+      el.title = p.name;
+      el.addEventListener('click', () => { activePerson = id; render(); });
+      whoRow.appendChild(el);
+    });
+    whoRow.querySelectorAll('.who-avatar').forEach(el => {
+      el.classList.toggle('active', el.dataset.who === activePerson);
+    });
+  }
+
+  function sortRecipes(list) {
+    const arr = list.slice();
+    if (sortMode === 'alpha') {
+      arr.sort((a, b) => a.title.localeCompare(b.title, 'de'));
+    } else if (sortMode === 'cooked') {
+      arr.sort((a, b) => b.lastCookedDaysAgo - a.lastCookedDaysAgo);
+    } else {
+      // smart: availability first, then cook count desc
+      arr.sort((a, b) => {
+        if (a.available !== b.available) return a.available ? -1 : 1;
+        return b.cookCount - a.cookCount;
+      });
+    }
+    return arr;
+  }
+
+  function render() {
+    renderWhoRow();
+    grid.innerHTML = '';
+
+    const active = recipes.filter(r => !isHidden(r));
+    let visible = active.filter(r => activeFilter === 'alle' || r.available);
+    visible = sortRecipes(visible);
+
+    visible.forEach(r => {
+      const card = document.createElement('div');
+      card.className = 'recipe-card' + (!r.available ? ' missing' : '');
+
+      const extraCount = r.ingredients.length - 3;
+      const ups = upList(r);
+      const upAvatars = ups.map(id => {
+        const p = people[id];
+        return `<div class="up-avatar" style="background:${p.bg}" title="${p.name} mag das">${p.icon}</div>`;
+      }).join('');
+
+      const myRating = r.ratings[activePerson];
+
+      const wishAvatars = r.wishers.map(id => {
+        const p = people[id];
+        return `<div class="wisher-avatar" style="background:${p.bg}">${p.icon}</div>`;
+      }).join('');
+
+      card.innerHTML = `
+        <div class="r-image" style="background-image:url('${r.image}')">
+          <div class="source-badge">${r.source}</div>
+          <div class="avail-toggle ${r.available ? 'on' : ''}" data-act="toggle-avail">
+            <div class="dot">✓</div> ${r.available ? 'Zutaten da' : 'Fehlt was'}
+          </div>
+          <div class="cook-count">${r.cookCount}× gekocht</div>
+        </div>
+        <div class="r-body">
+          <div class="r-title">${r.title}</div>
+          <div class="r-ingredients">
+            ${r.ingredients.slice(0, 3).map(i => `<span class="ing-chip">${i}</span>`).join('')}
+            ${extraCount > 0 ? `<span class="ing-chip more">+${extraCount} weitere</span>` : ''}
+          </div>
+          <div class="r-social">
+            ${ups.length ? `<div class="up-avatars">${upAvatars}</div>` : `<div class="no-votes">Noch keine Bewertung</div>`}
+            <div class="rate-btns">
+              <button class="rate-btn up ${myRating === 'up' ? 'selected' : ''}" data-act="rate" data-val="up" title="Gefällt mir">👍</button>
+              <button class="rate-btn down ${myRating === 'down' ? 'selected' : ''}" data-act="rate" data-val="down" title="Gefällt mir nicht">👎</button>
+            </div>
+          </div>
+          <div class="r-wishers">${wishAvatars}</div>
+          <div class="picker-panel" data-panel>
+            <div class="p-title">Wer wünscht sich das?</div>
+            ${Object.entries(people).map(([id, p]) => `
+              <button class="picker-opt ${r.wishers.includes(id) ? 'active' : ''}" data-person="${id}">
+                <span class="av" style="background:${p.bg}">${p.icon}</span>${p.name}
+              </button>`).join('')}
+          </div>
+          <div class="r-footer">
+            <a class="r-link" href="${r.link}" target="_blank" title="Rezept ansehen">↗</a>
+            <button class="want-btn ${!r.available ? 'disabled' : (r.wishers.length ? 'wished' : '')}" data-act="want">
+              ${!r.available ? 'Zutaten fehlen' : (r.wishers.length ? `${r.wishers.length} wünschen sich das` : 'Das will ich!')}
+            </button>
+          </div>
+        </div>
+      `;
+
+      card.querySelector('[data-act="toggle-avail"]').addEventListener('click', () => {
+        r.available = !r.available;
+        render();
+      });
+
+      card.querySelectorAll('[data-act="rate"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const val = btn.dataset.val;
+          if (r.ratings[activePerson] === val) delete r.ratings[activePerson];
+          else r.ratings[activePerson] = val;
+          render();
+        });
+      });
+
+      const wantBtn = card.querySelector('[data-act="want"]');
+      const panel = card.querySelector('[data-panel]');
+      if (r.available) {
+        wantBtn.addEventListener('click', () => {
+          openPickerId = openPickerId === r.id ? null : r.id;
+          render();
+        });
+      }
+      if (openPickerId === r.id) panel.classList.add('open');
+
+      panel.querySelectorAll('.picker-opt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pid = btn.dataset.person;
+          const idx = r.wishers.indexOf(pid);
+          if (idx > -1) r.wishers.splice(idx, 1); else r.wishers.push(pid);
+          render();
+        });
+      });
+
+      grid.appendChild(card);
+    });
+
+    const addCard = document.createElement('a');
+    addCard.href = '#';
+    addCard.className = 'add-card';
+    addCard.innerHTML = `<div class="plus">+</div>Rezept importieren<br>(Fooby-Link, Cookidoo-Link oder manuell)`;
+    grid.appendChild(addCard);
+
+    renderHidden();
+    updateWishesMsg();
+  }
+
+  function renderHidden() {
+    const hidden = recipes.filter(isHidden);
+    document.getElementById('hiddenTitle').textContent = `Nicht mehr vorgeschlagen (${hidden.length})`;
+    const list = document.getElementById('hiddenList');
+    list.innerHTML = hidden.map(r => `
+      <div class="hidden-item">
+        <div class="hi-icon" style="background-image:url('${r.image}')"></div>
+        <div class="hi-name">${r.title}</div>
+        <div class="hi-votes">${downCount(r)} von 4 wollen das nicht mehr</div>
+        <button class="hi-restore" data-restore="${r.id}">Wieder vorschlagen</button>
+      </div>
+    `).join('') || '<div class="no-votes">Aktuell nichts ausgeblendet.</div>';
+
+    list.querySelectorAll('[data-restore]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const r = recipes.find(x => x.id === btn.dataset.restore);
+        r.ratings = {};
+        render();
+      });
+    });
+  }
+
+  document.getElementById('hiddenToggle').addEventListener('click', () => {
+    document.getElementById('hiddenSection').classList.toggle('open');
+  });
+
+  function updateWishesMsg() {
+    const withWishes = recipes.filter(r => r.wishers.length > 0);
+    if (withWishes.length === 0) {
+      wishesMsg.innerHTML = 'Noch niemand hat sich heute etwas gewünscht.';
+      return;
+    }
+    const parts = withWishes.map(r => `<b>${r.title}</b> (${r.wishers.map(id => people[id].icon).join('')})`);
+    wishesMsg.innerHTML = 'Heutige Wünsche: ' + parts.join(' · ');
+  }
+
+  document.getElementById('filterTabs').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('#filterTabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    render();
+  });
+
+  document.getElementById('sortSelect').addEventListener('change', e => {
+    sortMode = e.target.value;
+    render();
+  });
+
+  render();
+</script>
+
+</body>
+</html>
+

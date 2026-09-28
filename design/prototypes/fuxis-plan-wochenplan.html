@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuxis Plan — Wochenplan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FCEFE3;
+    --cream-deep: #F7E3CF;
+    --orange: #E8703C;
+    --orange-deep: #C85A2C;
+    --amber: #F6B93B;
+    --brown: #5A3423;
+    --brown-soft: #8A6250;
+    --brown-muted: #B39C8C;
+    --mint: #B8E6C4;
+    --mint-deep: #4FA868;
+    --lilac: #DCC6F2;
+    --sky: #BFE3F5;
+    --rose: #F5C6CE;
+    --shadow-warm: rgba(90, 52, 35, 0.16);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(160deg, #FDF5EC 0%, var(--cream) 60%, var(--cream-deep) 100%);
+    color: var(--brown);
+  }
+
+  .board {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 30px 34px 50px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; }
+  .back-link { font-size: 13.5px; font-weight: 600; color: var(--brown-soft); text-decoration: none; }
+
+  .subnav {
+    display: flex; gap: 4px;
+    background: #fff; padding: 5px; border-radius: 14px;
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+
+  .subnav a {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 16px; border-radius: 10px;
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13px;
+    color: var(--brown-soft); text-decoration: none;
+  }
+
+  .subnav a.active { background: var(--orange); color: #fff; }
+
+  .page-head h1 { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 26px; }
+  .page-head p { font-size: 13.5px; color: var(--brown-soft); margin-top: 4px; }
+
+  .controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .week-nav {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; padding: 6px; border-radius: 14px;
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+
+  .week-nav button {
+    width: 34px; height: 34px; border-radius: 10px; border: none;
+    background: var(--cream); font-size: 15px; cursor: pointer; color: var(--brown);
+  }
+
+  .week-nav button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .week-nav .week-label {
+    font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 14px;
+    padding: 0 6px;
+    white-space: nowrap;
+  }
+
+  .today-btn {
+    border: none;
+    background: #fff;
+    padding: 10px 16px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 12.5px;
+    color: var(--orange-deep);
+    cursor: pointer;
+    box-shadow: 0 8px 18px var(--shadow-warm);
+  }
+
+  .who-row {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; padding: 8px 8px 8px 14px; border-radius: 16px;
+    box-shadow: 0 8px 18px var(--shadow-warm); width: fit-content;
+  }
+  .who-row .who-label { font-size: 12px; font-weight: 700; color: var(--brown-soft); text-transform: uppercase; letter-spacing: 0.3px; }
+  .who-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer; border: 2.5px solid transparent; opacity: 0.55;
+  }
+  .who-avatar.active { border-color: var(--brown); opacity: 1; transform: scale(1.06); }
+
+  /* WEEK TABLE — days vertical, meals horizontal */
+  .week-table {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .meal-header {
+    display: grid;
+    grid-template-columns: 92px 1fr 1fr;
+    gap: 10px;
+    padding: 0 2px;
+  }
+
+  .meal-header .mh-label {
+    text-align: center;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--brown-soft);
+  }
+
+  .day-row {
+    display: grid;
+    grid-template-columns: 92px 1fr 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .day-cell {
+    background: #fff;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    box-shadow: 0 10px 22px -16px var(--shadow-warm);
+  }
+
+  .day-row.today .day-cell {
+    background: linear-gradient(135deg, var(--amber), var(--orange));
+    color: #fff;
+  }
+
+  .day-cell .dc-name {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .day-cell .dc-date {
+    font-size: 11px;
+    opacity: 0.85;
+    margin-top: 1px;
+  }
+
+  .meal-slot {
+    background: #fff;
+    border-radius: 16px;
+    padding: 10px;
+    min-height: 88px;
+    box-shadow: 0 10px 22px -16px var(--shadow-warm);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .meal-slot.empty {
+    border: 2px dashed rgba(90,52,35,0.22);
+    background: transparent;
+    box-shadow: none;
+    justify-content: center;
+    color: var(--brown-muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    gap: 6px;
+  }
+
+  .meal-slot.empty .plus {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--cream); color: var(--orange-deep);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .slot-image {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+  }
+
+  .slot-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+
+  .slot-title {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 12.5px;
+    line-height: 1.2;
+  }
+
+  .slot-wishers { display: flex; align-items: center; }
+  .slot-wisher {
+    width: 19px; height: 19px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; border: 2px solid #fff; margin-left: -6px;
+  }
+  .slot-wisher:first-child { margin-left: 0; }
+
+  .slot-remove {
+    font-size: 10px;
+    color: var(--brown-muted);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-weight: 600;
+    align-self: flex-start;
+    padding: 0;
+  }
+
+  /* RECIPE PICKER MODAL */
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(90,52,35,0.35);
+    align-items: center; justify-content: center;
+    z-index: 50;
+    padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: #fff;
+    border-radius: 24px;
+    max-width: 640px;
+    width: 100%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--cream);
+  }
+
+  .modal-head h3 {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+  }
+
+  .modal-close {
+    border: none; background: var(--cream);
+    width: 32px; height: 32px; border-radius: 10px;
+    cursor: pointer; font-size: 14px; color: var(--brown);
+  }
+
+  .modal-list {
+    overflow-y: auto;
+    padding: 14px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-recipe {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--cream);
+    border-radius: 14px;
+    padding: 8px;
+    cursor: pointer;
+    border: none;
+    text-align: left;
+    width: 100%;
+  }
+
+  .modal-recipe img { width: 46px; height: 46px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+  .modal-recipe .mr-name { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 13.5px; flex: 1; }
+  .modal-recipe .mr-tag { font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 8px; }
+  .modal-recipe .mr-tag.ok { background: #E4F7E9; color: var(--mint-deep); }
+  .modal-recipe .mr-tag.missing { background: #FBE4DF; color: #D2543E; }
+
+  @media (max-width: 640px) {
+    .day-cell .dc-name { font-size: 12.5px; }
+    .meal-header, .day-row { grid-template-columns: 66px 1fr 1fr; gap: 6px; }
+    .slot-image { display: none; }
+    .board { padding: 24px 16px 50px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="board">
+
+  <div class="topbar">
+    <a class="back-link" href="#">← Zurück zum Familien-Board</a>
+    <div class="subnav">
+      <a href="fuxis-plan-mahlzeiten.html">🍽️ Rezepte</a>
+      <a href="fuxis-plan-wochenplan.html" class="active">📅 Wochenplan</a>
+    </div>
+  </div>
+
+  <div class="page-head">
+    <h1>Wochenplan</h1>
+    <p>Mittag- und Abendessen für die nächsten Tage</p>
+  </div>
+
+  <div class="controls-row">
+    <div class="week-nav">
+      <button id="prevWeek" title="Eine Woche zurück">‹</button>
+      <div class="week-label" id="weekLabel"></div>
+      <button id="nextWeek" title="Eine Woche vor">›</button>
+    </div>
+    <button class="today-btn" id="todayBtn">Heute</button>
+  </div>
+
+  <div class="who-row" id="whoRow">
+    <div class="who-label">Ich bin:</div>
+  </div>
+
+  <div class="week-table">
+    <div class="meal-header">
+      <div></div>
+      <div class="mh-label">☀️ Mittag</div>
+      <div class="mh-label">🌙 Abend</div>
+    </div>
+    <div id="dayRows"></div>
+  </div>
+
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">Rezept wählen</h3>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-list" id="modalList"></div>
+  </div>
+</div>
+
+<script>
+  const people = {
+    mia: { name: 'Mia', icon: '🦊', bg: 'var(--mint)' },
+    ben: { name: 'Ben', icon: '🐻', bg: 'var(--lilac)' },
+    papa: { name: 'Papa', icon: '🦉', bg: 'var(--sky)' },
+    mama: { name: 'Mama', icon: '🐰', bg: 'var(--rose)' },
+  };
+
+  let activePerson = 'mia';
+
+  const recipeLibrary = [
+    { id: 'r1', title: 'Spaghetti Bolognese', image: 'https://recipecontent.fooby.ch/16042_3-2_1200-800.jpg', available: true },
+    { id: 'r2', title: 'Paprikacremesuppe', image: 'https://assets.tmecosys.com/image/upload/t_web_rdp_recipe_584x480/img/recipe/ras/Assets/45280123-BB6A-4FA2-BD47-339BDE6F5C5D/Derivates/728B4558-1C0B-4982-94AA-2452FAED173A.jpg', available: true },
+    { id: 'r3', title: 'Griechischer Salat mit Pouletspiessen', image: 'https://recipecontent.fooby.ch/13210_3-2_1200-800.jpg', available: false },
+    { id: 'r4', title: 'Kürbisrisotto', image: 'https://recipecontent.fooby.ch/22715_3-2_1200-800.jpg', available: true },
+    { id: 'r5', title: 'Chicken Nuggets mit Ofenpommes', image: 'https://recipecontent.fooby.ch/23103_3-2_1200-800.jpg', available: true },
+    { id: 'r6', title: 'Käsespätzle', image: 'https://recipecontent.fooby.ch/19842_3-2_1200-800.jpg', available: false },
+  ];
+
+  const today = new Date(2026, 8, 28); // matches "today" in this conversation
+  today.setHours(0, 0, 0, 0);
+
+  // Planning horizon: how far back / forward data exists. In the real app this
+  // would come from the backend (oldest/newest planned date); here it's fixed
+  // so the nav buttons demonstrate disabling at the edges.
+  const MIN_WEEK_OFFSET = -2; // 2 weeks of history
+  const MAX_WEEK_OFFSET = 4;  // 4 weeks planned ahead
+
+  let weekOffset = 0;
+
+  function isoDay(d) { return d.toISOString().slice(0, 10); }
+  function addDays(base, n) {
+    const d = new Date(base);
+    d.setDate(d.getDate() + n);
+    return d;
+  }
+
+  // demo plan data, keyed by "YYYY-MM-DD-meal"
+  let plan = {};
+  function seedPlan() {
+    const set = (offsetDays, meal, recipeId, wishers) => {
+      const d = addDays(today, offsetDays);
+      plan[`${isoDay(d)}-${meal}`] = { recipeId, wishers: wishers.slice() };
+    };
+    set(0, 'abend', 'r1', ['mia', 'ben']);
+    set(2, 'mittag', 'r2', ['mama']);
+    set(3, 'abend', 'r5', ['mia']);
+    set(5, 'mittag', 'r4', ['papa', 'mama']);
+    set(-3, 'abend', 'r6', ['ben']);
+    set(-1, 'mittag', 'r1', ['mia', 'papa']);
+    set(9, 'abend', 'r4', ['mama']);
+  }
+  seedPlan();
+
+  let modalSlotKey = null;
+
+  const whoRow = document.getElementById('whoRow');
+  const dayRows = document.getElementById('dayRows');
+  const weekLabel = document.getElementById('weekLabel');
+
+  function renderWhoRow() {
+    Object.entries(people).forEach(([id, p]) => {
+      if (whoRow.querySelector(`[data-who="${id}"]`)) return;
+      const el = document.createElement('div');
+      el.className = 'who-avatar' + (activePerson === id ? ' active' : '');
+      el.dataset.who = id;
+      el.style.background = p.bg;
+      el.textContent = p.icon;
+      el.title = p.name;
+      el.addEventListener('click', () => { activePerson = id; render(); });
+      whoRow.appendChild(el);
+    });
+    whoRow.querySelectorAll('.who-avatar').forEach(el => {
+      el.classList.toggle('active', el.dataset.who === activePerson);
+    });
+  }
+
+  function weekStart(offset) {
+    return addDays(today, offset * 7);
+  }
+
+  function render() {
+    renderWhoRow();
+    dayRows.innerHTML = '';
+
+    const start = weekStart(weekOffset);
+    const end = addDays(start, 6);
+    const fmtShort = d => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+    weekLabel.textContent = weekOffset === 0
+      ? `Heute – ${fmtShort(end)}`
+      : `${fmtShort(start)} – ${fmtShort(end)}`;
+
+    document.getElementById('prevWeek').disabled = weekOffset <= MIN_WEEK_OFFSET;
+    document.getElementById('nextWeek').disabled = weekOffset >= MAX_WEEK_OFFSET;
+    document.getElementById('todayBtn').style.visibility = weekOffset === 0 ? 'hidden' : 'visible';
+
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(start, i);
+      const isToday = isoDay(date) === isoDay(today);
+      const dayName = date.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
+
+      const row = document.createElement('div');
+      row.className = 'day-row' + (isToday ? ' today' : '');
+
+      const dayCell = document.createElement('div');
+      dayCell.className = 'day-cell';
+      dayCell.innerHTML = `<div class="dc-name">${isToday ? 'Heute' : dayName}</div><div class="dc-date">${fmtShort(date)}</div>`;
+      row.appendChild(dayCell);
+
+      ['mittag', 'abend'].forEach(meal => {
+        const key = `${isoDay(date)}-${meal}`;
+        const entry = plan[key];
+        const slot = document.createElement('div');
+
+        if (!entry) {
+          slot.className = 'meal-slot empty';
+          slot.innerHTML = `<div class="plus">+</div>Rezept wählen`;
+          slot.addEventListener('click', () => openModal(key, date, meal));
+        } else {
+          const recipe = recipeLibrary.find(r => r.id === entry.recipeId);
+          slot.className = 'meal-slot';
+          const wisherAvatars = entry.wishers.map(id => {
+            const p = people[id];
+            return `<div class="slot-wisher" style="background:${p.bg}">${p.icon}</div>`;
+          }).join('');
+          const iWish = entry.wishers.includes(activePerson);
+          slot.innerHTML = `
+            <div class="slot-image" style="background-image:url('${recipe.image}')"></div>
+            <div class="slot-body">
+              <div class="slot-title">${recipe.title}</div>
+              <div class="slot-wishers">${wisherAvatars}</div>
+              <button class="slot-remove" data-act="toggle-wish">${iWish ? 'Nicht mehr ich' : '+ Ich auch'}</button>
+            </div>
+          `;
+          slot.querySelector('[data-act="toggle-wish"]').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = entry.wishers.indexOf(activePerson);
+            if (idx > -1) entry.wishers.splice(idx, 1); else entry.wishers.push(activePerson);
+            render();
+          });
+          slot.addEventListener('click', () => openModal(key, date, meal));
+        }
+        row.appendChild(slot);
+      });
+
+      dayRows.appendChild(row);
+    }
+  }
+
+  const mealLabels = { mittag: 'Mittag', abend: 'Abend' };
+
+  function openModal(key, date, meal) {
+    modalSlotKey = key;
+    const dayName = date.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
+    document.getElementById('modalTitle').textContent = `${mealLabels[meal]} am ${dayName} — Rezept wählen`;
+    const list = document.getElementById('modalList');
+    list.innerHTML = recipeLibrary.map(r => `
+      <button class="modal-recipe" data-recipe="${r.id}">
+        <img src="${r.image}" alt="">
+        <div class="mr-name">${r.title}</div>
+        <div class="mr-tag ${r.available ? 'ok' : 'missing'}">${r.available ? 'Zutaten da' : 'Fehlt was'}</div>
+      </button>
+    `).join('');
+    list.querySelectorAll('.modal-recipe').forEach(btn => {
+      btn.addEventListener('click', () => {
+        plan[modalSlotKey] = { recipeId: btn.dataset.recipe, wishers: [activePerson] };
+        closeModal();
+        render();
+      });
+    });
+    document.getElementById('modalBackdrop').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modalBackdrop').classList.remove('open');
+    modalSlotKey = null;
+  }
+
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('modalBackdrop').addEventListener('click', (e) => {
+    if (e.target.id === 'modalBackdrop') closeModal();
+  });
+
+  document.getElementById('prevWeek').addEventListener('click', () => {
+    if (weekOffset > MIN_WEEK_OFFSET) { weekOffset--; render(); }
+  });
+  document.getElementById('nextWeek').addEventListener('click', () => {
+    if (weekOffset < MAX_WEEK_OFFSET) { weekOffset++; render(); }
+  });
+  document.getElementById('todayBtn').addEventListener('click', () => {
+    weekOffset = 0; render();
+  });
+
+  render();
+</script>
+
+</body>
+</html>
+
