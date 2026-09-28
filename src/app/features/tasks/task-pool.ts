@@ -193,9 +193,6 @@ export class TaskPool {
   readonly me = computed(() => this.family().find((m) => m.user_id === this.auth.user()?.id));
   readonly isParent = computed(() => this.me()?.role === 'parent');
 
-  /** Tasks nobody has finished yet (badge in the navigation). */
-  readonly openCount = computed(() => this.tasks().filter((t) => !t.is_done).length);
-
   member(id: string | null | undefined): FamilyMember | undefined {
     return this.family().find((m) => m.id === id);
   }
