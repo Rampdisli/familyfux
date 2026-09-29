@@ -4,11 +4,6 @@ Offene Punkte aus der Arbeit an Fuxis Plan.
 
 ## Offen
 
-- [ ] **Migrationen für Belohnungen und Kinder-Login auf Supabase ausführen** (Projekt `familyfux`),
-      bevor App 0.7.0 und MCP-Server 0.8.0 laufen — die App lädt das Guthaben aus `member_balance`:
-      `supabase/migrations/20260929150000_rewards.sql`, danach
-      `supabase/migrations/20260929160000_child_logins.sql`. Danach hier abhaken.
-
 - [ ] **Belohnungen anlegen:** Es gibt keine Startdaten; die Familie legt Belohnungen und Preise unter
       „Belohnungen verwalten“ oder per Claude an. `supabase/seed.sql` ist nur für die Entwicklung.
 
