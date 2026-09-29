@@ -7,9 +7,6 @@ Offene Punkte aus der Arbeit an Fuxis Plan.
 - [ ] **Belohnungen anlegen:** Es gibt keine Startdaten; die Familie legt Belohnungen und Preise unter
       „Belohnungen verwalten“ oder per Claude an. `supabase/seed.sql` ist nur für die Entwicklung.
 
-- [ ] **Migration für Rezepte bearbeiten und löschen auf Supabase ausführen** (Projekt `familyfux`), bevor
-      App 0.9.0 läuft: `supabase/migrations/20260930100000_recipe_edit_delete.sql`. Danach hier abhaken.
-
 - [ ] **MCP-Tools `update_recipe` und `delete_recipe`** (Abschnitt 6 von `design/rezept-bearbeiten-loeschen.md`),
       nur für Eltern; kommt als eigener Schritt.
 
@@ -26,7 +23,8 @@ Offene Punkte aus der Arbeit an Fuxis Plan.
       bleibt), Lösch-Dialog in Detailansicht und Bearbeiten-Seite, gesperrt sobald das Rezept Mahlzeiten hat;
       Bilder aus `recipe-images` werden beim Ersetzen und Löschen aufgeräumt. Migration
       `supabase/migrations/20260930100000_recipe_edit_delete.sql` (Delete nur Eltern, `meals.recipe_id`
-      `on delete restrict`, `update_recipe`), SQL-Test `supabase/tests/recipes_edit_test.sql`
+      `on delete restrict`, `update_recipe`), SQL-Test `supabase/tests/recipes_edit_test.sql`; Migration auf
+      Supabase (Projekt `familyfux`) ausgeführt, als Version `20260930100000` registriert
 
 - [x] Auch Eltern können ihr Guthaben gegen Belohnungen einlösen (App 0.8.0, MCP-Server 0.8.1);
       Migration `supabase/migrations/20260930090000_parents_redeem_rewards.sql` auf Supabase ausgeführt,
