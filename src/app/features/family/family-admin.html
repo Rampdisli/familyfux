@@ -40,6 +40,40 @@
                 </div>
               </div>
             </div>
+            <div class="m-account">
+              @if (member.user_id) {
+                <span class="acc" [title]="'Meldet sich mit ' + accountEmail(member) + ' an'">🔑 {{ accountEmail(member) }}</span>
+                @if (member.id !== pool.me()?.id) {
+                  <button
+                    type="button"
+                    class="acc-btn"
+                    [class.confirm]="unlinkArmed() === member.id"
+                    [attr.aria-label]="(unlinkArmed() === member.id ? 'Wirklich lösen: Konto von ' : 'Konto lösen: ') + member.name"
+                    (click)="unlink(member)"
+                  >
+                    {{ unlinkArmed() === member.id ? 'Wirklich lösen?' : 'Lösen' }}
+                  </button>
+                }
+              } @else if (linking() === member.id) {
+                <form class="link-form" (submit)="$event.preventDefault(); link(member)">
+                  <input
+                    type="email"
+                    required
+                    placeholder="E-Mail des Kontos"
+                    [attr.aria-label]="'E-Mail des Kontos von ' + member.name"
+                    [value]="linkEmail()"
+                    (input)="linkEmail.set($any($event.target).value)"
+                  />
+                  <p class="acc-hint">{{ member.name }} registriert sich zuerst selbst auf der Anmeldeseite.</p>
+                  <div class="edit-actions">
+                    <button type="submit" class="m-btn save" [disabled]="saving() || !linkEmail().trim()">Verknüpfen</button>
+                    <button type="button" class="m-btn cancel" (click)="linking.set(null)">Abbrechen</button>
+                  </div>
+                </form>
+              } @else {
+                <button type="button" class="acc-btn" (click)="startLink(member)">🔑 Konto verknüpfen</button>
+              }
+            </div>
             <div class="m-actions">
               <button type="button" class="m-btn edit" (click)="edit(member)">Bearbeiten</button>
               @if (member.id !== pool.me()?.id) {

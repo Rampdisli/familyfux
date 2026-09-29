@@ -374,6 +374,18 @@ export class TaskPool {
     return this.mutate(supabase.from('family_members').delete().eq('id', id));
   }
 
+  /** Links a member to the account with this email (kid logins); parents only. Resolves to an error message, if any. */
+  linkAccount(memberId: string, email: string): Promise<string | null> {
+    return this.mutate(supabase.rpc('link_member_account', { p_member_id: memberId, p_email: email.trim() }));
+  }
+
+  /** Removes a member's login link again; parents only, never their own. */
+  async unlinkAccount(memberId: string): Promise<string | null> {
+    const { data, error } = await supabase.rpc('unlink_member_account', { p_member_id: memberId });
+    this.data.reload();
+    return error?.message ?? (data ? null : 'Das Konto ist schon gelöst, oder du darfst es nicht lösen.');
+  }
+
   /** Runs a write, reloads the pool and resolves to the error message, if any. */
   private async mutate(query: PromiseLike<{ error: { message: string } | null }>): Promise<string | null> {
     const { error } = await query;

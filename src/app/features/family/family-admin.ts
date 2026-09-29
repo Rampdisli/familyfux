@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { supabase } from '../../core/supabase-client';
 import { FamilyMember, MemberDraft, POOL_COLORS, TaskPool } from '../tasks/task-pool';
 
 const ROLE_LABELS: Record<FamilyMember['role'], string> = { parent: 'Elternteil', child: 'Kind' };
@@ -28,6 +29,62 @@ export class FamilyAdmin {
   protected readonly deleteArmed = signal<string | null>(null);
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+
+  /** Member whose "Konto verknüpfen" form is open, and the email typed there. */
+  protected readonly linking = signal<string | null>(null);
+  protected readonly linkEmail = signal('');
+  protected readonly unlinkArmed = signal<string | null>(null);
+
+  /** Email of each linked member's account (parents only, family_member_accounts). */
+  protected readonly accounts = resource({
+    params: () => ({ family: this.pool.family() }),
+    loader: async () => {
+      const { data, error } = await supabase.rpc('family_member_accounts');
+      if (error) {
+        throw new Error(error.message, { cause: error });
+      }
+      return new Map((data as { member_id: string; email: string }[]).map((a) => [a.member_id, a.email]));
+    },
+  });
+
+  protected accountEmail(member: FamilyMember): string {
+    return this.accounts.value()?.get(member.id) ?? 'eigenes Konto';
+  }
+
+  /** "🔑 Konto verknüpfen": the kid signed up on the login page; a parent enters that email here. */
+  protected startLink(member: FamilyMember): void {
+    this.linking.set(member.id);
+    this.linkEmail.set('');
+    this.unlinkArmed.set(null);
+    this.errorMessage.set(null);
+  }
+
+  protected async link(member: FamilyMember): Promise<void> {
+    const email = this.linkEmail().trim();
+    if (!email) {
+      return;
+    }
+
+    this.saving.set(true);
+    const error = await this.pool.linkAccount(member.id, email);
+    this.saving.set(false);
+
+    this.errorMessage.set(error);
+    if (!error) {
+      this.linking.set(null);
+    }
+  }
+
+  /** First click arms "Lösen", the second removes the login link. */
+  protected async unlink(member: FamilyMember): Promise<void> {
+    if (this.unlinkArmed() !== member.id) {
+      this.unlinkArmed.set(member.id);
+      return;
+    }
+
+    this.unlinkArmed.set(null);
+    this.errorMessage.set(await this.pool.unlinkAccount(member.id));
+  }
 
   protected edit(member: FamilyMember): void {
     const { name, emoji, color, role } = member;
