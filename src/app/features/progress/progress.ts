@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, resource, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { supabase } from '../../core/supabase-client';
 import { PoolClaim, PoolColor, TaskPool, formatStars } from '../tasks/task-pool';
@@ -52,8 +52,8 @@ function startOfDay(date: Date): Date {
 export class Progress {
   protected readonly pool = inject(TaskPool);
 
-  /** Route parameter :memberId. */
-  readonly memberId = input.required<string>();
+  /** The person picked in the brown bar. */
+  protected readonly memberId = computed(() => this.pool.selectedMemberId() ?? '');
 
   protected readonly range = signal<Range>(14);
   protected readonly hovered = signal<number | null>(null);

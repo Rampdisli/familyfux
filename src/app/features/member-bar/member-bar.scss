@@ -1,0 +1,112 @@
+/* Brown bar "Wer ist dran?" — design/prototypes/fuxis-plan-belohnungen.html */
+
+:host {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  background: var(--brown);
+  color: var(--cream);
+  box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.4);
+}
+
+.wb-pills {
+  display: flex;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.wb-pill {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px 5px 5px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--cream);
+  font: inherit;
+  text-align: left;
+
+  &:is(button) {
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  &.active,
+  &.active:hover {
+    background: #fff;
+    color: var(--brown);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+  }
+}
+
+.av {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+
+  &.all {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+.wb-pill.active .av.all {
+  background: var(--cream);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+}
+
+.nm {
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.1;
+}
+
+.sb {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  :host {
+    justify-content: flex-start;
+    padding: 8px 12px;
+  }
+
+  .wb-pills {
+    flex: 1;
+    padding: 0;
+    background: none;
+  }
+
+  .wb-pill {
+    min-height: 44px;
+  }
+}

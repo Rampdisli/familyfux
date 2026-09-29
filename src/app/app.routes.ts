@@ -1,7 +1,7 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, parentGuard } from './core/auth-guard';
-
-const comingSoon = () => import('./features/coming-soon/coming-soon').then((m) => m.ComingSoon);
+import { TaskPool } from './features/tasks/task-pool';
 
 export const routes: Routes = [
   {
@@ -30,15 +30,22 @@ export const routes: Routes = [
     loadComponent: () => import('./features/tasks/task-admin/task-admin').then((m) => m.TaskAdmin),
   },
   {
-    path: 'fortschritt/:memberId',
+    path: 'profil',
     canActivate: [authGuard],
     loadComponent: () => import('./features/progress/progress').then((m) => m.Progress),
   },
   {
+    // Old progress links: the profile of that member.
+    path: 'fortschritt/:memberId',
+    redirectTo: ({ params }) => {
+      inject(TaskPool).selectMember(params['memberId']);
+      return '/profil';
+    },
+  },
+  {
+    // The calendar was dropped.
     path: 'kalender',
-    canActivate: [authGuard],
-    loadComponent: comingSoon,
-    data: { icon: '📅', title: 'Kalender', text: 'Gemeinsame Familientermine — noch nicht ausgebaut.' },
+    redirectTo: 'tasks',
   },
   {
     path: 'essen',
