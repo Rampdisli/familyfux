@@ -1,0 +1,128 @@
+<div class="board">
+  <div class="pool-head">
+    <div>
+      <h1>Belohnungen</h1>
+      <span>Tausche deine Sterne ein</span>
+    </div>
+    @if (pool.isParent()) {
+      <div class="pool-actions">
+        <a routerLink="/belohnungen/verwalten" class="manage">Verwalten</a>
+        <a routerLink="/belohnungen/neu" class="new">+ Neue Belohnung</a>
+      </div>
+    }
+  </div>
+
+  @if (rewards.data.error(); as error) {
+    <p class="message error">Konnte die Belohnungen nicht laden: {{ error.message }}</p>
+  } @else if (!rewards.data.hasValue() || !pool.data.hasValue()) {
+    <p class="message">Lade…</p>
+  } @else {
+    @if (kid(); as k) {
+      <app-fuxi-hero>
+        <span big>{{ k.name }} hat {{ stars(balance()) }} ⭐</span>
+        <span say>
+          @if (next(); as n) {
+            Fuxi: „Noch {{ stars(n.price - balance()) }} ⭐ bis {{ n.title }}!“
+          } @else {
+            Fuxi: „Du kannst dir alles aussuchen!“
+          }
+        </span>
+      </app-fuxi-hero>
+    } @else {
+      <app-fuxi-hero muted>
+        <span big>Wer möchte einlösen?</span>
+        <span say>Fuxi: „Wähl oben in der braunen Leiste ein Kind aus.“</span>
+      </app-fuxi-hero>
+    }
+
+    <div class="block-head">
+      <div class="segmented" role="group" aria-label="Kategorie">
+        @for (c of categories; track c.key) {
+          <button
+            type="button"
+            [class.active]="category() === c.key"
+            [attr.aria-pressed]="category() === c.key"
+            (click)="category.set(c.key)"
+          >
+            {{ c.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="reward-grid">
+      @for (reward of visible(); track reward.id) {
+        <button
+          type="button"
+          app-reward-card
+          [reward]="reward"
+          [missing]="missing(reward)"
+          [disabled]="!kid()"
+          (click)="open(reward)"
+        ></button>
+      } @empty {
+        <p class="message">
+          {{ rewards.active().length ? 'In dieser Kategorie gibt es noch nichts.' : 'Noch keine Belohnungen angelegt.' }}
+        </p>
+      }
+    </div>
+  }
+</div>
+
+@if (selected(); as r) {
+  @if (kid(); as k) {
+    <div class="overlay" (click)="close()">
+      <div
+        #dialog
+        class="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Belohnung einlösen"
+        tabindex="-1"
+        (click)="$event.stopPropagation()"
+      >
+        @if (bought(); as b) {
+          <div class="d-icon tile-mint">✅</div>
+          <h2>Gekauft!</h2>
+          <div class="strong">{{ b.text }} für {{ k.name }}</div>
+          <div class="sub">
+            Einlösen, sobald Mama oder Papa es in {{ possessive(k.name) }} Profil abhakt.<br />
+            Neues Guthaben: <b>{{ stars(b.balance) }} ⭐</b>
+          </div>
+          <button type="button" class="primary" (click)="close()">Super!</button>
+          <a routerLink="/profil" class="ghost">Zu {{ possessive(k.name) }} Profil</a>
+        } @else {
+          <div class="d-icon tile-{{ r.color }}">{{ r.emoji }}</div>
+          <h2>{{ r.title }}</h2>
+          <div class="sub">{{ unitText(r) ? unitText(r) + ' für ' : '' }}{{ r.price }} ⭐</div>
+          <span class="for"><span class="av av-{{ k.color }}">{{ k.emoji }}</span>für {{ k.name }}</span>
+
+          @if (r.unit_amount && r.max_quantity > 1) {
+            <div class="stepper">
+              <button type="button" aria-label="Weniger" [disabled]="quantity() <= 1" (click)="changeQuantity(-1)">−</button>
+              <span class="val">{{ quantity() }}×</span>
+              <button type="button" aria-label="Mehr" [disabled]="quantity() >= r.max_quantity" (click)="changeQuantity(1)">
+                +
+              </button>
+            </div>
+            <div class="strong">= {{ amountText(r, quantity()) }}</div>
+          }
+
+          <div class="sum"><span>Kostet</span><b>{{ cost() }} ⭐</b></div>
+          <div class="sub strong" [class.short]="rest() < 0">
+            {{ rest() >= 0 ? 'Danach bleiben ' + stars(rest()) + ' ⭐' : 'Es fehlen noch ' + stars(-rest()) + ' ⭐' }}
+          </div>
+
+          @if (errorMessage(); as message) {
+            <p class="message error">Konnte nicht einlösen: {{ message }}</p>
+          }
+
+          <button type="button" class="primary" [disabled]="rest() < 0 || buying()" (click)="buy()">
+            {{ buying() ? 'Löse ein…' : 'Einlösen' }}
+          </button>
+          <button type="button" class="ghost" (click)="close()">Abbrechen</button>
+        }
+      </div>
+    </div>
+  }
+}

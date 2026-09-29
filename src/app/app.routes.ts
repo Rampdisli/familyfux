@@ -30,9 +30,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/tasks/task-admin/task-admin').then((m) => m.TaskAdmin),
   },
   {
+    path: 'belohnungen',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/rewards/reward-shop/reward-shop').then((m) => m.RewardShop),
+  },
+  {
     path: 'profil',
     canActivate: [authGuard],
-    loadComponent: () => import('./features/progress/progress').then((m) => m.Progress),
+    loadComponent: () => import('./features/profile/profile').then((m) => m.Profile),
   },
   {
     // Old progress links: the profile of that member.
