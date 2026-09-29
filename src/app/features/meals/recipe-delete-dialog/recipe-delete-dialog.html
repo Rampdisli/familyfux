@@ -1,0 +1,102 @@
+<div class="scrim" (click)="onBackdrop($event)" (keydown.escape)="onEscape($event)">
+  <div
+    #sheet
+    class="sheet"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="recipe-delete-title"
+    aria-describedby="recipe-delete-desc"
+    (keydown)="trapFocus($event)"
+  >
+    <div class="sheet-top">
+      @if (recipe().image_url; as src) {
+        <div class="thumb" aria-hidden="true" [style.background-image]="background(src)"></div>
+      } @else {
+        <div class="thumb" aria-hidden="true">🍲</div>
+      }
+      <div>
+        @if (!check.hasValue()) {
+          <h2 id="recipe-delete-title">Rezept löschen</h2>
+          <p class="sub" id="recipe-delete-desc">
+            {{ check.error() ? 'Konnte den Menüplan nicht prüfen: ' + check.error()!.message : 'Prüfe den Menüplan…' }}
+          </p>
+        } @else if (blocked()) {
+          <h2 id="recipe-delete-title">Löschen geht nicht</h2>
+          <p class="sub" id="recipe-delete-desc">„{{ recipe().title }}“ steht auf dem Menüplan.</p>
+        } @else {
+          <h2 id="recipe-delete-title">Rezept löschen?</h2>
+          <p class="sub" id="recipe-delete-desc">„{{ recipe().title }}“ ist danach für die ganze Familie weg.</p>
+        }
+      </div>
+    </div>
+
+    @if (!check.hasValue()) {
+      <div class="sheet-actions">
+        <button #second type="button" class="btn btn-secondary" (click)="close.emit()">Abbrechen</button>
+      </div>
+    } @else if (blocked()) {
+      @let c = check.value()!;
+      <ul class="consequences blocked">
+        @if (c.planned.length) {
+          <li>
+            <span aria-hidden="true">📅</span>
+            <span>
+              <b>{{ c.planned.length }} {{ c.planned.length === 1 ? 'geplante Mahlzeit' : 'geplante Mahlzeiten' }}</b>
+              ({{ plannedDays() }})
+            </span>
+          </li>
+        }
+        @if (c.cooked) {
+          <li>
+            <span aria-hidden="true">✓</span>
+            <span><b>{{ c.cooked }}× gekocht</b></span>
+          </li>
+        }
+      </ul>
+      <p class="keep">
+        @if (c.cooked) {
+          Das Rezept wurde schon gekocht und bleibt deshalb für den Verlauf erhalten.
+        } @else {
+          Ein Rezept mit geplanten Mahlzeiten bleibt erhalten. Nimm es zuerst aus dem Wochenplan heraus.
+        }
+      </p>
+      <div class="sheet-actions">
+        @if (!c.cooked) {
+          <a routerLink="/essen/wochenplan" class="btn btn-primary">📅 Zum Wochenplan</a>
+        }
+        <button #second type="button" class="btn btn-secondary" (click)="close.emit()">Schliessen</button>
+      </div>
+    } @else {
+      @let c = check.value()!;
+      <ul class="consequences">
+        @if (recipe().ingredients.length) {
+          <li><span aria-hidden="true">🧺</span><span>Zutaten und Abweichungen</span></li>
+        }
+        @if (c.people) {
+          <li>
+            <span aria-hidden="true">👍</span>
+            <span>Bewertungen und Wünsche von {{ c.people }} {{ c.people === 1 ? 'Person' : 'Personen' }}</span>
+          </li>
+        }
+        @if (storedPhoto()) {
+          <li><span aria-hidden="true">🖼️</span><span>Das gespeicherte Foto</span></li>
+        }
+      </ul>
+      <p class="keep">
+        Das lässt sich nicht rückgängig machen.
+        @if (recipe().url) {
+          Das Originalrezept auf {{ source() }} bleibt bestehen.
+        }
+      </p>
+      @if (errorMessage(); as message) {
+        <p class="message error">Konnte das Rezept nicht löschen: {{ message }}</p>
+      }
+      <div class="sheet-actions">
+        <button type="button" class="btn btn-danger" [disabled]="deleting()" (click)="delete()">
+          {{ deleting() ? 'Lösche…' : 'Endgültig löschen' }}
+        </button>
+        <button #second type="button" class="btn btn-secondary" (click)="close.emit()">Abbrechen</button>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,108 @@
+/* "Rezept bearbeiten" — design/prototypes/fuxis-plan-rezept-bearbeiten.html; page like "Rezept importieren". */
+
+:host {
+  display: block;
+}
+
+.board {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 34px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.back-link {
+  align-self: flex-start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--brown-soft);
+  text-decoration: none;
+}
+
+.page-head {
+  h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 26px;
+  }
+
+  p {
+    margin: 4px 0 0;
+    font-size: 13.5px;
+    color: var(--brown-soft);
+  }
+}
+
+/* Phones: everything below each other; from 900 px the preview (and "Rezept löschen") on the right. */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 22px;
+}
+
+.aside-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* "Rezept löschen": white card with a light red edge. */
+.danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 2px solid #fbe4df;
+  border-radius: 20px;
+  background: #fff;
+
+  strong {
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--brown-soft);
+  }
+}
+
+.btn-danger-outline {
+  min-height: 44px;
+  border: 2px solid var(--danger);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--danger);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    background: #fbe4df;
+  }
+}
+
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+
+  .aside-stack {
+    position: sticky;
+    top: 90px;
+  }
+}
+
+@media (max-width: 640px) {
+  .board {
+    padding-inline: 16px;
+  }
+}

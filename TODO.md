@@ -7,9 +7,11 @@ Offene Punkte aus der Arbeit an Fuxis Plan.
 - [ ] **Belohnungen anlegen:** Es gibt keine Startdaten; die Familie legt Belohnungen und Preise unter
       „Belohnungen verwalten“ oder per Claude an. `supabase/seed.sql` ist nur für die Entwicklung.
 
-- [ ] **Rezepte bearbeiten und löschen** — spezifiziert in `design/rezept-bearbeiten-loeschen.md`,
-      Prototyp `design/prototypes/fuxis-plan-rezept-bearbeiten.html`. Braucht ein Bearbeiten-Formular
-      (Basis: `/essen/neu`), `update_recipe` und in Supabase eine Delete-Policy samt Grant für `recipes`.
+- [ ] **Migration für Rezepte bearbeiten und löschen auf Supabase ausführen** (Projekt `familyfux`), bevor
+      App 0.9.0 läuft: `supabase/migrations/20260930100000_recipe_edit_delete.sql`. Danach hier abhaken.
+
+- [ ] **MCP-Tools `update_recipe` und `delete_recipe`** (Abschnitt 6 von `design/rezept-bearbeiten-loeschen.md`),
+      nur für Eltern; kommt als eigener Schritt.
 
 - [ ] **Alte Zutaten-Spalte entfernen,** sobald App 0.3.0 und MCP-Server 0.6.0 auf dem NAS laufen:
       `recipes.ingredients` ist nur noch eine automatisch gepflegte Kopie von `recipe_ingredients`
@@ -18,6 +20,13 @@ Offene Punkte aus der Arbeit an Fuxis Plan.
       `recipes_split_text_ingredients`.
 
 ## Erledigt
+
+- [x] Rezepte bearbeiten und löschen, nur für Eltern (`design/rezept-bearbeiten-loeschen.md`, App 0.9.0):
+      `/essen/rezept/:id/bearbeiten` mit Zutaten-Abweichungen (angepasst / ergänzt / weggelassen, das Original
+      bleibt), Lösch-Dialog in Detailansicht und Bearbeiten-Seite, gesperrt sobald das Rezept Mahlzeiten hat;
+      Bilder aus `recipe-images` werden beim Ersetzen und Löschen aufgeräumt. Migration
+      `supabase/migrations/20260930100000_recipe_edit_delete.sql` (Delete nur Eltern, `meals.recipe_id`
+      `on delete restrict`, `update_recipe`), SQL-Test `supabase/tests/recipes_edit_test.sql`
 
 - [x] Auch Eltern können ihr Guthaben gegen Belohnungen einlösen (App 0.8.0, MCP-Server 0.8.1);
       Migration `supabase/migrations/20260930090000_parents_redeem_rewards.sql` auf Supabase ausgeführt,

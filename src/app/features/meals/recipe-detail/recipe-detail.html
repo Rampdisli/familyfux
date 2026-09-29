@@ -62,6 +62,14 @@
             <div class="stat"><b>{{ details.hasValue() ? planned().length : '–' }}</b><span>geplant</span></div>
             <div class="stat"><b>{{ likes() }}/{{ pool.family().length }}</b><span>mögen es</span></div>
           </div>
+          @if (pool.isParent()) {
+            <div class="recipe-tools">
+              <a class="tool" [routerLink]="['/essen/rezept', r.id, 'bearbeiten']">✏️ Bearbeiten</a>
+              <button type="button" class="tool del" aria-label="Rezept löschen" (click)="deleteOpen.set(true)">
+                🗑️ Löschen
+              </button>
+            </div>
+          }
           @if (r.url) {
             <a class="origin-link" [href]="r.url" target="_blank" rel="noopener">Originalrezept auf {{ host(r.url).split('/')[0] }} öffnen ↗</a>
           }
@@ -274,3 +282,8 @@
     }
   </div>
 </div>
+
+<!-- Outside the details' dialog, so its focus trap and Esc stay with the delete dialog. -->
+@if (deleteOpen() && recipe(); as r) {
+  <app-recipe-delete-dialog [recipe]="r" (close)="deleteOpen.set(false)" />
+}

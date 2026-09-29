@@ -1,25 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { IngredientInput, Meals, cssImage, recipeSource } from '../meals';
-
-/** Only web links; anything else would end up in an href / background-image. */
-function webUrl(value: string): string | null {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-  try {
-    const url = new URL(trimmed);
-    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
-  } catch {
-    return null;
-  }
-}
+import { Meals } from '../meals';
+import { RecipeForm } from '../recipe-form/recipe-form';
+import { newRecipeDraft, recipeInput, usedIngredients, webUrl } from '../recipe-form/recipe-draft';
+import { RecipePreview } from '../recipe-preview/recipe-preview';
 
 /** "Rezept importieren": a Fooby / Cookidoo link or an own recipe, typed in by hand. */
 @Component({
   selector: 'app-recipe-create',
-  imports: [RouterLink],
+  imports: [RecipeForm, RecipePreview, RouterLink],
   templateUrl: './recipe-create.html',
   styleUrl: './recipe-create.scss',
 })
@@ -27,63 +16,19 @@ export class RecipeCreate {
   private readonly meals = inject(Meals);
   private readonly router = inject(Router);
 
-  protected readonly background = cssImage;
-
-  protected readonly title = signal('');
-  protected readonly url = signal('');
-  protected readonly imageUrl = signal('');
-  /** Ingredient rows as typed: quantity ("200 g") and name ("Spaghetti") in separate fields. */
-  protected readonly rows = signal<{ quantity: string; name: string }[]>([{ quantity: '', name: '' }]);
-  protected readonly available = signal(true);
-
+  protected readonly draft = signal(newRecipeDraft());
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
 
-  /** Rows with a name; a quantity alone isn't an ingredient. */
-  protected readonly ingredients = computed<IngredientInput[]>(() =>
-    this.rows()
-      .map((r) => ({ quantity: r.quantity.trim() || null, name: r.name.trim() }))
-      .filter((r) => r.name),
-  );
-
-  protected setRow(index: number, field: 'quantity' | 'name', value: string): void {
-    this.rows.update((rows) => rows.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
-  }
-
-  protected addRow(): void {
-    this.rows.update((rows) => [...rows, { quantity: '', name: '' }]);
-  }
-
-  protected removeRow(index: number): void {
-    this.rows.update((rows) => (rows.length > 1 ? rows.filter((_, i) => i !== index) : [{ quantity: '', name: '' }]));
-  }
-
-  protected readonly link = computed(() => webUrl(this.url()));
-  protected readonly image = computed(() => webUrl(this.imageUrl()));
-  protected readonly source = computed(() => recipeSource(this.link()));
-
-  protected readonly urlInvalid = computed(() => this.url().trim() !== '' && !this.link());
-  protected readonly imageInvalid = computed(() => this.imageUrl().trim() !== '' && !this.image());
-
-  protected readonly canSave = computed(
-    () => this.title().trim().length > 0 && !this.urlInvalid() && !this.imageInvalid() && !this.saving(),
-  );
+  protected readonly link = computed(() => webUrl(this.draft().url));
+  protected readonly image = computed(() => webUrl(this.draft().imageUrl));
+  protected readonly ingredients = computed(() => usedIngredients(this.draft().rows));
 
   protected async save(): Promise<void> {
-    if (!this.canSave()) {
-      return;
-    }
-
     this.saving.set(true);
     this.errorMessage.set(null);
 
-    const error = await this.meals.createRecipe({
-      title: this.title().trim(),
-      url: this.link(),
-      image_url: this.image(),
-      ingredients: this.ingredients(),
-      ingredients_available: this.available(),
-    });
+    const error = await this.meals.createRecipe(recipeInput(this.draft()));
 
     this.saving.set(false);
 
