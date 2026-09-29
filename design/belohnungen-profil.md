@@ -14,7 +14,7 @@ Mit `#mia` oder `#leo` am Ende der Adresse sieht man den Kinder-Login.
 - Kinder können gesammelte Sterne gegen Belohnungen eintauschen, z. B. 20 ⭐ für 5 Minuten Tabletzeit.
 - Jeder Kauf wird festgehalten und erscheint im Profil der Person als Abzug.
 - Ein Elternteil hakt ab, wenn die Belohnung eingelöst wurde.
-- Preise und Belohnungen werden über den MCP-Server gepflegt.
+- Eltern pflegen Belohnungen und Preise in der App („Belohnungen verwalten“) oder per Claude über den MCP-Server.
 - Eine Personenwahl oben ersetzt die Familien-Chips und macht die Seiten persönlich.
 
 ## 1. Navigation
@@ -31,8 +31,7 @@ Mit `#mia` oder `#leo` am Ende der Adresse sieht man den Kinder-Login.
 - **Hintergrund und Pills:** Hintergrund `var(--brown)`. Die Pills stehen in einer halbtransparenten Gruppe; die aktive Pill ist weiß.
 - **Inhalt:** `Alle` (👨‍👩‍👧‍👦, ohne Zahl), danach jedes Familienmitglied in `sort_order`.
 - **Aufbau einer Pill:** Emoji-Avatar in der Personenfarbe (`av-*`). Rechts davon zwei Zeilen: Name, darunter `85 ⭐`.
-  - Kinder: Zahl = Guthaben (siehe 6.3).
-  - Eltern: Zahl = Sterne dieser Woche (`member_week_stars`).
+  - Die Zahl ist für **alle** das Guthaben: Summe aller je verdienten Sterne minus eingelöste Belohnungen (siehe 6.3).
   - Keine weiteren Texte (kein „Wer ist dran?“, kein „Guthaben“, kein „ganze Familie“).
 - **Handy:** Die Leiste scrollt seitlich. Die aktive Pill wird nach jedem Wechsel ins Sichtfeld gescrollt.
 - **Rolle kommt vom Login** (`TaskPool.me()` bzw. `family_members.user_id = auth.uid()`). Keine PIN.
@@ -72,11 +71,12 @@ Mit `#mia` oder `#leo` am Ende der Adresse sieht man den Kinder-Login.
 - **Hero** (Verlauf `amber → orange`, Fuxi-Avatar):
   - Kind gewählt: „Mia hat 85 ⭐“ und ein Fuxi-Satz zur nächsten, noch nicht erreichbaren Belohnung, z. B. „Noch 65 ⭐ bis Ausflug wählen!“. Wenn alles erreichbar ist: „Du kannst dir alles aussuchen!“.
   - `Alle` oder Elternteil gewählt: brauner Hero „Wer möchte einlösen?“ / „Wähl oben in der braunen Leiste ein Kind aus.“ Die Karten sind dann nur zur Ansicht, nicht klickbar.
-- **Kategorien:** `segmented` mit Alle / Bildschirm / Essen / Erlebnisse. Für Eltern steht rechts der Hinweis „Preise ändern: über Claude (MCP)“.
+- **Eltern-Buttons im Kopf** (wie im Aufgaben-Pool): „Verwalten“ → `/belohnungen/verwalten`, „+ Neue Belohnung“ → `/belohnungen/neu`.
+- **Kategorien:** `segmented` mit Alle / Bildschirm / Essen / Erlebnisse. Angezeigt werden nur aktive Belohnungen.
 - **Karten-Raster:** Karte mit Emoji-Kachel (`tile-*`), Name, Einheit/Beschreibung und Preis-Pill „20 ⭐“. Reicht das Guthaben nicht, ist die Karte gedimmt und zeigt „noch 65 ⭐“.
 - **Dialog** (Handy: Bottom-Sheet, Desktop: zentriert):
   - Inhalt: Emoji, Name, „5 Minuten für 20 ⭐“, Chip „für Mia“.
-  - Bei stapelbaren Belohnungen ein Stepper wie `app-reward-stepper` (1–6), darunter „= 15 Minuten Tabletzeit“.
+  - Bei Belohnungen „in Einheiten“ ein Stepper wie `app-reward-stepper` (1 bis `max_quantity`), darunter „= 15 Minuten“.
   - Danach eine Box „Kostet 60 ⭐“ und „Danach bleiben 25 ⭐“ bzw. rot „Es fehlen noch … ⭐“.
   - Button „Einlösen“ (deaktiviert, wenn nicht genug Sterne) und „Abbrechen“.
 - **Nach dem Kauf:**
@@ -106,12 +106,55 @@ Mit `#mia` oder `#leo` am Ende der Adresse sieht man den Kinder-Login.
 - **Aufbau bei einem Elternteil:**
   - Kopf.
   - „Offene Belohnungen der Kinder“: alle Kinder, mit „🦊 Mia · −60 ⭐ · heute“, abhakbar.
-  - Statistik ohne Guthaben (drei Kacheln).
+  - Statistik mit allen vier Kacheln (auch Guthaben).
   - Diagramm.
   - Verlauf nur mit verdienten Sternen.
 - **Bei „Alle“:**
   - Brauner Hero „Wessen Profil?“ / „Wähl oben in der braunen Leiste eine Person aus.“
   - Darunter „Offene Belohnungen der Kinder“.
+
+## 5a. Belohnungen verwalten (neu, nur Eltern)
+
+Aufbau und Verhalten 1:1 wie „Aufgaben verwalten“ (`task-admin`) und „Neue Aufgabe“ (`task-create`).
+Beide Routen mit `authGuard` und `parentGuard`.
+
+### `/belohnungen/verwalten`
+
+- „← Zurück zu den Belohnungen“, Titel „Belohnungen verwalten“, Untertitel „Preise, Einheiten und bisherige Einlösungen“, rechts „🔒 Nur für Eltern sichtbar“.
+- Filter-Tabs Alle / Aktiv / Archiviert und rechts „+ Neue Belohnung“.
+- Hinweis darunter: „💬 Geht auch mit Claude: „Leg eine Belohnung an: 10 Minuten Gamezeit für 40 Sterne.““
+- **Zeile pro Belohnung:**
+  - Links: Emoji-Kachel, Name und Badges (Kategorie, „In Einheiten“, „Archiviert“).
+  - Darunter: „bis 6× pro Kauf · 14× eingelöst“ bzw. die Beschreibung.
+  - Rechts: „20 ⭐“ mit „pro 5 Minuten“ bzw. „pro Kauf“.
+- **Aktionen:**
+  - ✏️ Bearbeiten: Die Zeile klappt inline zum Formular auf, wie bei den Aufgaben.
+  - 🗄️ Archivieren: zwei Klicks wie beim Löschen von Aufgaben (erst rot „✓“). Archivierte verschwinden aus dem Shop, Käufe bleiben erhalten.
+  - ↩️ Wiederherstellen: bei archivierten Belohnungen.
+  - ▾ Einlösungen: klappt eine Liste auf mit Person, Menge, Zeitpunkt, Status und Kosten der letzten 30 Tage.
+
+### `/belohnungen/neu`
+
+- Zweispaltig: links das Formular in einer Karte, rechts „Vorschau im Shop“ (die Shop-Karte, live aktualisiert). Auf dem Handy steht die Vorschau oben.
+
+### Formular (neu und bearbeiten gleich)
+
+| Feld | Eingabe | Regeln |
+|---|---|---|
+| Name der Belohnung | Textfeld | Pflicht, 1–40 Zeichen, pro Familie eindeutig unter den aktiven |
+| Symbol | Emoji-Swatches wie bei Aufgaben (Kachel in gewählter Farbe) | Auswahl: 📱 🎮 📺 🎧 🍨 🍕 🧁 🍿 🌙 🎬 🏞️ 🎲 🎨 ⚽ 🏊 🎁 |
+| Farbe | 6 Farbkreise (`mint` … `lemon`) | |
+| Kategorie | `segmented`: Bildschirm / Essen / Erlebnisse | |
+| Preis | Stepper −/+ **in 5er-Schritten**, Zahl direkt eintippbar | ganze Zahl 1–999 |
+| Art | zwei Karten wie „Aufgabentyp“: **Pro Kauf** / **In Einheiten** | |
+| Menge pro Einheit | Zahl (nur „In Einheiten“) | 1–999, z. B. 5 |
+| Einheit | Text (nur „In Einheiten“) | Pflicht, z. B. „Minuten“, „Folge“ (Mehrzahl: „Folge“ → „Folgen“) |
+| Höchstens pro Kauf | Stepper 1–10 (nur „In Einheiten“) | Standard 6 |
+| Beschreibung | Text, optional (nur „Pro Kauf“) | bis 40 Zeichen, z. B. „beim Abendessen“ |
+
+- **Zusammenfassung unter den Feldern**, gelb hinterlegt, live, z. B. „Im Shop: 20 ⭐ für 5 Minuten · bis 6× pro Kauf = 30 Minuten für 120 ⭐.“
+- **Hinweis beim Bearbeiten:** „Neue Preise gelten ab sofort für neue Käufe. Bereits gekaufte Belohnungen behalten ihren Preis.“
+- **Buttons:** „Belohnung erstellen“ bzw. „Speichern“ (deaktiviert, solange Pflichtfelder fehlen) und „Abbrechen“.
 
 ## 6. Datenmodell (neue Supabase-Migration)
 
@@ -126,30 +169,20 @@ Mit `#mia` oder `#leo` am Ende der Adresse sieht man den Kinder-Login.
 | `color` | text | wie `tasks.color` (`mint`…`lemon`) |
 | `category` | text | `screen` \| `food` \| `fun` |
 | `price` | int > 0 | Sterne pro Einheit |
-| `unit_amount` | int null | z. B. `5` (nur stapelbar) |
-| `unit_label` | text | „Minuten“, „Folge“ oder Beschreibung wie „beim Abendessen“ |
-| `stackable` | bool | Menge 1–6 im Dialog |
+| `unit_amount` | int null | z. B. `5`; gesetzt = Art „In Einheiten“, null = „Pro Kauf“ |
+| `unit_label` | text null | „Minuten“, „Folge“ (nur bei Einheiten) |
+| `description` | text null | z. B. „beim Abendessen“ (nur „Pro Kauf“) |
+| `max_quantity` | int 1–10 default 1 | bei Einheiten Standard 6, sonst 1 |
 | `is_active` | bool default true | archivierte Belohnungen ausblenden |
 | `sort_order` | int | |
 | `created_at` | timestamptz | |
 
 - **RLS lesen:** Familienmitglieder (`public.is_family_member`).
 - **RLS schreiben:** nur Eltern (`private.is_family_parent`).
+- Checks in der Tabelle: `price between 1 and 999`, `unit_amount is null or unit_amount between 1 and 999`, `(unit_amount is null) = (unit_label is null)`, `max_quantity between 1 and 10`, bei `unit_amount is null` gilt `max_quantity = 1`.
+- Eindeutiger Index auf `(family_id, lower(title)) where is_active`.
 
-**Startdaten (Beispiele):**
-
-| Belohnung | Menge | Preis |
-|---|---|---|
-| 📱 Tabletzeit | 5 Minuten | 20 |
-| 🎮 Gamezeit | 10 Minuten | 40 |
-| 📺 Serienfolge | 1 Folge | 30 |
-| 🍨 Dessert aussuchen | – | 25 |
-| 🍕 Wunsch-Menü | – | 45 |
-| 🌙 Länger aufbleiben | 15 Minuten | 35 |
-| 🎬 Filmabend | – | 60 |
-| 🏞️ Ausflug wählen | – | 150 |
-
-Nur „Tabletzeit 20 ⭐ = 5 Minuten“ ist fest vorgegeben. Die übrigen Preise sind Beispiele.
+**Startdaten:** Keine festen Werte. Für die Entwicklung genügt ein Seed mit den Beispielen aus dem Prototyp (Tabletzeit, Gamezeit, Serienfolge, Dessert aussuchen, Wunsch-Menü, Länger aufbleiben, Filmabend, Ausflug wählen). Alle Preise sind Beispiele; die Familie legt sie selbst fest.
 
 ### 6.2 `public.reward_purchases`
 
@@ -160,7 +193,7 @@ Nur „Tabletzeit 20 ⭐ = 5 Minuten“ ist fest vorgegeben. Die übrigen Preise
 | `member_id` | uuid → family_members | Wer eingelöst hat |
 | `reward_id` | uuid → rewards, null bei Löschung | |
 | `title`, `emoji`, `color` | text | Kopie zum Kaufzeitpunkt |
-| `quantity` | int 1–6 | |
+| `quantity` | int 1–`max_quantity` | |
 | `label` | text | z. B. „Tabletzeit · 15 Minuten“ |
 | `cost` | int > 0 | Kopie: `price × quantity` |
 | `purchased_at` | timestamptz default now() | |
@@ -173,15 +206,16 @@ Nur „Tabletzeit 20 ⭐ = 5 Minuten“ ist fest vorgegeben. Die übrigen Preise
 
 ### 6.3 Guthaben
 
-- **View `public.member_balance`** (`security_invoker = true`):
+- **View `public.member_balance`** (`security_invoker = true`), für **alle** Mitglieder (Kinder und Eltern):
   `sum(claim_rewards.stars where is_done)` über **alle Zeit** minus `sum(reward_purchases.cost)` pro Mitglied.
+- Dieses Guthaben wird überall angezeigt, wo „Sterne einer Person“ stehen: braune Leiste, Profil-Kachel „Guthaben“, Belohnungen-Hero, MCP `list_family_members`.
   `claim_rewards` enthält bereits die „Immer wieder“-Erledigungen und lässt gelöschte Einträge weg.
 - **Negatives Guthaben:** Wenn Eltern nachträglich einen Eintrag löschen, kann das Guthaben negativ werden. Das ist erlaubt und wird angezeigt; Käufe sind dann gesperrt.
 
 ### 6.4 Funktionen (security definer, `set search_path = ''`)
 
 - **`redeem_reward(p_member_id uuid, p_reward_id uuid, p_quantity int) returns uuid`**
-  - Prüft: gleiche Familie, Belohnung aktiv, Menge 1–6 (bzw. 1, wenn nicht stapelbar).
+  - Prüft: gleiche Familie, Belohnung aktiv, Menge 1 bis `max_quantity`.
   - Prüft das Guthaben mit Sperre (`for update` auf das Mitglied), damit es keine Doppelkäufe gibt.
   - Kinder-Login darf nur für sich selbst kaufen; Eltern-Login für jedes Kind.
   - Legt den Kauf an.
@@ -197,16 +231,64 @@ Nur „Tabletzeit 20 ⭐ = 5 Minuten“ ist fest vorgegeben. Die übrigen Preise
   - Beitreten, Abhaken, Verlassen (`task_claims`) und Erledigen (`task_completions`) nur für das **eigene** Mitglied.
   - Eltern dürfen weiterhin für alle handeln.
 
-## 7. MCP-Server (`mcp-server/src/index.ts`)
+## 7. MCP-Server: Belohnungen erfassen (`mcp-server/src/index.ts`)
 
-- **Neue Tools**, gleicher Stil wie `create_task` / `list_tasks`, nur für Eltern (Rolle prüfen):
-  - `list_rewards`: aktive und optional archivierte Belohnungen mit Preis, Einheit und Kategorie.
-  - `upsert_reward`: Belohnung anlegen oder ändern (Titel, Emoji, Farbe, Kategorie, Preis, Einheit, stapelbar).
-  - `archive_reward`: Belohnung ausblenden (`is_active = false`). Bestehende Käufe bleiben erhalten.
-  - `list_open_redemptions`: gekaufte, noch nicht eingelöste Belohnungen pro Kind (optional, praktisch per Sprache).
-- `list_family_members` zusätzlich um das Guthaben ergänzen.
-- Server-Version erhöhen, `mcp-server/README.md` ergänzen.
-- Kurze, sprechbare Antworten auf Deutsch (siehe Server-Instructions).
+### 7.1 Allgemein
+
+- Gleicher Stil wie die bestehenden Tools (`create_task`, `list_tasks`, …): `server.registerTool`, Eingaben mit `zod`, Zugriff mit dem OAuth-Token des Nutzers (RLS greift).
+- **Rechte:**
+  - Das angemeldete Konto wird über `family_members.user_id` einem Mitglied zugeordnet.
+  - Alle schreibenden Tools und `confirm_redemption` sind nur für Eltern erlaubt, sonst Fehler „Nur Eltern können Belohnungen ändern.“ (zusätzlich durch RLS abgesichert).
+  - `list_rewards` und `list_open_redemptions` dürfen alle Familienmitglieder.
+- **Antworten:** kurz, auf Deutsch, sprechbar (Server-Instructions). Immer mit Emoji, Name, Einheit und Preis, z. B. „Gespeichert: 🎮 Gamezeit — 10 Minuten für 40 ⭐, bis 6× pro Kauf.“
+- **Nichts erfinden:** Fehlt der Preis oder der Name, fragt Claude nach. Fehlen nur Emoji, Farbe oder Kategorie, setzt der Server Standardwerte: Emoji nach Kategorie (Bildschirm 📱, Essen 🍨, Erlebnisse 🎁), sonst 🎁, Farbe `peach`, Kategorie `fun`. Die gewählten Werte stehen in der Antwort.
+- **Belohnungen per Name finden:** Tools mit `reward` akzeptieren ID oder Namen (Groß-/Kleinschreibung egal). Bei mehreren Treffern kommt eine Rückfrage mit den Kandidaten.
+
+### 7.2 Tools
+
+**`list_rewards`**
+- Eingabe: `include_archived?: boolean` (Standard `false`), `category?: 'screen' | 'food' | 'fun'`.
+- Ausgabe pro Belohnung: Emoji, Name, Kategorie, Preis, Einheit („pro 5 Minuten, bis 6×“ bzw. „pro Kauf“), Beschreibung, Anzahl Einlösungen der letzten 30 Tage, archiviert ja/nein, ID.
+
+**`create_reward`**
+- Eingabe:
+  - `title` (Pflicht, 1–40)
+  - `price` (Pflicht, ganze Zahl 1–999)
+  - `emoji?`, `color?`, `category?`
+  - `unit_amount?` (1–999) und `unit_label?` (nur zusammen) für Belohnungen in Einheiten, `max_quantity?` (1–10, Standard 6)
+  - `description?` (nur ohne Einheit, bis 40)
+- Fehler, wenn eine aktive Belohnung mit gleichem Namen existiert. Die Antwort nennt sie und schlägt `update_reward` vor.
+- Beispiele:
+  - „Leg eine Belohnung an: 10 Minuten Gamezeit für 40 Sterne.“ → `title: "Gamezeit", price: 40, unit_amount: 10, unit_label: "Minuten", category: "screen"`
+  - „Neue Belohnung Pizza-Abend für 80 Sterne.“ → `title: "Pizza-Abend", price: 80, category: "food"`
+
+**`update_reward`**
+- Eingabe: `reward` (ID oder Name, Pflicht) plus beliebige Felder aus `create_reward`. Nur die angegebenen Felder werden geändert.
+- `unit_amount: null` macht aus einer Einheiten-Belohnung eine „Pro Kauf“-Belohnung (dann `max_quantity = 1`).
+- Die Antwort zeigt vorher → nachher, z. B. „Tabletzeit: 20 ⭐ → 25 ⭐ pro 5 Minuten.“
+- Bestehende Käufe bleiben unverändert (Preis ist im Kauf gespeichert).
+
+**`archive_reward`** / **`restore_reward`**
+- Eingabe: `reward` (ID oder Name).
+- Archivieren blendet die Belohnung im Shop aus. Käufe und Verlauf bleiben erhalten.
+- Wiederherstellen schlägt fehl, wenn inzwischen eine aktive Belohnung mit gleichem Namen existiert.
+
+**`list_open_redemptions`**
+- Eingabe: `member?` (ID oder Name, optional).
+- Ausgabe: gekaufte, noch nicht eingelöste Belohnungen pro Kind mit Menge, Kosten und Kaufzeitpunkt, z. B. „🦊 Mia: Tabletzeit · 15 Minuten (−60 ⭐, heute 14:10)“.
+
+**`confirm_redemption`**
+- Eingabe: `purchase_id` oder `member` + `reward`.
+- Ruft `confirm_redemption()` auf, damit „Mia hat ihre Tabletzeit eingelöst“ per Sprache abgehakt werden kann.
+- Gibt es mehrere offene Käufe, wird der älteste abgehakt und die Antwort nennt ihn.
+
+**Bestehende Tools ergänzen**
+- `list_family_members`: statt „★ this week“ das Guthaben (Summe aller Sterne minus Belohnungen) und zusätzlich die Sterne dieser Woche.
+
+### 7.3 Sonstiges
+
+- Server-Version erhöhen (`familyfux-tasks` 0.8.0), `mcp-server/README.md` um die Tools und Beispiele ergänzen.
+- Tests oder mindestens ein Skript, das create → update → archive → restore gegen eine lokale Supabase durchspielt.
 
 ## 8. Design-Regeln
 
@@ -219,13 +301,14 @@ Nur „Tabletzeit 20 ⭐ = 5 Minuten“ ist fest vorgegeben. Die übrigen Preise
 
 - [ ] Navigation zeigt Aufgaben-Pool, Belohnungen, Profil, Essen; Kalender ist weg.
 - [ ] Braune Leiste: Eltern können frei wechseln; Kinder-Login sieht nur sich selbst und kann nicht wechseln.
-- [ ] Pills zeigen Namen und darunter die Sterne (Kinder: Guthaben, Eltern: diese Woche).
+- [ ] Pills zeigen Namen und darunter das Guthaben (alle Sterne minus Belohnungen), für Kinder und Eltern.
 - [ ] Aufgaben-Pool mit Person: „Mias Aufgaben“ → „Noch frei“ → „Immer wieder“; „Ich mach’s!“ und „Erledigt!“ zählen direkt für die Person.
 - [ ] Kauf reduziert das Guthaben sofort und erscheint im Profil unter „Offene Belohnungen“ und im Sterne-Verlauf.
 - [ ] Kauf mit zu wenig Sternen ist im UI und in `redeem_reward` unmöglich.
 - [ ] Nur Eltern können abhaken und stornieren; Stornieren gibt die Sterne zurück.
 - [ ] `/fortschritt/:id` leitet auf das Profil der Person weiter.
-- [ ] MCP: Eltern können Belohnungen per Claude anlegen, ändern und archivieren.
+- [ ] „Belohnungen verwalten“: anlegen, bearbeiten, archivieren, wiederherstellen und Einlösungen ansehen; nur für Eltern.
+- [ ] MCP: `list_rewards`, `create_reward`, `update_reward`, `archive_reward`, `restore_reward`, `list_open_redemptions`, `confirm_redemption` wie in Abschnitt 7; Kinder-Konten bekommen bei schreibenden Tools einen Fehler.
 - [ ] `npm run build` und die bestehenden Tests laufen durch; Migration ist in `supabase/migrations/` abgelegt; `TODO.md` ist nachgeführt.
 
 ## 10. Vorgeschlagene Reihenfolge
@@ -235,10 +318,11 @@ Nur „Tabletzeit 20 ⭐ = 5 Minuten“ ist fest vorgegeben. Die übrigen Preise
 3. Personenwahl-Leiste und Navigation (Kalender raus, Belohnungen/Profil rein).
 4. Aufgaben-Pool mit den drei Bereichen.
 5. Profil (aus `progress` umbauen) und Belohnungen-Seite.
-6. MCP-Tools.
-7. Kinder-Login (Konto verknüpfen + RLS). Kann als eigener Schritt folgen; bis dahin gilt alles als Eltern-Login.
+6. „Belohnungen verwalten“ und „Neue Belohnung“.
+7. MCP-Tools.
+8. Kinder-Login (Konto verknüpfen + RLS). Kann als eigener Schritt folgen; bis dahin gilt alles als Eltern-Login.
 
-## Offene Punkte
+## Entschieden
 
-- Zahl bei Eltern in der Leiste: Sterne dieser Woche (aktuell) oder Summe aller Sterne?
-- Preis-Kalibrierung: Aufgaben bringen meist 1–4 ⭐; 20 ⭐ für 5 Minuten Tablet entsprechen etwa einer Woche Arbeit.
+- Angezeigt wird überall das Guthaben: Summe aller je verdienten Sterne minus eingelöste Belohnungen, für Kinder und Eltern.
+- Es gibt keine festen Preise. Alle Belohnungen und Preise im Prototyp sind Beispiele.

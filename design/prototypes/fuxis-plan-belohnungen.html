@@ -197,6 +197,89 @@ div.wb-pill:hover{background:#fff}
 .done-btn{flex:1;background:var(--mint-deep);color:#fff;border:none;padding:10px 0;border-radius:13px;font-weight:600;font-size:13.5px}
 .repeatable-section{padding-top:4px}
 
+/* BELOHNUNGEN VERWALTEN — wie task-admin.scss / task-create.scss */
+.board.wide{max-width:1080px}
+.page-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.page-head h1{margin:0;font-family:var(--font-display);font-weight:600;font-size:26px}
+.page-head p{margin:4px 0 0;font-size:13.5px;color:var(--brown-soft)}
+.lock-note{display:flex;align-items:center;gap:7px;background:#fff;padding:9px 14px;border-radius:14px;font-size:12.5px;font-weight:600;color:var(--brown-soft);box-shadow:0 8px 18px var(--shadow-warm)}
+.filter-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.filter-tabs{display:flex;gap:4px;background:#fff;padding:5px;border-radius:14px;box-shadow:0 8px 18px var(--shadow-warm)}
+.filter-tabs button{border:none;background:transparent;padding:8px 16px;border-radius:10px;font-weight:600;font-size:13px;color:var(--brown-soft)}
+.filter-tabs button.active{background:var(--orange);color:#fff}
+.add-link{padding:11px 18px;border:none;border-radius:14px;background:var(--orange);color:#fff;font-weight:700;font-size:13.5px;box-shadow:0 14px 26px -12px rgba(232,112,60,.55)}
+.mcp-note{margin:-6px 0 0;font-size:13px;color:var(--brown-soft)}
+.adm-list{display:flex;flex-direction:column;gap:12px}
+.adm-card{background:#fff;border-radius:20px;box-shadow:0 14px 28px -18px var(--shadow-warm);overflow:hidden}
+.adm-card.deleted{opacity:.6}
+.adm-row{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.adm-row .t-icon{width:46px;height:46px;border-radius:14px;font-size:21px}
+.t-main{flex:1;min-width:0}
+.adm-row .t-name{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:15.5px}
+.t-badge{padding:3px 8px;border-radius:8px;background:var(--cream);color:var(--brown-soft);font-family:var(--font-body);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.t-badge.units{background:#fff3d6;color:#a0680a}
+.t-badge.deleted-badge{background:#fbe4df;color:var(--danger)}
+.t-sub{margin-top:3px;font-size:12.5px;color:var(--brown-soft)}
+.t-reward{font-weight:700;font-size:13.5px;color:var(--orange-deep);white-space:nowrap;text-align:right}
+.t-mode{display:block;font-size:10.5px;font-weight:600;color:var(--brown-soft)}
+.t-actions{display:flex;gap:6px;flex-shrink:0}
+.a-btn{width:34px;height:34px;border:none;border-radius:10px;background:var(--cream);font-size:14px;display:flex;align-items:center;justify-content:center}
+.a-btn.del{background:#fbe4df;color:var(--danger)}
+.a-btn.del.confirm{background:var(--danger);color:#fff}
+.a-btn.restore{background:#e4f7e9}
+.chevron{font-size:12px;color:var(--brown-soft);transition:transform .2s ease;display:inline-block}
+.chevron.open{transform:rotate(180deg)}
+.history-panel{border-top:1px solid var(--cream);padding:4px 16px 16px 76px}
+.history-entry{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;border-bottom:1px solid var(--cream)}
+.history-entry:last-child{border-bottom:none}
+.he-person{width:26px;height:26px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px}
+.he-date{flex:1;color:var(--brown-soft)}
+.he-date b{font-weight:600;color:var(--brown)}
+.he-stars{font-weight:700;font-size:12.5px;color:var(--brown)}
+.history-empty{padding:10px 0;font-size:12.5px;color:var(--brown-soft)}
+.edit-panel{padding:18px;background:var(--cream);--segmented-bg:var(--cream-deep)}
+.edit-panel input{background:#fff}
+.layout{display:grid;grid-template-columns:1.5fr 1fr;gap:22px;align-items:start}
+.card{background:#fff;border-radius:24px;padding:22px;box-shadow:0 16px 32px -18px var(--shadow-warm)}
+.field{margin-bottom:20px}
+.f-label{display:block;margin-bottom:9px;font-size:12.5px;font-weight:700;color:var(--brown-soft);text-transform:uppercase;letter-spacing:.3px}
+.optional{font-weight:600;text-transform:none;letter-spacing:0}
+.field input[type=text],.unit-grid input{width:100%;border:2px solid var(--cream-deep);background:var(--cream);border-radius:13px;padding:11px 14px;font:inherit;font-size:14.5px;font-weight:600;color:var(--brown);outline:none}
+.edit-panel .field input[type=text],.edit-panel .unit-grid input{background:#fff}
+.field input:focus{border-color:var(--orange)}
+.swatch-row{display:flex;flex-wrap:wrap;gap:9px}
+.icon-swatch,.color-swatch{width:38px;height:38px;padding:0;border-radius:12px;border:2.5px solid transparent;display:flex;align-items:center;justify-content:center;font-size:17px}
+.icon-swatch.active{border-color:var(--orange)}
+.color-swatch{border-radius:50%;box-shadow:inset 0 0 0 1px rgba(90,52,35,.18)}
+.color-swatch.active{border-color:var(--brown)}
+.color-swatch.active::after{content:'✓';font-size:13px;font-weight:700;color:var(--brown)}
+.seg-lg button{padding:9px 16px;font-size:13.5px}
+.stepper.big .val{display:flex;align-items:center;gap:4px}
+.stepper.big input{width:4ch;border:none;background:transparent;font:inherit;text-align:right;color:inherit;outline:none;-moz-appearance:textfield;appearance:textfield}
+.stepper.big input::-webkit-inner-spin-button,.stepper.big input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.stepper.big input:focus{border-bottom:2px solid var(--orange)}
+.edit-panel .stepper{background:#fff}.edit-panel .stepper button{background:var(--cream)}
+.type-toggle{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.type-btn{border:2.5px solid var(--cream-deep);background:var(--cream);border-radius:16px;padding:14px;text-align:left}
+.type-btn.active{border-color:var(--orange);background:#fff;box-shadow:0 10px 22px -14px var(--shadow-warm)}
+.edit-panel .type-btn{background:#fff}
+.tb-title{font-family:var(--font-display);font-weight:600;font-size:15px}
+.tb-sub{margin-top:2px;font-size:11.5px;color:var(--brown-soft)}
+.unit-grid{display:grid;grid-template-columns:1fr 1.3fr auto;gap:12px;align-items:end}
+.hint{margin:8px 0 0;font-size:12px;color:var(--brown-soft)}
+.hint.strong{margin:0 0 4px;padding:10px 14px;border-radius:12px;background:#fff3d6;color:#7a5307;font-weight:600;font-size:13px}
+.form-actions{display:flex;gap:10px;margin-top:22px}
+.btn{border:none;padding:13px 22px;border-radius:14px;font-weight:700;font-size:14.5px}
+.btn-primary{flex:1;background:var(--orange);color:#fff;box-shadow:0 14px 26px -10px rgba(232,112,60,.55)}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed}
+.btn-secondary{background:var(--cream);color:var(--brown)}
+.edit-panel .btn-secondary{background:#fff}
+.preview-sticky{position:sticky;top:90px}
+.preview-label{margin-bottom:12px;font-size:12.5px;font-weight:700;color:var(--brown-soft);text-transform:uppercase;letter-spacing:.3px}
+.reward-card.preview{max-width:240px;cursor:default}
+.reward-card.preview:hover{transform:none}
+@media (max-width:760px){.layout{grid-template-columns:1fr}.preview-sticky{position:static;order:-1}.unit-grid{grid-template-columns:1fr 1fr}.history-panel{padding-left:16px}.adm-row{flex-wrap:wrap}.adm-row .t-main{flex-basis:calc(100% - 60px)}.t-actions{margin-left:auto}}
+
 /* FORTSCHRITT — wie progress.scss */
 .person-head{display:flex;align-items:center;gap:16px}
 .person-head h1{margin:0;font-family:var(--font-display);font-weight:600;font-size:25px}
@@ -254,20 +337,29 @@ div.wb-pill:hover{background:#fff}
   var FAMILY = [
     {id:'mia', name:'Mia', emoji:'🦊', color:'mint', role:'child', week:17, balance:85},
     {id:'leo', name:'Leo', emoji:'🐻', color:'sky', role:'child', week:9, balance:42},
-    {id:'mama', name:'Mama', emoji:'🌻', color:'lemon', role:'parent', week:6},
-    {id:'papa', name:'Papa', emoji:'🦉', color:'lilac', role:'parent', week:4}
+    {id:'mama', name:'Mama', emoji:'🌻', color:'lemon', role:'parent', week:6, balance:64},
+    {id:'papa', name:'Papa', emoji:'🦉', color:'lilac', role:'parent', week:4, balance:38}
   ];
   // Belohnungen: Preise später über MCP gepflegt (Beispielwerte ausser Tablet)
+  // Belohnungen: in der App aus public.rewards, gepflegt über „Belohnungen verwalten“ oder den MCP-Server
   var REWARDS = [
-    {id:'tablet', emoji:'📱', color:'peach', name:'Tabletzeit', unit:'5 Minuten', price:20, cat:'screen', step:5, word:'Minuten Tabletzeit'},
-    {id:'game', emoji:'🎮', color:'sky', name:'Gamezeit', unit:'10 Minuten', price:40, cat:'screen', step:10, word:'Minuten Gamezeit'},
-    {id:'serie', emoji:'📺', color:'lilac', name:'Serienfolge', unit:'1 Folge', price:30, cat:'screen', step:1, word:'Folge(n)'},
-    {id:'dessert', emoji:'🍨', color:'rose', name:'Dessert aussuchen', unit:'beim Abendessen', price:25, cat:'food'},
-    {id:'menu', emoji:'🍕', color:'lemon', name:'Wunsch-Menü', unit:'du wählst das Essen', price:45, cat:'food'},
-    {id:'wach', emoji:'🌙', color:'lilac', name:'Länger aufbleiben', unit:'15 Minuten', price:35, cat:'fun', step:15, word:'Minuten länger wach'},
-    {id:'film', emoji:'🎬', color:'peach', name:'Filmabend', unit:'du wählst den Film', price:60, cat:'fun'},
-    {id:'ausflug', emoji:'🏞️', color:'mint', name:'Ausflug wählen', unit:'am Wochenende', price:150, cat:'fun'}
+    {id:'tablet', emoji:'📱', color:'peach', name:'Tabletzeit', cat:'screen', price:20, amount:5, unitLabel:'Minuten', desc:'', max:6, active:true, count:14},
+    {id:'game', emoji:'🎮', color:'sky', name:'Gamezeit', cat:'screen', price:40, amount:10, unitLabel:'Minuten', desc:'', max:6, active:true, count:6},
+    {id:'serie', emoji:'📺', color:'lilac', name:'Serienfolge', cat:'screen', price:30, amount:1, unitLabel:'Folge', desc:'', max:3, active:true, count:4},
+    {id:'dessert', emoji:'🍨', color:'rose', name:'Dessert aussuchen', cat:'food', price:25, amount:null, unitLabel:'', desc:'beim Abendessen', max:1, active:true, count:3},
+    {id:'menu', emoji:'🍕', color:'lemon', name:'Wunsch-Menü', cat:'food', price:45, amount:null, unitLabel:'', desc:'du wählst das Essen', max:1, active:true, count:1},
+    {id:'wach', emoji:'🌙', color:'lilac', name:'Länger aufbleiben', cat:'fun', price:35, amount:15, unitLabel:'Minuten', desc:'', max:2, active:true, count:5},
+    {id:'film', emoji:'🎬', color:'peach', name:'Filmabend', cat:'fun', price:60, amount:null, unitLabel:'', desc:'du wählst den Film', max:1, active:true, count:2},
+    {id:'ausflug', emoji:'🏞️', color:'mint', name:'Ausflug wählen', cat:'fun', price:150, amount:null, unitLabel:'', desc:'am Wochenende', max:1, active:true, count:0},
+    {id:'kino', emoji:'🍿', color:'rose', name:'Kinobesuch', cat:'fun', price:200, amount:null, unitLabel:'', desc:'mit Mama oder Papa', max:1, active:false, count:1}
   ];
+  var REWARD_ICONS = ['📱','🎮','📺','🎧','🍨','🍕','🧁','🍿','🌙','🎬','🏞️','🎲','🎨','⚽','🏊','🎁'];
+  var COLORS = ['mint','lilac','sky','rose','peach','lemon'];
+  var CAT_LABEL = {screen:'Bildschirm', food:'Essen', fun:'Erlebnisse'};
+  function plural(u, n){ return n===1 ? u : (/e$/.test(u) ? u+'n' : u); }
+  function unitText(r){ return r.amount ? r.amount+' '+plural(r.unitLabel, r.amount) : r.desc; }
+  function amountText(r, q){ return (q*r.amount)+' '+plural(r.unitLabel, q*r.amount); }
+  function qtyLabel(r, q){ return r.amount ? r.name+' · '+amountText(r, q) : r.name; }
   var CATS = [['all','Alle'],['screen','Bildschirm'],['food','Essen'],['fun','Erlebnisse']];
 
   var S = {
@@ -304,7 +396,7 @@ div.wb-pill:hover{background:#fff}
     ['essen','🍝','Essen','Essen']
   ];
   function shell(inner){
-    var active = S.view;
+    var active = S.view.indexOf('shop')===0 ? 'shop' : S.view;
     var badge = isParent() && openCount() ? '<span class="badge" title="offene Belohnungen">'+openCount()+'</span>' : '';
     var h = '<nav class="topnav"><a class="brand" href="#" data-a="view" data-v="pool"><span class="brand-mark"></span><span class="brand-name">Fuxis Plan</span></a><div class="nav-pills">';
     NAV.forEach(function(n){
@@ -418,9 +510,10 @@ div.wb-pill:hover{background:#fff}
   function shopView(){
     var b = member(S.cur), kid = b && b.role==='child';
     var h = '<div class="board">';
-    h += '<div class="pool-head"><div><h1>Belohnungen</h1><span>Tausche deine Sterne ein</span></div></div>';
+    h += '<div class="pool-head"><div><h1>Belohnungen</h1><span>Tausche deine Sterne ein</span></div>'
+      +(isParent()?'<div class="pool-actions"><button class="manage-tasks" data-a="view" data-v="shop-admin">Verwalten</button><button class="new-task" data-a="rnew">+ Neue Belohnung</button></div>':'')+'</div>';
     if (kid){
-      var next = REWARDS.filter(function(r){return r.price>b.balance;}).sort(function(x,y){return x.price-y.price;})[0];
+      var next = REWARDS.filter(function(r){return r.active && r.price>b.balance;}).sort(function(x,y){return x.price-y.price;})[0];
       h += '<div class="hero"><div class="fuxi" aria-hidden="true">🦊</div><div><div class="big">'+b.name+' hat '+b.balance+' ⭐</div>'
         +'<div class="say">'+(next?'Fuxi: „Noch '+(next.price-b.balance)+' ⭐ bis '+next.name+'!“':'Fuxi: „Du kannst dir alles aussuchen!“')+'</div></div></div>';
     } else {
@@ -428,20 +521,18 @@ div.wb-pill:hover{background:#fff}
         +'<div class="say">Fuxi: „Wähl oben in der braunen Leiste ein Kind aus.“</div></div></div>';
     }
     h += '<div class="block-head"><div class="segmented" role="group" aria-label="Kategorie">'+CATS.map(function(c){
-      return '<button class="'+(S.cat===c[0]?'active':'')+'" data-a="cat" data-v="'+c[0]+'">'+c[1]+'</button>';}).join('')+'</div>'
-      +(isParent()?'<span>Preise ändern: über Claude (MCP)</span>':'')+'</div>';
+      return '<button class="'+(S.cat===c[0]?'active':'')+'" data-a="cat" data-v="'+c[0]+'">'+c[1]+'</button>';}).join('')+'</div></div>';
     h += '<div class="reward-grid">';
-    REWARDS.filter(function(r){return S.cat==='all'||r.cat===S.cat;}).forEach(function(r){
+    REWARDS.filter(function(r){return r.active && (S.cat==='all'||r.cat===S.cat);}).forEach(function(r){
       var ok = kid && b.balance>=r.price;
       h += '<button class="reward-card'+(kid&&!ok?' short':'')+'"'+(kid?' data-a="open" data-v="'+r.id+'"':' disabled')+'><div class="r-icon tile-'+r.color+'">'+r.emoji+'</div>'
-        +'<div><div class="r-name">'+r.name+'</div><div class="r-unit">'+r.unit+'</div></div>'
+        +'<div><div class="r-name">'+r.name+'</div><div class="r-unit">'+unitText(r)+'</div></div>'
         +'<span class="price">'+r.price+' ⭐</span>'+(kid&&!ok?'<span class="missing">noch '+(r.price-b.balance)+' ⭐</span>':'')+'</button>';
     });
     h += '</div></div>';
     if (S.sel && kid) h += dialog();
     return h;
   }
-  function qtyLabel(r,q){ return r.step ? (r.step===1 ? q+' '+(q===1?'Folge':'Folgen') : (q*r.step)+' '+r.word) : r.name; }
   function dialog(){
     var r = reward(S.sel), b = member(S.cur);
     var h = '<div class="overlay'+(S.anim?' anim':'')+'" data-a="close"><div class="dialog" role="dialog" aria-modal="true" aria-label="Belohnung einlösen" data-stop="1">';
@@ -451,16 +542,124 @@ div.wb-pill:hover{background:#fff}
         +'<button class="primary" data-a="close">Super!</button><button class="ghost" data-a="view" data-v="profil">Zu '+b.name+'s Profil</button>';
     } else {
       var cost = r.price*S.qty, rest = b.balance-cost, ok = rest>=0;
-      h += '<div class="d-icon tile-'+r.color+'">'+r.emoji+'</div><h2>'+r.name+'</h2><div class="sub">'+r.unit+' für '+r.price+' ⭐</div>'
+      h += '<div class="d-icon tile-'+r.color+'">'+r.emoji+'</div><h2>'+r.name+'</h2><div class="sub">'+unitText(r)+' für '+r.price+' ⭐</div>'
         +'<span class="for"><span class="av av-'+b.color+'">'+b.emoji+'</span>für '+b.name+'</span>';
-      if (r.step) h += '<div class="stepper"><button data-a="dec" aria-label="Weniger"'+(S.qty<=1?' disabled':'')+'>−</button><span class="val">'+S.qty+'×</span><button data-a="inc" aria-label="Mehr"'+(S.qty>=6?' disabled':'')+'>+</button></div>'
-        +'<div style="font-weight:600">= '+qtyLabel(r,S.qty)+'</div>';
+      if (r.amount && r.max>1) h += '<div class="stepper"><button data-a="dec" aria-label="Weniger"'+(S.qty<=1?' disabled':'')+'>−</button><span class="val">'+S.qty+'×</span><button data-a="inc" aria-label="Mehr"'+(S.qty>=r.max?' disabled':'')+'>+</button></div>'
+        +'<div style="font-weight:600">= '+amountText(r,S.qty)+'</div>';
       h += '<div class="sum"><span>Kostet</span><b>'+cost+' ⭐</b></div>'
         +'<div class="sub" style="font-weight:600;color:'+(ok?'var(--brown-soft)':'var(--danger)')+'">'+(ok?'Danach bleiben '+rest+' ⭐':'Es fehlen noch '+(-rest)+' ⭐')+'</div>'
         +'<button class="primary" data-a="buy"'+(ok?'':' disabled')+'>Einlösen</button><button class="ghost" data-a="close">Abbrechen</button>';
     }
     return h+'</div></div>';
   }
+
+  // ---------- Belohnungen verwalten (nur Eltern) ----------
+  function draftFrom(r){
+    return r ? {name:r.name, emoji:r.emoji, color:r.color, cat:r.cat, price:r.price, mode:r.amount?'units':'single',
+                amount:r.amount||5, unitLabel:r.unitLabel||'Minuten', desc:r.desc||'', max:r.amount?r.max:6}
+             : {name:'', emoji:'🎁', color:'peach', cat:'fun', price:20, mode:'single', amount:5, unitLabel:'Minuten', desc:'', max:6};
+  }
+  function draftAsReward(d){
+    return {name:d.name.trim()||'Neue Belohnung', emoji:d.emoji, color:d.color, cat:d.cat, price:d.price||0,
+            amount:d.mode==='units'?(d.amount||0):null, unitLabel:d.unitLabel.trim(), desc:d.desc.trim(), max:d.mode==='units'?d.max:1};
+  }
+  function draftValid(d){
+    return !!d.name.trim() && d.price>=1 && d.price<=999 && (d.mode==='single' || (d.amount>=1 && !!d.unitLabel.trim()));
+  }
+  function draftHint(d){
+    var r = draftAsReward(d);
+    if (d.mode!=='units') return 'Im Shop: „'+r.name+'“ für '+r.price+' ⭐, einmal pro Kauf.';
+    if (!(r.amount>=1) || !r.unitLabel) return 'Menge und Einheit ausfüllen.';
+    return 'Im Shop: '+r.price+' ⭐ für '+unitText(r)+(r.max>1?' · bis '+r.max+'× pro Kauf = '+amountText(r,r.max)+' für '+(r.price*r.max)+' ⭐':'')+'.';
+  }
+  function previewCard(d){
+    var r = draftAsReward(d);
+    return '<div class="reward-card preview"><div class="r-icon tile-'+r.color+'">'+r.emoji+'</div><div><div class="r-name">'+r.name+'</div><div class="r-unit">'+(unitText(r)||'&nbsp;')+'</div></div><span class="price">'+r.price+' ⭐</span></div>';
+  }
+  function rewardForm(d, isNew){
+    var h = '<div class="field"><label class="f-label" for="rf-name">Name der Belohnung</label><input id="rf-name" type="text" maxlength="40" placeholder="z. B. Tabletzeit" value="'+d.name.replace(/"/g,'&quot;')+'" data-f="name"></div>';
+    h += '<div class="field"><span class="f-label">Symbol</span><div class="swatch-row">'+REWARD_ICONS.map(function(i){
+      return '<button class="icon-swatch tile-'+d.color+(d.emoji===i?' active':'')+'" aria-pressed="'+(d.emoji===i)+'" data-a="df" data-v="emoji|'+i+'">'+i+'</button>';}).join('')+'</div></div>';
+    h += '<div class="field"><span class="f-label">Farbe</span><div class="swatch-row">'+COLORS.map(function(c){
+      return '<button class="color-swatch tile-'+c+(d.color===c?' active':'')+'" aria-pressed="'+(d.color===c)+'" aria-label="'+c+'" data-a="df" data-v="color|'+c+'"></button>';}).join('')+'</div></div>';
+    h += '<div class="field"><span class="f-label">Kategorie</span><div class="segmented seg-lg" role="group" aria-label="Kategorie">'+['screen','food','fun'].map(function(c){
+      return '<button class="'+(d.cat===c?'active':'')+'" data-a="df" data-v="cat|'+c+'">'+CAT_LABEL[c]+'</button>';}).join('')+'</div></div>';
+    h += '<div class="field"><label class="f-label" for="rf-price">Preis</label><div class="stepper big"><button data-a="dprice" data-v="-5" aria-label="5 Sterne weniger"'+(d.price<=5?' disabled':'')+'>−</button>'
+      +'<span class="val"><input id="rf-price" type="number" min="1" max="999" value="'+d.price+'" data-f="price"> ⭐</span><button data-a="dprice" data-v="5" aria-label="5 Sterne mehr"'+(d.price>=995?' disabled':'')+'>+</button></div>'
+      +'<p class="hint">Die Knöpfe ändern um 5 ⭐, die Zahl kannst du auch direkt eintippen (1–999).</p></div>';
+    h += '<div class="field"><span class="f-label">Art</span><div class="type-toggle">'
+      +'<button class="type-btn'+(d.mode==='single'?' active':'')+'" aria-pressed="'+(d.mode==='single')+'" data-a="df" data-v="mode|single"><div class="tb-title">Pro Kauf</div><div class="tb-sub">z. B. Dessert aussuchen, Filmabend</div></button>'
+      +'<button class="type-btn'+(d.mode==='units'?' active':'')+'" aria-pressed="'+(d.mode==='units')+'" data-a="df" data-v="mode|units"><div class="tb-title">In Einheiten</div><div class="tb-sub">z. B. 5 Minuten Tabletzeit, mehrfach kaufbar</div></button></div></div>';
+    if (d.mode==='units'){
+      h += '<div class="field unit-grid"><div><label class="f-label" for="rf-amount">Menge pro Einheit</label><input id="rf-amount" type="number" min="1" max="999" value="'+d.amount+'" data-f="amount"></div>'
+        +'<div><label class="f-label" for="rf-unit">Einheit</label><input id="rf-unit" type="text" maxlength="20" placeholder="Minuten" value="'+d.unitLabel.replace(/"/g,'&quot;')+'" data-f="unitLabel"></div>'
+        +'<div><span class="f-label">Höchstens pro Kauf</span><div class="stepper"><button data-a="dmax" data-v="-1" aria-label="Weniger"'+(d.max<=1?' disabled':'')+'>−</button><span class="val">'+d.max+'×</span><button data-a="dmax" data-v="1" aria-label="Mehr"'+(d.max>=10?' disabled':'')+'>+</button></div></div></div>';
+    } else {
+      h += '<div class="field"><label class="f-label" for="rf-desc">Beschreibung <span class="optional">(optional)</span></label><input id="rf-desc" type="text" maxlength="40" placeholder="z. B. beim Abendessen" value="'+d.desc.replace(/"/g,'&quot;')+'" data-f="desc"></div>';
+    }
+    h += '<p class="hint strong" id="rf-hint">'+draftHint(d)+'</p>';
+    if (!isNew) h += '<p class="hint">Neue Preise gelten ab sofort für neue Käufe. Bereits gekaufte Belohnungen behalten ihren Preis.</p>';
+    h += '<div class="form-actions"><button class="btn btn-primary" id="rf-save" data-a="dsave"'+(draftValid(d)?'':' disabled')+'>'+(isNew?'Belohnung erstellen':'Speichern')+'</button><button class="btn btn-secondary" data-a="dcancel">Abbrechen</button></div>';
+    return h;
+  }
+  function adminView(){
+    var f = S.adminFilter || 'all';
+    var list = REWARDS.filter(function(r){ return f==='all' || (f==='active' ? r.active : !r.active); });
+    var h = '<div class="board wide"><button class="back-link" data-a="view" data-v="shop">← Zurück zu den Belohnungen</button>'
+      +'<div class="page-head"><div><h1>Belohnungen verwalten</h1><p>Preise, Einheiten und bisherige Einlösungen</p></div><div class="lock-note">🔒 Nur für Eltern sichtbar</div></div>'
+      +'<div class="filter-row"><div class="filter-tabs" role="group" aria-label="Filter">'
+      +[['all','Alle'],['active','Aktiv'],['archived','Archiviert']].map(function(x){return '<button class="'+(f===x[0]?'active':'')+'" data-a="afilter" data-v="'+x[0]+'">'+x[1]+'</button>';}).join('')
+      +'</div><button class="add-link" data-a="rnew">+ Neue Belohnung</button></div>'
+      +'<p class="mcp-note">💬 Geht auch mit Claude: „Leg eine Belohnung an: 10 Minuten Gamezeit für 40 Sterne.“</p><div class="adm-list">';
+    if (!list.length) h += '<p class="message">Keine Belohnungen in dieser Ansicht.</p>';
+    list.forEach(function(r){
+      h += '<div class="adm-card'+(r.active?'':' deleted')+'">';
+      if (S.editId===r.id){
+        h += '<div class="edit-panel">'+rewardForm(S.draft,false)+'</div>';
+      } else {
+        var armed = S.armArch===r.id;
+        h += '<div class="adm-row"><div class="t-icon tile-'+r.color+'">'+r.emoji+'</div><div class="t-main"><div class="t-name">'+r.name
+          +'<span class="t-badge">'+CAT_LABEL[r.cat]+'</span>'+(r.amount?'<span class="t-badge units">In Einheiten</span>':'')+(r.active?'':'<span class="t-badge deleted-badge">Archiviert</span>')+'</div>'
+          +'<div class="t-sub">'+(r.amount?'bis '+r.max+'× pro Kauf':(r.desc||'pro Kauf'))+' · '+r.count+'× eingelöst</div></div>'
+          +'<div class="t-reward">'+r.price+' ⭐<span class="t-mode">'+(r.amount?'pro '+unitText(r):'pro Kauf')+'</span></div><div class="t-actions">';
+        if (r.active){
+          h += '<button class="a-btn" title="Bearbeiten" aria-label="'+r.name+' bearbeiten" data-a="redit" data-v="'+r.id+'">✏️</button>'
+            +'<button class="a-btn del'+(armed?' confirm':'')+'" title="'+(armed?'Wirklich archivieren?':'Archivieren')+'" aria-label="'+(armed?'Wirklich archivieren: ':'Archivieren: ')+r.name+'" data-a="rarchive" data-v="'+r.id+'">'+(armed?'✓':'🗄️')+'</button>';
+        } else {
+          h += '<button class="a-btn restore" title="Wiederherstellen" aria-label="'+r.name+' wiederherstellen" data-a="rrestore" data-v="'+r.id+'">↩️</button>';
+        }
+        h += '<button class="a-btn" title="Einlösungen anzeigen" aria-label="Einlösungen anzeigen" aria-expanded="'+(S.histId===r.id)+'" data-a="rhist" data-v="'+r.id+'"><span class="chevron'+(S.histId===r.id?' open':'')+'">▾</span></button></div></div>';
+        if (S.histId===r.id){
+          var ps = S.purchases.filter(function(p){return p.rid===r.id;});
+          h += '<div class="history-panel">'+(ps.length ? ps.map(function(p){ var k = member(p.member);
+            return '<div class="history-entry"><span class="he-person av-'+k.color+'">'+k.emoji+'</span><span class="he-date"><b>'+k.name+'</b> · '+p.label.replace(r.name+' · ','')+' · '+DAYS[p.day].replace(/,.*/,'')+', '+p.time+' Uhr · '+(p.doneBy?'eingelöst ✓':'noch offen')+'</span><span class="he-stars">−'+p.cost+' ⭐</span></div>'; }).join('')
+            : '<div class="history-empty">In den letzten 30 Tagen nicht eingelöst.</div>')+'</div>';
+        }
+      }
+      h += '</div>';
+    });
+    return h+'</div></div>';
+  }
+  function newRewardView(){
+    return '<div class="board wide"><button class="back-link" data-a="view" data-v="shop-admin">← Zurück zu Belohnungen verwalten</button>'
+      +'<div class="page-head"><div><h1>Neue Belohnung</h1><p>Lege fest, wie die Belohnung im Shop aussieht und was sie kostet</p></div></div>'
+      +'<div class="layout"><div class="card">'+rewardForm(S.draft,true)+'</div>'
+      +'<div class="preview-sticky"><div class="preview-label">Vorschau im Shop</div><div id="rf-preview">'+previewCard(S.draft)+'</div></div></div></div>';
+  }
+  function refreshDraftUI(){
+    var pv = document.getElementById('rf-preview'); if (pv) pv.innerHTML = previewCard(S.draft);
+    var hn = document.getElementById('rf-hint'); if (hn) hn.textContent = draftHint(S.draft);
+    var sv = document.getElementById('rf-save'); if (sv) sv.disabled = !draftValid(S.draft);
+  }
+  document.addEventListener('input', function(e){
+    var f = e.target.getAttribute && e.target.getAttribute('data-f'); if (!f || !S.draft) return;
+    S.draft[f] = e.target.type==='number' ? (parseInt(e.target.value,10)||0) : e.target.value;
+    refreshDraftUI();
+  });
+  document.addEventListener('change', function(e){
+    var f = e.target.getAttribute && e.target.getAttribute('data-f'); if (!f || !S.draft || e.target.type!=='number') return;
+    S.draft[f] = Math.min(999, Math.max(1, parseInt(e.target.value,10)||1)); render();
+  });
 
   // ---------- Profil (neu, eigener Menüpunkt; ersetzt /fortschritt/:memberId) ----------
   function openRewardsBlock(list, many){
@@ -489,8 +688,8 @@ div.wb-pill:hover{background:#fff}
 
     h += kid ? openRewardsBlock(mine.filter(function(p){return !p.doneBy;}), false) : openRewardsBlock(allOpen, true);
 
-    h += '<div class="block-head"><h2>Statistik</h2><span>letzte 14 Tage</span></div><div class="stat-row'+(kid?'':' three')+'">'
-      +(kid?'<div class="stat-tile gold"><div class="s-label">Guthaben</div><div class="s-value">'+m.balance+' <span class="unit">⭐</span></div></div>':'')
+    h += '<div class="block-head"><h2>Statistik</h2><span>letzte 14 Tage</span></div><div class="stat-row">'
+      +'<div class="stat-tile gold"><div class="s-label">Guthaben</div><div class="s-value">'+m.balance+' <span class="unit">⭐</span></div></div>'
       +'<div class="stat-tile"><div class="s-label">Sterne diese Woche</div><div class="s-value">'+m.week+' <span class="unit">⭐</span></div></div>'
       +'<div class="stat-tile"><div class="s-label">Aufgaben erledigt</div><div class="s-value">23 <span class="unit">14 Tage</span></div></div>'
       +'<div class="stat-tile"><div class="s-label">Bester Tag</div><div class="s-value">Sa <span class="unit">6 ⭐</span></div></div></div>';
@@ -528,8 +727,8 @@ div.wb-pill:hover{background:#fff}
 
   // ---------- Render + Events ----------
   function render(){
-    // Kinder: gesammelte Sterne (Guthaben); Eltern: Sterne diese Woche
-    function starsTag(m){ return '<span class="sb">'+(m.role==='child'?m.balance:m.week)+' ⭐</span>'; }
+    // Guthaben: alle verdienten Sterne minus eingelöste Belohnungen
+    function starsTag(m){ return '<span class="sb">'+m.balance+' ⭐</span>'; }
     var wb = document.getElementById('whobar');
     if (kidMode()){
       var k = member(S.cur);
@@ -540,7 +739,7 @@ div.wb-pill:hover{background:#fff}
       +FAMILY.map(function(m){
         return '<button class="wb-pill'+(S.cur===m.id?' active':'')+'" data-a="cur" data-v="'+m.id+'" aria-pressed="'+(S.cur===m.id)+'"><span class="av av-'+m.color+'">'+m.emoji+'</span><span><span class="nm">'+m.name+'</span><br>'+starsTag(m)+'</span></button>';
       }).join('')+'</div>';
-    var inner = S.view==='shop' ? shopView() : S.view==='profil' ? progressView() : S.view==='pool' ? poolView()
+    var inner = S.view==='shop' ? shopView() : (S.view==='shop-admin' && isParent()) ? adminView() : (S.view==='shop-new' && isParent()) ? newRewardView() : S.view==='profil' ? progressView() : S.view==='pool' ? poolView()
       : placeholder('🍝','Essen');
     document.getElementById('app').innerHTML = shell(inner);
     // aktive Person in der braunen Leiste sichtbar halten (Handy: seitlich scrollbar)
@@ -555,16 +754,33 @@ div.wb-pill:hover{background:#fff}
     if (el.classList.contains('overlay') && e.target.closest('[data-stop]')) return;
     e.preventDefault();
     var b = member(S.cur);
-    if (a!=='loginmenu' && a!=='login') S.loginMenu = false;
+    if (a!=='rarchive') S.armArch = null;
     switch(a){
       case 'loginmenu': S.loginMenu = !S.loginMenu; break;
       case 'login':
         S.login = v; S.loginMenu = false; S.sel = null; S.picker = null; S.armed = null;
         S.cur = member(v).role==='child' ? v : 'all';
         break;
-      case 'view': S.view = v; S.sel = null; S.picker = null; window.scrollTo(0,0); break;
+      case 'view': S.view = v; S.sel = null; S.picker = null; S.editId = null; S.histId = null; S.armArch = null; window.scrollTo(0,0); break;
       case 'cur': if (kidMode()) return; S.cur = v; S.sel = null; S.bought = null; S.picker = null; S.armed = null; if (!isParent()) S.filter = S.filter; break;
       case 'cat': S.cat = v; break;
+      case 'afilter': S.adminFilter = v; S.editId = null; break;
+      case 'rnew': S.draft = draftFrom(null); S.editId = null; S.view = 'shop-new'; window.scrollTo(0,0); break;
+      case 'redit': S.editId = v; S.draft = draftFrom(reward(v)); S.histId = null; S.armArch = null; break;
+      case 'rhist': S.histId = S.histId===v ? null : v; break;
+      case 'rarchive': if (S.armArch!==v){ S.armArch = v; break; } reward(v).active = false; S.armArch = null; break;
+      case 'rrestore': reward(v).active = true; break;
+      case 'df': (function(){ var x = v.split('|'); S.draft[x[0]] = x[1]; if (x[0]==='mode' && x[1]==='units' && S.draft.max<2) S.draft.max = 6; })(); break;
+      case 'dprice': S.draft.price = Math.min(999, Math.max(1, (S.draft.price||0) + parseInt(v,10))); break;
+      case 'dmax': S.draft.max = Math.min(10, Math.max(1, S.draft.max + parseInt(v,10))); break;
+      case 'dcancel': if (S.view==='shop-new') S.view = 'shop-admin'; S.editId = null; S.draft = null; break;
+      case 'dsave':
+        if (!draftValid(S.draft)) return;
+        var nr = draftAsReward(S.draft);
+        if (S.view==='shop-new'){ S.seq++; nr.id = 'nr'+S.seq; nr.active = true; nr.count = 0; REWARDS.push(nr); S.view = 'shop-admin'; S.adminFilter = 'all'; window.scrollTo(0,0); }
+        else { var old = reward(S.editId); for (var k in nr) old[k] = nr[k]; S.editId = null; }
+        S.draft = null;
+        break;
       case 'open': S.sel = v; S.qty = 1; S.bought = null; S.anim = true; render(); S.anim = false; return;
       case 'inc': if (S.qty<6) S.qty++; break;
       case 'dec': if (S.qty>1) S.qty--; break;
@@ -572,7 +788,7 @@ div.wb-pill:hover{background:#fff}
       case 'buy':
         var r = reward(S.sel), cost = r.price*S.qty; if (b.balance<cost) return;
         b.balance -= cost; S.seq++;
-        var label = !r.step ? r.name : r.name+' · '+(r.step===1 ? qtyLabel(r,S.qty) : (S.qty*r.step)+' Minuten');
+        var label = qtyLabel(r,S.qty); r.count++;
         var now = new Date(), hh = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
         S.purchases.unshift({id:'n'+S.seq, member:b.id, rid:r.id, label:label, cost:cost, time:hh, day:0, doneBy:null});
         S.bought = qtyLabel(r,S.qty);
