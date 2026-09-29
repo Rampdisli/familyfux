@@ -63,6 +63,12 @@ export const routes: Routes = [
     redirectTo: 'tasks',
   },
   {
+    // Its own page (not over the recipe list); before 'essen' so it doesn't count as the details' route.
+    path: 'essen/rezept/:id/bearbeiten',
+    canActivate: [authGuard, parentGuard],
+    loadComponent: () => import('./features/meals/recipe-edit/recipe-edit').then((m) => m.RecipeEdit),
+  },
+  {
     path: 'essen',
     canActivate: [authGuard],
     loadComponent: () => import('./features/meals/recipes/recipes').then((m) => m.Recipes),

@@ -1,0 +1,188 @@
+/* "Rezept löschen" — design/prototypes/fuxis-plan-rezept-bearbeiten.html (screen 3).
+   Same colour variables as recipe-detail.scss; red only for deleting. */
+
+:host {
+  --bernstein-hell: #fde7b0;
+  --danger-bg: #fbe4df;
+  --foto: #f3c9a4;
+}
+
+/* Phones: bottom sheet; from 768 px centred (like the purchase dialog of the rewards). */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(90, 52, 35, 0.45);
+  animation: fade 0.18s ease;
+}
+
+.sheet {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 26px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  border-radius: 28px 28px 0 0;
+  background: #fff;
+  color: var(--brown);
+  box-shadow: 0 30px 60px -20px rgba(90, 52, 35, 0.5);
+  animation: up 0.22s ease;
+}
+
+.sheet-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 24px;
+    text-wrap: balance;
+  }
+}
+
+.thumb {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 18px;
+  background: var(--foto) center / cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+
+.sub {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brown-soft);
+}
+
+/* What goes with the recipe (light red), or what keeps it (yellow: nothing happens). */
+.consequences {
+  margin: 0;
+  padding: 12px 14px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 16px;
+  background: var(--danger-bg);
+  font-size: 14px;
+  font-weight: 600;
+
+  li {
+    display: flex;
+    gap: 10px;
+  }
+
+  b {
+    font-weight: 700;
+  }
+
+  &.blocked {
+    background: var(--bernstein-hell);
+    color: #6b3d0c;
+  }
+}
+
+.keep {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brown-soft);
+}
+
+.message {
+  margin: 0;
+}
+
+.sheet-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.btn {
+  min-height: 48px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14.5px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--orange);
+  color: #fff;
+  box-shadow: 0 14px 26px -10px rgba(232, 112, 60, 0.55);
+}
+
+.btn-secondary {
+  border: 2px solid var(--cream-deep);
+  background: #fff;
+  color: var(--brown);
+}
+
+.btn-danger {
+  min-height: 52px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 15px;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .scrim {
+    align-items: center;
+    padding: 20px;
+  }
+
+  .sheet {
+    padding: 28px;
+    border-radius: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim,
+  .sheet {
+    animation: none;
+  }
+}

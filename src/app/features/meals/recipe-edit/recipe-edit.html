@@ -1,0 +1,49 @@
+<div class="board">
+  <a [routerLink]="['/essen/rezept', id()]" class="back-link">← Zurück zum Rezept</a>
+
+  <div class="page-head">
+    <h1>Rezept bearbeiten</h1>
+    <p>Änderungen gelten sofort für die ganze Familie</p>
+  </div>
+
+  @if (meals.recipesData.error(); as error) {
+    <p class="message error">Konnte das Rezept nicht laden: {{ error.message }}</p>
+  } @else if (draft(); as d) {
+    <div class="layout">
+      <app-recipe-form
+        editing
+        submitLabel="Speichern"
+        [draft]="d"
+        (draftChange)="draft.set($event)"
+        [changed]="changed()"
+        [saving]="saving()"
+        [errorMessage]="errorMessage()"
+        [cancelLink]="['/essen/rezept', id()]"
+        (save)="save()"
+      />
+
+      <aside class="aside-stack">
+        <app-recipe-preview
+          [title]="d.title"
+          [url]="link()"
+          [image]="image()"
+          [ingredients]="ingredients()"
+          placeholder="Rezept"
+        />
+        <div class="danger-zone">
+          <strong>Rezept löschen</strong>
+          <p>Geht nur, solange das Rezept nie auf dem Menüplan stand.</p>
+          <button type="button" class="btn-danger-outline" (click)="deleteOpen.set(true)">🗑️ Rezept löschen…</button>
+        </div>
+      </aside>
+    </div>
+
+    @if (deleteOpen() && recipe(); as r) {
+      <app-recipe-delete-dialog [recipe]="r" (close)="deleteOpen.set(false)" />
+    }
+  } @else if (meals.recipesData.isLoading() || !meals.recipesData.hasValue()) {
+    <p class="message">Lade…</p>
+  } @else {
+    <p class="message">Dieses Rezept gibt es nicht (mehr).</p>
+  }
+</div>

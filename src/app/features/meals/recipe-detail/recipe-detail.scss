@@ -247,6 +247,45 @@ a:focus-visible {
   }
 }
 
+/* Parents only: "✏️ Bearbeiten" (wide) and "🗑️ Löschen" (narrow, red) under the numbers. */
+.recipe-tools {
+  display: flex;
+  gap: 10px;
+}
+
+.tool {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 2px solid var(--rand);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--schoko);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--fuchs);
+  }
+
+  &.del {
+    flex: 0 0 auto;
+    color: var(--danger);
+
+    &:hover {
+      border-color: var(--danger);
+      background: #fbe4df;
+    }
+  }
+}
+
 /* Only in the overlay (phones have the "Herkunft" section). */
 .origin-link {
   display: none;

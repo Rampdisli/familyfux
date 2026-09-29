@@ -1,0 +1,77 @@
+/* Recipe card preview — like the cards in the recipe list. */
+
+:host {
+  display: block;
+}
+
+.preview-label {
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--brown-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.preview-card {
+  background: #fff;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 16px 32px -18px var(--shadow-warm);
+}
+
+.pc-image {
+  position: relative;
+  height: 140px;
+  background: var(--cream-deep) center / cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+}
+
+.pc-source {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 5px 10px;
+  border-radius: 9px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--brown-soft);
+}
+
+.pc-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pc-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+  line-height: 1.25;
+}
+
+.pc-ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.ing-chip {
+  background: var(--cream);
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--brown-soft);
+}
+
+.pc-empty {
+  font-size: 12px;
+  color: var(--brown-soft);
+}

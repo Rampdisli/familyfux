@@ -83,7 +83,7 @@ Mit `#mia` oder `#leo` am Ende der Adresse sieht man den Kinder-Login.
   - Anzeige „Gekauft!“ mit „15 Minuten Tabletzeit für Mia“.
   - Hinweis „Einlösen, sobald Mama oder Papa es in Mias Profil abhakt.“ und das neue Guthaben.
   - Buttons „Super!“ und „Zu Mias Profil“.
-- **Wer darf kaufen:** Kinder für sich selbst. Eltern für ein gewähltes Kind (gemeinsames Gerät).
+- **Wer darf kaufen:** Kinder für sich selbst. Eltern für sich selbst und für ein gewähltes Kind (gemeinsames Gerät). Nur bei „Alle“ sind die Karten zur Ansicht.
 
 ## 5. Profil (`/profil`, ersetzt `/fortschritt/:memberId`)
 
@@ -326,3 +326,6 @@ Beide Routen mit `authGuard` und `parentGuard`.
 
 - Angezeigt wird überall das Guthaben: Summe aller je verdienten Sterne minus eingelöste Belohnungen, für Kinder und Eltern.
 - Es gibt keine festen Preise. Alle Belohnungen und Preise im Prototyp sind Beispiele.
+- Nachtrag: Auch Eltern können ihr Guthaben einlösen (Migration `20260930090000_parents_redeem_rewards.sql`).
+  Abhaken und Stornieren bleiben bei den Eltern, auch für eigene Käufe; „Offene Belohnungen der Kinder“ heißt
+  „Offene Belohnungen der Familie“.

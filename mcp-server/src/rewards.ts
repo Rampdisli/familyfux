@@ -3,8 +3,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * Reward tools ("Belohnungen"): parents manage what kids can buy with their
- * stars, and tick purchases off once they're redeemed. See
+ * Reward tools ("Belohnungen"): parents manage what the family can buy with
+ * their stars, and tick purchases off once they're redeemed. See
  * design/belohnungen-profil.md (section 7) and
  * supabase/migrations/20260929150000_rewards.sql.
  *
@@ -240,7 +240,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
     {
       title: 'List rewards',
       description:
-        'Lists the rewards kids can buy with their stars ("Belohnungen"): emoji, name, category, price, unit, ' +
+        'Lists the rewards family members can buy with their stars ("Belohnungen"): emoji, name, category, price, unit, ' +
         'description, purchases in the last 30 days, archived yes/no and id. Every family member may use it.',
       inputSchema: {
         include_archived: z.boolean().default(false).describe('Also list archived rewards (default false)'),
@@ -289,7 +289,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
     {
       title: 'Create reward',
       description:
-        'Parents only. Adds a reward kids can buy with stars, per purchase ("Pizza-Abend für 80 Sterne") or in units ' +
+        'Parents only. Adds a reward family members can buy with stars, per purchase ("Pizza-Abend für 80 Sterne") or in units ' +
         '("10 Minuten Gamezeit für 40 Sterne": unit_amount 10, unit_label "Minuten", price 40 per unit). ' +
         'Title and price are required — if the user did not say them, ask; never guess. ' +
         'Emoji, colour and category get defaults when missing; the answer names them.',
@@ -553,7 +553,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
     {
       title: 'List open redemptions',
       description:
-        'Lists rewards kids bought that a parent has not ticked off as redeemed yet, per kid, with amount, cost, ' +
+        'Lists rewards family members bought that a parent has not ticked off as redeemed yet, per member, with amount, cost, ' +
         'when and the purchase id (for confirm_redemption). Every family member may use it.',
       inputSchema: {
         member: z.string().trim().min(1).optional().describe('Only this family member (id or name)'),
@@ -601,7 +601,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
         'Pass purchase_id, or member plus reward (names are fine); with several open purchases the oldest is ticked off.',
       inputSchema: {
         purchase_id: z.string().uuid().optional().describe('Id from list_open_redemptions'),
-        member: z.string().trim().min(1).optional().describe('Kid who bought it (id or name)'),
+        member: z.string().trim().min(1).optional().describe('Family member who bought it (id or name)'),
         reward: z.string().trim().min(1).optional().describe('Reward (id or name)'),
       },
     },
