@@ -1,0 +1,148 @@
+<div class="board">
+  <a routerLink="/belohnungen" class="back-link">← Zurück zu den Belohnungen</a>
+
+  <div class="page-head">
+    <div>
+      <h1>Belohnungen verwalten</h1>
+      <p>Preise, Einheiten und bisherige Einlösungen</p>
+    </div>
+    <div class="lock-note">🔒 Nur für Eltern sichtbar</div>
+  </div>
+
+  <div class="filter-row">
+    <div class="filter-tabs" role="group" aria-label="Filter">
+      <button type="button" [class.active]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="setFilter('all')">
+        Alle
+      </button>
+      <button type="button" [class.active]="filter() === 'active'" [attr.aria-pressed]="filter() === 'active'" (click)="setFilter('active')">
+        Aktiv
+      </button>
+      <button type="button" [class.active]="filter() === 'archived'" [attr.aria-pressed]="filter() === 'archived'" (click)="setFilter('archived')">
+        Archiviert
+      </button>
+    </div>
+    <a routerLink="/belohnungen/neu" class="add-link">+ Neue Belohnung</a>
+  </div>
+
+  <p class="mcp-note">💬 Geht auch mit Claude: „Leg eine Belohnung an: 10 Minuten Gamezeit für 40 Sterne.“</p>
+
+  @if (errorMessage(); as message) {
+    <p class="message error">Konnte nicht speichern: {{ message }}</p>
+  }
+
+  @if (rewards.data.error(); as error) {
+    <p class="message error">Konnte die Belohnungen nicht laden: {{ error.message }}</p>
+  } @else if (!rewards.data.hasValue()) {
+    <p class="message">Lade…</p>
+  } @else {
+    <div class="adm-list">
+      @for (reward of visible(); track reward.id) {
+        <div class="adm-card" [class.deleted]="!reward.is_active">
+          @if (editing() === reward.id) {
+            <div class="edit-panel">
+              <app-reward-form
+                [(draft)]="draft"
+                editing
+                [saving]="saving()"
+                [errorMessage]="editError()"
+                (save)="save(reward, $event)"
+                (cancel)="cancelEdit()"
+              />
+            </div>
+          } @else {
+            <div class="adm-row">
+              <div class="t-icon tile-{{ reward.color }}">{{ reward.emoji }}</div>
+              <div class="t-main">
+                <div class="t-name">
+                  {{ reward.title }}
+                  <span class="t-badge">{{ categoryLabels[reward.category] }}</span>
+                  @if (reward.unit_amount) {
+                    <span class="t-badge units">In Einheiten</span>
+                  }
+                  @if (!reward.is_active) {
+                    <span class="t-badge deleted-badge">Archiviert</span>
+                  }
+                </div>
+                <div class="t-sub">
+                  {{ reward.unit_amount ? 'bis ' + reward.max_quantity + '× pro Kauf' : reward.description || 'pro Kauf' }}
+                  · {{ purchasesOf(reward).length }}× eingelöst
+                </div>
+              </div>
+              <div class="t-reward">
+                {{ reward.price }} ⭐
+                <span class="t-mode">{{ reward.unit_amount ? 'pro ' + unitText(reward) : 'pro Kauf' }}</span>
+              </div>
+              <div class="t-actions">
+                @if (reward.is_active) {
+                  <button
+                    type="button"
+                    class="a-btn"
+                    title="Bearbeiten"
+                    [attr.aria-label]="reward.title + ' bearbeiten'"
+                    (click)="edit(reward)"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    type="button"
+                    class="a-btn del"
+                    [class.confirm]="archiveArmed() === reward.id"
+                    [title]="archiveArmed() === reward.id ? 'Wirklich archivieren?' : 'Archivieren'"
+                    [attr.aria-label]="(archiveArmed() === reward.id ? 'Wirklich archivieren: ' : 'Archivieren: ') + reward.title"
+                    (click)="archive(reward)"
+                  >
+                    {{ archiveArmed() === reward.id ? '✓' : '🗄️' }}
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="a-btn restore"
+                    title="Wiederherstellen"
+                    [attr.aria-label]="reward.title + ' wiederherstellen'"
+                    (click)="restore(reward)"
+                  >
+                    ↩️
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="a-btn"
+                  title="Einlösungen anzeigen"
+                  aria-label="Einlösungen anzeigen"
+                  [attr.aria-expanded]="expanded() === reward.id"
+                  (click)="toggleHistory(reward)"
+                >
+                  <span class="chevron" [class.open]="expanded() === reward.id">▾</span>
+                </button>
+              </div>
+            </div>
+
+            @if (expanded() === reward.id) {
+              <div class="history-panel">
+                @for (p of purchasesOf(reward); track p.id) {
+                  <div class="history-entry">
+                    <span class="he-person av-{{ memberColor(p.member_id) }}">{{ memberEmoji(p.member_id) }}</span>
+                    <span class="he-date">
+                      <b>{{ memberName(p.member_id) }}</b>
+                      @if (amount(p); as a) {
+                        · {{ a }}
+                      }
+                      · {{ when(p.purchased_at) }} · {{ p.redeemed_at ? 'eingelöst ✓' : 'noch offen' }}
+                    </span>
+                    <span class="he-stars">−{{ p.cost }} ⭐</span>
+                  </div>
+                } @empty {
+                  <div class="history-empty">In den letzten 30 Tagen nicht eingelöst.</div>
+                }
+              </div>
+            }
+          }
+        </div>
+      } @empty {
+        <p class="message">
+          {{ filter() === 'archived' ? 'Keine archivierten Belohnungen.' : 'Noch keine Belohnungen angelegt.' }}
+        </p>
+      }
+    </div>
+  }
+</div>

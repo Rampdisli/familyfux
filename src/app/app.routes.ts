@@ -35,6 +35,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/rewards/reward-shop/reward-shop').then((m) => m.RewardShop),
   },
   {
+    path: 'belohnungen/verwalten',
+    canActivate: [authGuard, parentGuard],
+    loadComponent: () => import('./features/rewards/reward-admin/reward-admin').then((m) => m.RewardAdmin),
+  },
+  {
+    path: 'belohnungen/neu',
+    canActivate: [authGuard, parentGuard],
+    loadComponent: () => import('./features/rewards/reward-create/reward-create').then((m) => m.RewardCreate),
+  },
+  {
     path: 'profil',
     canActivate: [authGuard],
     loadComponent: () => import('./features/profile/profile').then((m) => m.Profile),

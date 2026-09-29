@@ -1,0 +1,178 @@
+<form (submit)="$event.preventDefault(); submit()">
+  <div class="field">
+    <label class="f-label" for="rf-title">Name der Belohnung</label>
+    <input
+      id="rf-title"
+      type="text"
+      required
+      placeholder="z. B. Tabletzeit"
+      [maxLength]="maxTitle"
+      [value]="draft().title"
+      (input)="patch({ title: $any($event.target).value })"
+    />
+  </div>
+
+  <div class="field">
+    <span class="f-label">Symbol</span>
+    <div class="swatch-row">
+      @for (icon of icons(); track icon) {
+        <button
+          type="button"
+          class="icon-swatch tile-{{ draft().color }}"
+          [class.active]="draft().emoji === icon"
+          [attr.aria-pressed]="draft().emoji === icon"
+          (click)="patch({ emoji: icon })"
+        >
+          {{ icon }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="field">
+    <span class="f-label">Farbe</span>
+    <div class="swatch-row">
+      @for (c of colors; track c) {
+        <button
+          type="button"
+          class="color-swatch tile-{{ c }}"
+          [class.active]="draft().color === c"
+          [attr.aria-pressed]="draft().color === c"
+          [attr.aria-label]="c"
+          (click)="patch({ color: c })"
+        ></button>
+      }
+    </div>
+  </div>
+
+  <div class="field">
+    <span class="f-label">Kategorie</span>
+    <div class="segmented seg-lg" role="group" aria-label="Kategorie">
+      @for (c of categories; track c) {
+        <button
+          type="button"
+          [class.active]="draft().category === c"
+          [attr.aria-pressed]="draft().category === c"
+          (click)="patch({ category: c })"
+        >
+          {{ categoryLabels[c] }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="f-label" for="rf-price">Preis</label>
+    <div class="stepper big">
+      <button type="button" aria-label="5 Sterne weniger" [disabled]="draft().price <= 5" (click)="stepPrice(-5)">−</button>
+      <span class="val">
+        <input
+          #price
+          id="rf-price"
+          type="number"
+          min="1"
+          [max]="maxPrice"
+          [value]="draft().price"
+          (change)="typePrice(price)"
+        />
+        ⭐
+      </span>
+      <button type="button" aria-label="5 Sterne mehr" [disabled]="draft().price >= maxPrice - 4" (click)="stepPrice(5)">
+        +
+      </button>
+    </div>
+    <p class="hint">Die Knöpfe ändern um 5 ⭐, die Zahl kannst du auch direkt eintippen (1–{{ maxPrice }}).</p>
+  </div>
+
+  <div class="field">
+    <span class="f-label">Art</span>
+    <div class="type-toggle">
+      <button
+        type="button"
+        class="type-btn"
+        [class.active]="draft().mode === 'single'"
+        [attr.aria-pressed]="draft().mode === 'single'"
+        (click)="setMode('single')"
+      >
+        <div class="tb-title">Pro Kauf</div>
+        <div class="tb-sub">z. B. Dessert aussuchen, Filmabend</div>
+      </button>
+      <button
+        type="button"
+        class="type-btn"
+        [class.active]="draft().mode === 'units'"
+        [attr.aria-pressed]="draft().mode === 'units'"
+        (click)="setMode('units')"
+      >
+        <div class="tb-title">In Einheiten</div>
+        <div class="tb-sub">z. B. 5 Minuten Tabletzeit, mehrfach kaufbar</div>
+      </button>
+    </div>
+  </div>
+
+  @if (draft().mode === 'units') {
+    <div class="field unit-grid">
+      <div>
+        <label class="f-label" for="rf-amount">Menge pro Einheit</label>
+        <input
+          #amount
+          id="rf-amount"
+          type="number"
+          min="1"
+          [max]="maxUnitAmount"
+          [value]="draft().unit_amount"
+          (change)="typeAmount(amount)"
+        />
+      </div>
+      <div>
+        <label class="f-label" for="rf-unit">Einheit</label>
+        <input
+          id="rf-unit"
+          type="text"
+          placeholder="Minuten"
+          [maxLength]="maxUnitLabel"
+          [value]="draft().unit_label"
+          (input)="patch({ unit_label: $any($event.target).value })"
+        />
+      </div>
+      <div>
+        <span class="f-label">Höchstens pro Kauf</span>
+        <div class="stepper">
+          <button type="button" aria-label="Weniger" [disabled]="draft().max_quantity <= 1" (click)="stepMax(-1)">−</button>
+          <span class="val">{{ draft().max_quantity }}×</span>
+          <button type="button" aria-label="Mehr" [disabled]="draft().max_quantity >= maxQuantity" (click)="stepMax(1)">
+            +
+          </button>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="field">
+      <label class="f-label" for="rf-desc">Beschreibung <span class="optional">(optional)</span></label>
+      <input
+        id="rf-desc"
+        type="text"
+        placeholder="z. B. beim Abendessen"
+        [maxLength]="maxDescription"
+        [value]="draft().description"
+        (input)="patch({ description: $any($event.target).value })"
+      />
+    </div>
+  }
+
+  <p class="hint strong">{{ summary() }}</p>
+  @if (editing()) {
+    <p class="hint">Neue Preise gelten ab sofort für neue Käufe. Bereits gekaufte Belohnungen behalten ihren Preis.</p>
+  }
+
+  @if (errorMessage(); as message) {
+    <p class="message error">Konnte die Belohnung nicht speichern: {{ message }}</p>
+  }
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary" [disabled]="!valid() || saving()">
+      {{ saving() ? 'Speichere…' : editing() ? 'Speichern' : 'Belohnung erstellen' }}
+    </button>
+    <button type="button" class="btn btn-secondary" (click)="cancel.emit()">Abbrechen</button>
+  </div>
+</form>

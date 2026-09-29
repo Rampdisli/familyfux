@@ -1,0 +1,87 @@
+/* "Neue Belohnung" — like task-create.scss; design/prototypes/fuxis-plan-belohnungen.html */
+
+:host {
+  display: block;
+}
+
+.board {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 34px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.back-link {
+  align-self: flex-start;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--brown-soft);
+  text-decoration: none;
+}
+
+.page-head {
+  h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 26px;
+  }
+
+  p {
+    margin: 4px 0 0;
+    font-size: 13.5px;
+    color: var(--brown-soft);
+  }
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 22px;
+  box-shadow: 0 16px 32px -18px var(--shadow-warm);
+}
+
+.preview-sticky {
+  position: sticky;
+  top: 90px;
+}
+
+.preview-label {
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--brown-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.preview {
+  max-width: 240px;
+}
+
+/* Phones: the preview goes on top. */
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-sticky {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .board {
+    padding-inline: 18px;
+  }
+}
