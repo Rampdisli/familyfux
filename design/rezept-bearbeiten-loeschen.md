@@ -120,11 +120,14 @@ Eltern- und Kinder-Login.
 - **Gelbe Box** (`--bernstein-hell`, nicht rot, weil nichts passiert). Nur Zeilen, die zutreffen:
   - 📅 „**2 geplante Mahlzeiten** (Do Mittag, Sa Abend)“
   - ✓ „**7× gekocht**“
-- **Text:** „Ein Rezept mit Mahlzeiten bleibt erhalten, damit Wochenplan und Verlauf stimmen. Nimm es zuerst aus dem
-  Wochenplan heraus.“
+- **Text** je nach Mahlzeiten:
+  - Mindestens einmal gekocht (Mahlzeit vor heute): „Das Rezept wurde schon gekocht und bleibt deshalb für den
+    Verlauf erhalten.“ Das ist endgültig.
+  - Nur geplant (ab heute): „Ein Rezept mit geplanten Mahlzeiten bleibt erhalten. Nimm es zuerst aus dem Wochenplan
+    heraus.“
 - **Buttons:**
-  - „📅 Zum Wochenplan“ (primär): führt zu `/essen/wochenplan`.
-  - „Schliessen“.
+  - Nur bei „nur geplant“: „📅 Zum Wochenplan“ (primär), führt zu `/essen/wochenplan`.
+  - „Schliessen“ (bei „schon gekocht“ der einzige Button).
 
 ### Variante B: keine Mahlzeiten → löschen
 
