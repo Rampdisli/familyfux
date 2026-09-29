@@ -30,6 +30,7 @@
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { margin: 0; }
   body {
     font-family: 'Inter', system-ui, sans-serif;
@@ -225,11 +226,14 @@
   .consequences { list-style: none; margin: 0; padding: 12px 14px; background: var(--danger-bg); border-radius: 16px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; }
   .consequences li { display: flex; gap: 10px; }
   .consequences b { font-weight: 700; }
+  .consequences.blocked { background: var(--bernstein-hell); color: #6b3d0c; }
+  .sheet > div { display: flex; flex-direction: column; gap: 14px; }
+  .sheet > div[hidden] { display: none; }
   .keep { margin: 0; font-size: 13px; font-weight: 600; color: var(--schoko-2); }
   .sheet-actions { display: grid; gap: 10px; }
   .btn-danger { min-height: 52px; border: 0; border-radius: 16px; background: var(--danger); color: #fff; font-weight: 700; font-size: 15px; box-shadow: 0 3px 0 #a63e2c; }
 
-  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 400; background: var(--schoko); color: var(--creme); border-radius: 16px; padding: 14px 18px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,.25); display: none; max-width: calc(100% - 32px); }
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 400; background: var(--schoko); color: var(--creme); border-radius: 16px; padding: 14px 18px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,.25); display: none; width: max-content; max-width: calc(100% - 32px); }
   .toast.on { display: block; }
 
   .proto-note { max-width: 1180px; margin: 0 auto; padding: 0 16px 30px; font-size: 12.5px; font-weight: 600; color: var(--schoko-2); }
@@ -245,6 +249,11 @@
     <button type="button" data-screen="delete" aria-pressed="false">3 · Löschen</button>
   </div>
   <span class="sp"></span>
+  <span class="lbl">Menüplan</span>
+  <div class="grp">
+    <button type="button" data-meals="1" aria-pressed="true">Mit Mahlzeiten</button>
+    <button type="button" data-meals="0" aria-pressed="false">Ohne</button>
+  </div>
   <span class="lbl">Login</span>
   <div class="grp">
     <button type="button" data-role="parent" aria-pressed="true">Eltern</button>
@@ -268,14 +277,14 @@
           <div class="chips"><span class="chip src">🔗 Fooby</span><span class="chip ok">✓ Zutaten da</span></div>
           <h1 id="d-title" class="js-title">Spaghetti Bolognese</h1>
           <div class="stats">
-            <div class="stat"><b>7×</b><span>gekocht</span></div>
-            <div class="stat"><b>2</b><span>geplant</span></div>
+            <div class="stat"><b id="st-cooked">7×</b><span>gekocht</span></div>
+            <div class="stat"><b id="st-planned">2</b><span>geplant</span></div>
             <div class="stat"><b>3/4</b><span>mögen es</span></div>
           </div>
           <!-- NEU -->
-          <div class="recipe-tools new-mark">
+          <div class="recipe-tools new-mark parent-only">
             <button type="button" class="tool" data-go="edit">✏️ Bearbeiten</button>
-            <button type="button" class="tool del parent-only" data-go="delete" aria-label="Rezept löschen">🗑️ Löschen</button>
+            <button type="button" class="tool del" data-go="delete" aria-label="Rezept löschen">🗑️ Löschen</button>
           </div>
         </div>
         <div class="actions">
@@ -382,7 +391,7 @@
         </div>
         <div class="danger-zone parent-only">
           <strong>Rezept löschen</strong>
-          <p>Entfernt das Rezept samt Bewertungen und Menüplan-Einträgen für die ganze Familie.</p>
+          <p id="dz-text">Geht nur, solange das Rezept nie auf dem Menüplan stand.</p>
           <button type="button" class="btn-danger-outline" data-go="delete">🗑️ Rezept löschen…</button>
         </div>
       </aside>
@@ -393,30 +402,51 @@
 <!-- ===================== 3 · LÖSCHEN ===================== -->
 <div class="scrim" id="scrim">
   <div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="del-title" aria-describedby="del-desc">
-    <div class="sheet-top">
-      <div class="sheet-thumb" aria-hidden="true">🍝</div>
-      <div>
-        <h2 id="del-title">Rezept löschen?</h2>
-        <p class="sub" id="del-desc">„<span class="js-title">Spaghetti Bolognese</span>“ verschwindet für die ganze Familie.</p>
+    <!-- Variante A: Rezept hat Mahlzeiten → gesperrt -->
+    <div id="del-blocked">
+      <div class="sheet-top">
+        <div class="sheet-thumb" aria-hidden="true">🍝</div>
+        <div>
+          <h2 id="del-title-b">Löschen geht nicht</h2>
+          <p class="sub">„<span class="js-title">Spaghetti Bolognese</span>“ steht auf dem Menüplan.</p>
+        </div>
+      </div>
+      <ul class="consequences blocked">
+        <li><span>📅</span><span><b>2 geplante Mahlzeiten</b> (Do Mittag, Sa Abend)</span></li>
+        <li><span>✓</span><span><b>7× gekocht</b></span></li>
+      </ul>
+      <p class="keep">Ein Rezept mit Mahlzeiten bleibt erhalten, damit Wochenplan und Verlauf stimmen. Nimm es zuerst aus dem Wochenplan heraus.</p>
+      <div class="sheet-actions">
+        <button type="button" class="btn btn-primary" data-close>📅 Zum Wochenplan</button>
+        <button type="button" class="btn btn-secondary" data-close>Schliessen</button>
       </div>
     </div>
-    <ul class="consequences">
-      <li><span>📅</span><span><b>2 geplante Mahlzeiten</b> (Do Mittag, Sa Abend) werden aus dem Wochenplan entfernt.</span></li>
-      <li><span>✓</span><span><b>7× gekocht</b> — dieser Verlauf geht verloren.</span></li>
-      <li><span>👍</span><span>Bewertungen und Wünsche von 3 Personen werden gelöscht.</span></li>
-      <li><span>🖼️</span><span>Das gespeicherte Foto wird gelöscht.</span></li>
-    </ul>
-    <p class="keep">Das Originalrezept auf Fooby bleibt natürlich bestehen. Löschen lässt sich nicht rückgängig machen.</p>
-    <div class="sheet-actions">
-      <button type="button" class="btn-danger" id="confirm-del">Endgültig löschen</button>
-      <button type="button" class="btn btn-secondary" id="cancel-del">Abbrechen</button>
+    <!-- Variante B: keine Mahlzeiten → löschen -->
+    <div id="del-ok" hidden>
+      <div class="sheet-top">
+        <div class="sheet-thumb" aria-hidden="true">🍝</div>
+        <div>
+          <h2 id="del-title">Rezept löschen?</h2>
+          <p class="sub" id="del-desc">„<span class="js-title">Spaghetti Bolognese</span>“ ist danach für die ganze Familie weg.</p>
+        </div>
+      </div>
+      <ul class="consequences">
+        <li><span>🧺</span><span>Zutaten und Abweichungen</span></li>
+        <li><span>👍</span><span>Bewertungen und Wünsche von 3 Personen</span></li>
+        <li><span>🖼️</span><span>Das gespeicherte Foto</span></li>
+      </ul>
+      <p class="keep">Das lässt sich nicht rückgängig machen. Das Originalrezept auf Fooby bleibt bestehen.</p>
+      <div class="sheet-actions">
+        <button type="button" class="btn-danger" id="confirm-del">Endgültig löschen</button>
+        <button type="button" class="btn btn-secondary" data-close>Abbrechen</button>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast" role="status"></div>
 
-<p class="proto-note">Prototyp · Die gestrichelte gelbe Markierung zeigt, was in der Detailansicht neu ist. Mit „Kind“ oben rechts sieht man den Kinder-Login (kein Löschen). Es wird nichts gespeichert.</p>
+<p class="proto-note">Prototyp · Die gestrichelte gelbe Markierung zeigt, was in der Detailansicht neu ist. Mit „Kind“ sieht man den Kinder-Login (weder Bearbeiten noch Löschen). „Menüplan“ schaltet zwischen einem Rezept mit und ohne Mahlzeiten um: Nur ohne Mahlzeiten lässt es sich löschen. Es wird nichts gespeichert.</p>
 
 <script>
   // ---------- Zutaten: Zustand wie recipe_ingredients ----------
@@ -545,7 +575,8 @@
     if (screen === 'delete') {
       if (current === 'edit') { /* Dialog öffnet über dem Formular */ } else showScreen('detail');
       document.getElementById('scrim').classList.add('on');
-      document.getElementById('cancel-del').focus();
+      const box = document.getElementById(hasMeals ? 'del-blocked' : 'del-ok');
+      box.querySelector('.btn-secondary').focus();
       mark('delete');
       return;
     }
@@ -568,7 +599,7 @@
     const s = e.target.closest('[data-screen]'); if (s) return go(s.dataset.screen);
     const g = e.target.closest('[data-go]'); if (g) return go(g.dataset.go);
   });
-  document.getElementById('cancel-del').addEventListener('click', () => closeDelete());
+  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => closeDelete()));
   document.getElementById('scrim').addEventListener('click', (e) => { if (e.target.id === 'scrim') closeDelete(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDelete(); });
   document.getElementById('confirm-del').addEventListener('click', () => {
@@ -577,13 +608,30 @@
     toast('🗑️ „' + (document.getElementById('e-title').value.trim() || 'Rezept') + '“ gelöscht — zurück in der Rezeptliste');
   });
 
+  // ---------- Mahlzeiten ----------
+  let hasMeals = true;
+  document.querySelectorAll('[data-meals]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-meals]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    hasMeals = b.dataset.meals === '1';
+    document.getElementById('del-blocked').hidden = !hasMeals;
+    document.getElementById('del-ok').hidden = hasMeals;
+    document.getElementById('st-cooked').textContent = hasMeals ? '7×' : '0×';
+    document.getElementById('st-planned').textContent = hasMeals ? '2' : '0';
+    document.querySelector('#screen-detail .ghost-block').textContent = hasMeals
+      ? 'Auf dem Menüplan · Wer mag\'s? · Herkunft — unverändert'
+      : 'Noch nicht eingeplant · Wer mag\'s? · Herkunft — unverändert';
+  }));
+
   // ---------- Rolle ----------
   document.querySelectorAll('[data-role]').forEach((b) => b.addEventListener('click', () => {
     document.querySelectorAll('[data-role]').forEach((x) => x.setAttribute('aria-pressed', x === b));
     const parent = b.dataset.role === 'parent';
     document.querySelectorAll('.parent-only').forEach((el) => (el.hidden = !parent));
-    document.querySelector('[data-screen="delete"]').disabled = !parent;
-    document.querySelector('[data-screen="delete"]').style.opacity = parent ? '' : '.4';
+    ['edit', 'delete'].forEach((k) => {
+      const btn = document.querySelector(`[data-screen="${k}"]`);
+      btn.disabled = !parent; btn.style.opacity = parent ? '' : '.4';
+    });
+    if (!parent) go('detail');
   }));
 
   let tt;

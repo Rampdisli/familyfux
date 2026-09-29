@@ -6,14 +6,16 @@ Farben, Schriften und Komponenten kommen weiterhin aus `src/styles.scss` und den
 (`recipe-detail`, `recipe-create`). Der Prototyp nutzt dieselben Tokens wie `recipe-detail.scss`.
 
 Prototyp testen: Datei im Browser öffnen. Oben wechselt man zwischen den Screens 1 · Rezept, 2 · Bearbeiten und
-3 · Löschen. Rechts oben schaltet man zwischen Eltern- und Kinder-Login um.
+3 · Löschen. „Menüplan“ schaltet zwischen einem Rezept mit und ohne Mahlzeiten um. Rechts oben wechselt man zwischen
+Eltern- und Kinder-Login.
 
 ## Ziel
 
-- Ein Rezept lässt sich nach dem Import korrigieren: Name, Link, Bild, Zutaten und „Zutaten im Haus?“.
+- Eltern können ein Rezept nach dem Import korrigieren: Name, Link, Bild, Zutaten und „Zutaten im Haus?“.
 - Zutaten-Änderungen bleiben als Abweichung vom Original sichtbar, wie es `recipe_ingredients` heute schon vorsieht:
   „statt …“, „ergänzt“, „weggelassen“.
-- Eltern können ein Rezept löschen. Vorher zeigt ein Dialog, was dabei verloren geht.
+- Eltern können ein Rezept endgültig löschen, aber nur, solange es nie auf dem Menüplan stand.
+  Hat es Mahlzeiten (geplant oder gekocht), ist Löschen gesperrt.
 - Neue Screens gibt es nur für Bearbeiten und Löschen. In der Rezeptliste ändert sich nichts.
 
 ## 1. Detailansicht (`/essen/rezept/:id`): neue Buttons
@@ -26,16 +28,17 @@ Prototyp testen: Datei im Browser öffnen. Oben wechselt man zwischen den Screen
   - `✏️ Bearbeiten`: breit (`flex: 1`), weiß mit Rand `--rand`. Führt zu `/essen/rezept/:id/bearbeiten`.
   - `🗑️ Löschen`: schmal, Text in Rot (`--danger`), Hover mit rotem Rand und hellrotem Hintergrund.
     Öffnet den Lösch-Dialog (Abschnitt 3). `aria-label="Rezept löschen"`.
-- **Sichtbarkeit:**
-  - „Bearbeiten“ für alle Familienmitglieder (die Update-Policy für `recipes` gilt heute schon für alle Mitglieder).
-  - „Löschen“ nur bei Eltern-Login (`TaskPool.isParent()`). Bei Kinder-Login fehlt der Button, „Bearbeiten“ nimmt
-    dann die ganze Breite ein.
+- **Sichtbarkeit:** Die ganze Zeile nur bei Eltern-Login (`TaskPool.isParent()`). Bei Kinder-Login fehlt sie,
+  die Detailansicht sieht dann aus wie heute.
+- „Löschen“ ist auch bei einem Rezept mit Mahlzeiten sichtbar und aktiv. Der Dialog erklärt dann, warum es nicht
+  geht (Abschnitt 3).
 - Die sticky Aktionsleiste unten (Einplanen / Heute gekocht) und die übrigen Bereiche bleiben unverändert.
 - Mindesthöhe der Buttons: 44 px.
 
 ## 2. Rezept bearbeiten (`/essen/rezept/:id/bearbeiten`, neu)
 
-- **Route:** eigene Seite (kein Overlay) mit `authGuard`, gleich aufgebaut wie `/essen/neu` (`recipe-create`).
+- **Route:** eigene Seite (kein Overlay) mit `authGuard` und `parentGuard`, gleich aufgebaut wie `/essen/neu`
+  (`recipe-create`).
   - Neue Komponente `recipe-edit`.
   - Das Formular am besten als gemeinsame Komponente aus `recipe-create` herauslösen, z. B. `recipe-form`
     (wie bei `reward-form`).
@@ -96,51 +99,93 @@ Prototyp testen: Datei im Browser öffnen. Oben wechselt man zwischen den Screen
   `Meals` lädt die Rezepte neu (wie nach `create`).
 - **Fehler:** wie in `recipe-create`: „Konnte das Rezept nicht speichern: …“ über den Buttons.
 
-### „Rezept löschen“-Box (nur Eltern)
+### „Rezept löschen“-Box
 
 - Weiße Karte mit hellrotem Rand in der rechten Spalte, auf dem Handy unter der Vorschau.
-- Inhalt: „Rezept löschen“, „Entfernt das Rezept samt Bewertungen und Menüplan-Einträgen für die ganze Familie.“
-  und der Button „🗑️ Rezept löschen…“ (rot umrandet). Er öffnet denselben Dialog wie in der Detailansicht.
+- Inhalt: „Rezept löschen“, „Geht nur, solange das Rezept nie auf dem Menüplan stand.“ und der Button
+  „🗑️ Rezept löschen…“ (rot umrandet). Er öffnet denselben Dialog wie in der Detailansicht.
 
 ## 3. Rezept löschen (Dialog, nur Eltern)
 
 - **Form:** `role="alertdialog"`. Handy: Bottom-Sheet. Ab 768 px: zentriert (wie der Kauf-Dialog bei den
-  Belohnungen). Esc, Klick auf den Scrim und „Abbrechen“ schließen ihn. Der Fokus startet auf „Abbrechen“.
-- **Kopf:** Vorschaubild 64 × 64, Titel „Rezept löschen?“, darunter „„Spaghetti Bolognese“ verschwindet für die
-  ganze Familie.“
-- **Folgen** (hellrote Box). Nur Zeilen, die zutreffen:
-  - 📅 „**2 geplante Mahlzeiten** (Do Mittag, Sa Abend) werden aus dem Wochenplan entfernt.“
-    Das sind Mahlzeiten ab heute, wie `planned()` in der Detailansicht.
-  - ✓ „**7× gekocht** — dieser Verlauf geht verloren.“
-  - 👍 „Bewertungen und Wünsche von 3 Personen werden gelöscht.“
-  - 🖼️ „Das gespeicherte Foto wird gelöscht.“ Nur wenn das Bild im Bucket `recipe-images` liegt.
-- **Unter der Box:** „Das Originalrezept auf Fooby bleibt natürlich bestehen. Löschen lässt sich nicht rückgängig
-  machen.“ Der Satz zum Original nur, wenn ein Link gesetzt ist.
+  Belohnungen). Esc, Klick auf den Scrim und der zweite Button schließen ihn. Der Fokus startet auf dem zweiten
+  Button („Schliessen“ bzw. „Abbrechen“).
+- **Regel:** Ein Rezept lässt sich nur löschen, wenn es **keine einzige Mahlzeit** in `meals` hat, weder geplante
+  (ab heute) noch gekochte (vor heute). Beim Öffnen des Dialogs wird das frisch geprüft.
+
+### Variante A: Rezept hat Mahlzeiten → gesperrt
+
+- **Kopf:** Vorschaubild 64 × 64, Titel „Löschen geht nicht“, darunter „„Spaghetti Bolognese“ steht auf dem
+  Menüplan.“
+- **Gelbe Box** (`--bernstein-hell`, nicht rot, weil nichts passiert). Nur Zeilen, die zutreffen:
+  - 📅 „**2 geplante Mahlzeiten** (Do Mittag, Sa Abend)“
+  - ✓ „**7× gekocht**“
+- **Text:** „Ein Rezept mit Mahlzeiten bleibt erhalten, damit Wochenplan und Verlauf stimmen. Nimm es zuerst aus dem
+  Wochenplan heraus.“
+- **Buttons:**
+  - „📅 Zum Wochenplan“ (primär): führt zu `/essen/wochenplan`.
+  - „Schliessen“.
+
+### Variante B: keine Mahlzeiten → löschen
+
+- **Kopf:** Vorschaubild, Titel „Rezept löschen?“, darunter „„Spaghetti Bolognese“ ist danach für die ganze Familie
+  weg.“
+- **Hellrote Box** mit dem, was mitgelöscht wird. Nur Zeilen, die zutreffen:
+  - 🧺 „Zutaten und Abweichungen“
+  - 👍 „Bewertungen und Wünsche von 3 Personen“
+  - 🖼️ „Das gespeicherte Foto“: nur wenn das Bild im Bucket `recipe-images` liegt.
+- **Text:** „Das lässt sich nicht rückgängig machen. Das Originalrezept auf Fooby bleibt bestehen.“ Den zweiten Satz
+  nur, wenn ein Link gesetzt ist.
 - **Buttons:**
   - „Endgültig löschen“ (rot, gefüllt): wird während des Löschens deaktiviert und zeigt „Lösche…“.
   - „Abbrechen“.
 - **Nach dem Löschen:** zurück zu `/essen` (die Liste), Toast „🗑️ „Spaghetti Bolognese“ gelöscht“.
-  Es gibt **kein Rückgängig**.
+  Es gibt **kein Rückgängig**; das Rezept ist weg.
 - **Fehler:** Der Dialog bleibt offen und zeigt „Konnte das Rezept nicht löschen: …“.
+  - Ist inzwischen eine Mahlzeit dazugekommen, antwortet die Datenbank mit einem Fehler (siehe 4.1).
+    Der Dialog wechselt dann auf Variante A.
 
 ## 4. Datenmodell (neue Supabase-Migration)
 
-Heute dürfen Mitglieder `recipes` lesen, anlegen und ändern, aber nicht löschen. Die Kind-Tabellen
-(`recipe_ingredients`, `recipe_ratings`, `recipe_wishes`, `meals` → `meal_wishers`) hängen bereits mit
+Heute gilt für alle Mitglieder:
+
+- Sie dürfen `recipes` lesen, anlegen und ändern, aber nicht löschen.
+- Sie dürfen alle Zutaten ändern und löschen.
+
+Die Kind-Tabellen (`recipe_ingredients`, `recipe_ratings`, `recipe_wishes`, `meals` → `meal_wishers`) hängen mit
 `on delete cascade` an `recipes`.
 
-### 4.1 Löschen
+### 4.1 Löschen: nur Eltern, nur ohne Mahlzeiten
 
 - `grant delete on public.recipes to authenticated;`
-- Policy „Parents can delete their family's recipes“: `for delete using (private.is_family_parent(family_id))`.
+- Policy „Parents can delete their family's recipes“:
+  `for delete using (private.is_family_parent(family_id))`.
+- **Mahlzeiten sperren das Löschen:** Der Fremdschlüssel `meals.recipe_id` wechselt von `on delete cascade` auf
+  `on delete restrict`.
+  - Dann schlägt ein Löschen mit Mahlzeiten auf jeden Fall fehl, auch direkt über die API oder den MCP-Server
+    (Fehlercode `23503`).
+  - Die App übersetzt ihn in Variante A.
+  - Die übrigen Kind-Tabellen bleiben `on delete cascade`.
 - Das Bild im Storage löscht die App nach dem erfolgreichen Löschen der Zeile. Das gilt nur, wenn `image_url` auf den
   Bucket `recipe-images` zeigt: Pfad `<family_id>/<datei>` aus der URL lesen, dann
   `supabase.storage.from('recipe-images').remove([pfad])`. Die Storage-Policy dafür existiert schon.
   Schlägt das fehl, bleibt nur die Datei liegen; das Rezept gilt trotzdem als gelöscht.
 
-### 4.2 Bearbeiten: `public.update_recipe(...)`
+### 4.2 Bearbeiten: nur Eltern
 
-Atomar wie `create_recipe`, `security invoker` (RLS greift), `set search_path = ''`.
+**Rechte anpassen:**
+- `recipes`:
+  - Das Update-Grant für `authenticated` wird auf `ingredients_available` beschränkt
+    (`revoke update … ; grant update (ingredients_available) …`).
+  - Grund: Den Schalter „Zutaten da / fehlt was“ in der Rezeptliste (`Meals.setAvailable`) dürfen weiterhin alle
+    Mitglieder bedienen.
+  - Name, Link und Bild ändert nur noch `update_recipe`.
+- `recipe_ingredients`:
+  - Die Policies für update und delete werden auf `private.is_family_parent(family_id)` umgestellt.
+  - Insert bleibt für alle Mitglieder, weil `create_recipe` beim Anlegen Zutaten einfügt.
+
+**Funktion `public.update_recipe(...)`:** `security definer`, `set search_path = ''`. Sie prüft selbst, dass der
+Aufrufer Elternteil in der Familie des Rezepts ist; sonst gibt es den Fehler „Nur Eltern können Rezepte bearbeiten.“
 
 ```
 update_recipe(
@@ -155,8 +200,8 @@ update_recipe(
 
 - Aktualisiert `title`, `url`, `image_url`, `ingredients_available` der Zeile.
 - **Zutaten** (leere Strings zählen als fehlend):
-  - Eintrag **mit `id`**: `position`, `quantity`, `name` setzen. `name = null` heißt weggelassen.
-    Die `original_*`-Spalten bleiben unangetastet (dafür gibt es ohnehin keinen Grant).
+  - Eintrag **mit `id`** (muss zum Rezept gehören): `position`, `quantity`, `name` setzen. `name = null` heißt
+    weggelassen. Die `original_*`-Spalten bleiben unangetastet.
   - Eintrag **ohne `id`**: neu einfügen mit `original_* = null`, also ergänzt.
   - **Bestehende Zeile, die im Array fehlt:**
     - Hat sie ein Original, wird sie auf weggelassen gesetzt (`name = null`, `quantity = null`).
@@ -171,10 +216,17 @@ update_recipe(
 ### 4.3 Test
 
 - Neuer SQL-Test `supabase/tests/recipes_edit_test.sql`, im Stil von `rewards_test.sql`:
-  - Kind darf nicht löschen.
-  - Elternteil darf löschen; Zutaten, Bewertungen und Mahlzeiten verschwinden mit.
+  - **Kinder-Konto:**
+    - `update_recipe` schlägt fehl.
+    - Title per `update` direkt schlägt fehl.
+    - Löschen schlägt fehl.
+    - `ingredients_available` umschalten geht weiterhin.
+  - **Elternteil, Rezept ohne Mahlzeiten:** Löschen geht; Zutaten, Bewertungen und Wünsche verschwinden mit.
+  - **Elternteil, Rezept mit einer vergangenen oder geplanten Mahlzeit:** Löschen schlägt fehl (`23503`), nichts
+    ist weg.
   - `update_recipe` setzt geänderte, ergänzte und weggelassene Zeilen richtig, und `original_*` bleibt gleich.
   - Fremde Familie: kein Zugriff.
+  - `create_recipe` funktioniert für Kinder weiterhin.
 
 ## 5. App
 
@@ -182,20 +234,21 @@ update_recipe(
   - `updateRecipe(id, form)`: ruft `update_recipe` auf und räumt danach das alte Bild auf.
   - `deleteRecipe(recipe)`: löscht die Zeile, danach das Bild.
   - Beide geben wie die bestehenden Methoden eine Fehlermeldung oder `null` zurück und laden die Rezepte neu.
-- **Route** in `app.routes.ts`: `essen/rezept/:id/bearbeiten` mit `authGuard`, `loadComponent` auf `recipe-edit`.
-  Kein `parentGuard`, weil Bearbeiten für alle Mitglieder erlaubt ist.
+- **Route** in `app.routes.ts`: `essen/rezept/:id/bearbeiten` mit `authGuard` und `parentGuard`,
+  `loadComponent` auf `recipe-edit`.
 - **Lösch-Dialog:**
   - Als kleine Standalone-Komponente `recipe-delete-dialog`, die Detailansicht und Bearbeiten-Seite beide nutzen.
-  - Die Folgen (geplant, gekocht, Bewertungen) kommen aus denselben Daten wie `details` in `recipe-detail.ts`.
-    Auf der Bearbeiten-Seite werden sie beim Öffnen geladen.
+  - Beim Öffnen lädt er die Mahlzeiten (`meals` für `recipe_id`) und die Bewertungen neu.
+  - Sind Mahlzeiten da, kommt Variante A, sonst Variante B.
 - **Toast:** Gibt es noch keine gemeinsame Komponente, reicht ein einfacher Status-Text (`role="status"`) auf der
   Zielseite. Die Nachricht wird über den Router-State übergeben.
 
 ## 6. MCP-Server (optional, eigener Schritt)
 
 - `update_recipe` und `delete_recipe` analog zu `save_recipe` mit derselben Funktion bzw. Policy.
-- `delete_recipe` nur für Eltern („Nur Eltern können Rezepte löschen.“). Vorher kommt eine Rückfrage mit
-  denselben Folgen wie im Dialog.
+- Beide Tools nur für Eltern („Nur Eltern können Rezepte bearbeiten.“ / „… löschen.“).
+- `delete_recipe` lehnt ein Rezept mit Mahlzeiten mit derselben Erklärung ab wie Variante A. Sonst gibt es vorher
+  eine Rückfrage.
 
 ## 7. Design-Regeln
 
@@ -208,29 +261,35 @@ update_recipe(
 
 ## 8. Akzeptanzkriterien
 
-- [ ] Detailansicht zeigt „✏️ Bearbeiten“ für alle und „🗑️ Löschen“ nur für Eltern.
-- [ ] `/essen/rezept/:id/bearbeiten` lädt das Rezept vorbelegt; Name, Link, Bild, Zutaten und „Zutaten im Haus?“
-      lassen sich ändern und speichern.
+- [ ] Detailansicht zeigt „✏️ Bearbeiten“ und „🗑️ Löschen“ nur für Eltern; Kinder sehen die Zeile nicht.
+- [ ] `/essen/rezept/:id/bearbeiten` ist nur für Eltern erreichbar (`parentGuard`). Die Seite lädt das Rezept
+      vorbelegt; Name, Link, Bild, Zutaten und „Zutaten im Haus?“ lassen sich ändern und speichern.
+- [ ] Kinder können Rezepte weiterhin anlegen und „Zutaten da / fehlt was“ umschalten, aber nichts anderes ändern
+      (auch nicht direkt über die API).
 - [ ] Zutaten-Änderungen erscheinen danach in der Detailansicht als angepasst / ergänzt / weggelassen; das Original
       bleibt in der Datenbank unverändert.
 - [ ] Eine weggelassene Original-Zutat lässt sich mit „↺ zurückholen“ wiederherstellen.
-- [ ] Löschen zeigt vorher den Dialog mit den zutreffenden Folgen; danach sind Rezept, Zutaten, Bewertungen, Wünsche
-      und Mahlzeiten weg, und ein Bild aus `recipe-images` ist gelöscht.
+- [ ] Rezept mit mindestens einer Mahlzeit (geplant oder gekocht): Der Dialog zeigt „Löschen geht nicht“, und auch
+      ein direktes `delete` über die API schlägt fehl.
+- [ ] Rezept ohne Mahlzeiten: Nach „Endgültig löschen“ sind Rezept, Zutaten, Bewertungen und Wünsche weg, und ein Bild
+      aus `recipe-images` ist gelöscht.
 - [ ] Ein Kinder-Konto kann weder über die App noch direkt über die API löschen (RLS).
 - [ ] `npm run build` und die bestehenden Tests laufen durch; Migration liegt in `supabase/migrations/`, Test in
       `supabase/tests/`; `TODO.md` ist nachgeführt.
 
 ## 9. Vorgeschlagene Reihenfolge
 
-1. Migration: Delete-Grant und -Policy, `update_recipe`, SQL-Test.
+1. Migration: Delete-Grant und -Policy, `meals.recipe_id` auf `restrict`, Update-Rechte einschränken,
+   `update_recipe`, SQL-Test.
 2. `Meals`: `updateRecipe`, `deleteRecipe`, Bild-Aufräumen.
 3. Formular aus `recipe-create` herauslösen, `recipe-edit` und Route.
 4. Lösch-Dialog und Buttons in der Detailansicht.
 5. Optional: MCP-Tools.
 
-## Entschieden (Vorschlag, bitte bestätigen)
+## Entschieden
 
-- Bearbeiten dürfen alle Familienmitglieder, löschen nur Eltern.
-- Löschen passiert mit Bestätigungsdialog, ohne Rückgängig. Geplante Mahlzeiten werden mitgelöscht. Der Dialog nennt
-  sie ausdrücklich.
+- Bearbeiten und Löschen dürfen nur Eltern. Kinder sehen die Buttons nicht.
+- Löschen ist endgültig, ohne Rückgängig.
+- Ein Rezept mit Mahlzeiten (geplant oder gekocht) lässt sich nicht löschen. Die Datenbank erzwingt das mit
+  `on delete restrict`.
 - Eine Original-Zutat wird beim Bearbeiten nie gelöscht, nur weggelassen.
