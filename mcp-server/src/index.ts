@@ -13,6 +13,7 @@ import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middlew
 import { createClient } from '@supabase/supabase-js';
 import { renderLoginPage, SupabaseOAuthProvider } from './oauth-provider.js';
 import { copyImage, isOwnImage, readRecipePage, RECIPE_IMAGES_BUCKET } from './recipes.js';
+import { registerRewardTools } from './rewards.js';
 
 const { SUPABASE_URL, SUPABASE_ANON_KEY, PUBLIC_URL, PORT } = process.env;
 
@@ -195,11 +196,12 @@ const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
  */
 function createMcpServer(supabaseAccessToken: string, userId: string): McpServer {
   const server = new McpServer(
-    { name: 'familyfux-tasks', version: '0.7.0' },
+    { name: 'familyfux-tasks', version: '0.8.0' },
     {
       instructions:
-        'Family chore pool and recipe collection ("Fuxis Plan"). Users often talk to you by voice, mostly in German: keep replies ' +
-        'and follow-up questions short and speakable, and never invent details they did not give — ask instead.',
+        'Family chore pool, rewards and recipe collection ("Fuxis Plan"). Users often talk to you by voice, mostly in German: keep replies ' +
+        'and follow-up questions short and speakable, and never invent details they did not give — ask instead. ' +
+        'Kids trade the stars they earn for rewards ("Belohnungen"); only parents change rewards or tick purchases off.',
     },
   );
 
@@ -520,11 +522,13 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     'list_family_members',
     {
       title: 'List family members',
-      description: 'Lists the members of the family with the stars they earned this week, and their ids for claim_task.',
+      description:
+        'Lists the members of the family with their balance (all stars ever earned minus rewards bought), ' +
+        'the stars they earned this week, and their ids for claim_task.',
       inputSchema: {},
     },
     async () => {
-      const [members, stars] = await Promise.all([
+      const [members, stars, balances] = await Promise.all([
         supabase
           .from('family_members')
           .select('id, name, emoji, role')
@@ -532,9 +536,10 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
           .order('created_at')
           .returns<{ id: string; name: string; emoji: string; role: string }[]>(),
         supabase.from('member_week_stars').select('member_id, stars').returns<{ member_id: string; stars: number | string }[]>(),
+        supabase.from('member_balance').select('member_id, balance').returns<{ member_id: string; balance: number | string }[]>(),
       ]);
 
-      const error = members.error ?? stars.error;
+      const error = members.error ?? stars.error ?? balances.error;
       if (error) {
         return fail('list_family_members', `Failed to list family members: ${error.message}`);
       }
@@ -549,8 +554,11 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
 
       // numeric: shared tasks give fractional stars (1.5).
       const starsByMember = new Map((stars.data ?? []).map((s) => [s.member_id, Number(s.stars)]));
+      const balanceByMember = new Map((balances.data ?? []).map((b) => [b.member_id, Number(b.balance)]));
       const lines = family.map(
-        (m) => `- ${m.emoji} ${m.name} (${m.role}, ${starsByMember.get(m.id) ?? 0} ★ this week, id: ${m.id})`,
+        (m) =>
+          `- ${m.emoji} ${m.name} (${m.role}, balance ${balanceByMember.get(m.id) ?? 0} ★, ` +
+          `${starsByMember.get(m.id) ?? 0} ★ this week, id: ${m.id})`,
       );
       return { content: [{ type: 'text', text: lines.join('\n') }] };
     },
@@ -996,6 +1004,8 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       return { content: [{ type: 'text', text: lines.join('\n') }] };
     },
   );
+
+  registerRewardTools(server, supabase, userId, logEvent);
 
   /** Logs a successful claim change and answers with the entry's current state. */
   async function reportEntry(tool: string, id: string, details: Record<string, unknown>) {
