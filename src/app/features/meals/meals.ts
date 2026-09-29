@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, linkedSignal, resource, signal } from '@angular/core';
+import { environment } from '../../../environments/environment';
 import { Auth } from '../../core/auth';
 import { supabase } from '../../core/supabase-client';
 import { TaskPool } from '../tasks/task-pool';
@@ -51,6 +52,38 @@ export interface RecipeInput {
   image_url: string | null;
   ingredients: IngredientInput[];
   ingredients_available: boolean;
+}
+
+/** An ingredient as "Rezept bearbeiten" sends it (update_recipe): with id = an existing row, without = added. */
+export interface IngredientEdit {
+  id?: string;
+  quantity: string | null;
+  /** null = left out (only for rows from the original). */
+  name: string | null;
+}
+
+/** What "Rezept bearbeiten" saves (update_recipe). */
+export interface RecipeEdit extends Omit<RecipeInput, 'ingredients'> {
+  ingredients: IngredientEdit[];
+}
+
+/** Storage bucket of imported recipe pictures (supabase/migrations/20260929110000_recipe_images.sql). */
+export const RECIPE_IMAGES_BUCKET = 'recipe-images';
+
+/**
+ * Path (<family_id>/<file>) of a picture stored in our recipe-images bucket, or
+ * null for a picture elsewhere (a link to the recipe site) or none.
+ */
+export function storedImagePath(url: string | null, supabaseUrl = environment.supabaseUrl): string | null {
+  if (!url || !supabaseUrl) {
+    return null;
+  }
+  const prefix = `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/public/${RECIPE_IMAGES_BUCKET}/`;
+  if (!url.startsWith(prefix)) {
+    return null;
+  }
+  const path = decodeURIComponent(url.slice(prefix.length).split(/[?#]/)[0]);
+  return path.includes('/') ? path : null;
 }
 
 /** "200 g Spaghetti" — the family's version, or the original one. */
@@ -266,6 +299,58 @@ export class Meals {
     });
     this.recipesData.reload();
     return error?.message ?? null;
+  }
+
+  /**
+   * Saves an edited recipe (parents only; update_recipe). Rows from the original
+   * are never deleted, only left out. A replaced or removed picture from our
+   * bucket is deleted afterwards. Resolves to an error message, if any.
+   */
+  async updateRecipe(recipe: Recipe, input: RecipeEdit): Promise<string | null> {
+    const { error } = await supabase.rpc('update_recipe', {
+      p_recipe_id: recipe.id,
+      p_title: input.title,
+      p_url: input.url,
+      p_image_url: input.image_url,
+      p_ingredients_available: input.ingredients_available,
+      p_ingredients: input.ingredients,
+    });
+    this.recipesData.reload();
+    if (error) {
+      return error.message;
+    }
+
+    if (recipe.image_url !== input.image_url) {
+      await this.removeStoredImage(recipe.image_url);
+    }
+    return null;
+  }
+
+  /**
+   * Deletes a recipe for good (parents only), then its picture from our bucket.
+   * Any meal of the recipe makes the database refuse (meals.recipe_id on delete
+   * restrict). Resolves to an error message, if any.
+   */
+  async deleteRecipe(recipe: Recipe): Promise<string | null> {
+    const { data, error } = await supabase.from('recipes').delete().eq('id', recipe.id).select('id');
+    this.recipesData.reload();
+    if (error) {
+      return error.code === '23503' ? 'Das Rezept steht auf dem Menüplan.' : error.message;
+    }
+    if (!data?.length) {
+      return 'Das Rezept ist schon weg, oder du darfst es nicht löschen.';
+    }
+
+    await this.removeStoredImage(recipe.image_url);
+    return null;
+  }
+
+  /** Removes a picture from our bucket; if that fails, only the file stays behind. */
+  private async removeStoredImage(url: string | null): Promise<void> {
+    const path = storedImagePath(url);
+    if (path) {
+      await supabase.storage.from(RECIPE_IMAGES_BUCKET).remove([path]);
+    }
   }
 
   setAvailable(recipe: Recipe, available: boolean): Promise<void> {

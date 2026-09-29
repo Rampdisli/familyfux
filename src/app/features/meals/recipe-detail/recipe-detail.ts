@@ -12,10 +12,11 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { supabase } from '../../../core/supabase-client';
 import { TaskPool } from '../../tasks/task-pool';
 import { Ingredient, MealSlot, Meals, Rating, ingredientLabel, recipeSource } from '../meals';
+import { RecipeDeleteDialog } from '../recipe-delete-dialog/recipe-delete-dialog';
 
 /**
  * Recipe details ("Rezept-Detailansicht") — the Claude Doc of the same name and
@@ -70,6 +71,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [ta
 
 @Component({
   selector: 'app-recipe-detail',
+  imports: [RecipeDeleteDialog, RouterLink],
   templateUrl: './recipe-detail.html',
   styleUrl: './recipe-detail.scss',
   host: {
@@ -194,6 +196,9 @@ export class RecipeDetail implements OnDestroy {
   });
 
   protected readonly highlighted = signal<string | null>(null);
+
+  /** "🗑️ Löschen" (parents only): the delete dialog over the details. */
+  protected readonly deleteOpen = signal(false);
 
   protected readonly label = ingredientLabel;
   protected readonly mealLabel = MEAL_LABELS;

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Fuxis Plan — Rezept bearbeiten und löschen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Tokens wie in recipe-detail.scss / recipe-create.scss */
+  :root {
+    --creme: #fcefe3;
+    --cream-deep: #f7e3cf;
+    --fuchs: #e8703c;
+    --fuchs-text: #a8481a;
+    --zahl: #c85a26;
+    --schoko: #5a3423;
+    --schoko-2: #7a5543;
+    --bernstein: #f6b93b;
+    --bernstein-hell: #fde7b0;
+    --linie: #f3e4d6;
+    --rand: #ebd6c3;
+    --gruen-bg: #e4f3ea;
+    --gruen: #245c3e;
+    --gruen-punkt: #3e9a6a;
+    --foto: #f3c9a4;
+    --danger: #d2543e;
+    --danger-bg: #fbe4df;
+    --font-display: 'Fredoka', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--schoko);
+    background: linear-gradient(160deg, #fdf5ec 0%, var(--creme) 60%, var(--cream-deep) 100%);
+    min-height: 100vh;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--fuchs); outline-offset: 2px; }
+  .muted { font-size: 13px; font-weight: 600; color: var(--schoko-2); }
+
+  /* ---------- Prototyp-Leiste (nicht Teil der App) ---------- */
+  .proto {
+    position: sticky; top: 0; z-index: 500;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    padding: 10px 16px; background: #2e1a11; color: #fff;
+  }
+  .proto .lbl { font-size: 12px; font-weight: 700; opacity: .7; text-transform: uppercase; letter-spacing: .06em; }
+  .proto .grp { display: flex; gap: 4px; background: #ffffff1a; border-radius: 999px; padding: 3px; }
+  .proto button { border: 0; border-radius: 999px; padding: 8px 14px; min-height: 36px; background: none; color: #fff; font-weight: 600; font-size: 13.5px; }
+  .proto button[aria-pressed="true"] { background: #fff; color: var(--schoko); }
+  .proto .sp { flex: 1; }
+  .proto button { white-space: nowrap; }
+  @media (max-width: 600px) {
+    .proto { padding: 8px 10px; gap: 6px; }
+    .proto .lbl, .proto .sp { display: none; }
+    .proto button { padding: 7px 10px; font-size: 12.5px; }
+  }
+
+  .screen { display: none; }
+  .screen.on { display: block; }
+
+  /* =========================================================
+     1 · REZEPT-DETAIL (Ausschnitt: nur was sich ändert + Kontext)
+     ========================================================= */
+  .detail-stage { position: relative; min-height: calc(100vh - 56px); }
+  .list-behind { display: none; }
+  .dialog { background: var(--creme); min-height: calc(100vh - 56px); display: flex; flex-direction: column; }
+  .left, .right { display: contents; }
+  .hero { order: 1; }
+  .head { order: 2; }
+  .ingredients-section { order: 3; }
+  .more-sections { order: 4; }
+  .actions { order: 5; }
+
+  .hero { position: relative; height: 260px; background: var(--foto); display: flex; align-items: center; justify-content: center; font-size: 90px; }
+  .rbtn { font-size: 18px; width: 44px; height: 44px; border-radius: 22px; border: 0; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(90,52,35,.18); }
+  .close { position: absolute; top: 14px; left: 14px; }
+  .like { position: absolute; top: 14px; right: 14px; }
+
+  .head { position: relative; margin-top: -26px; padding: 14px 18px 0; border-radius: 26px 26px 0 0; background: var(--creme); display: flex; flex-direction: column; gap: 12px; }
+  .grip { width: 44px; height: 5px; border-radius: 3px; background: var(--rand); align-self: center; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+  .chip.src { background: #fff; border: 1px solid var(--rand); }
+  .chip.ok { background: var(--gruen-bg); color: var(--gruen); }
+  .head h1 { font-size: 28px; line-height: 1.12; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+  .stat { background: #fff; border-radius: 18px; padding: 12px; display: flex; flex-direction: column; }
+  .stat b { font-family: var(--font-display); font-weight: 600; font-size: 26px; color: var(--zahl); }
+  .stat span { font-size: 13px; font-weight: 600; color: var(--schoko-2); }
+
+  /* NEU: Rezept-Werkzeuge */
+  .recipe-tools { display: flex; gap: 10px; }
+  .tool {
+    flex: 1; min-height: 44px; border-radius: 14px; background: #fff;
+    border: 2px solid var(--rand); font-weight: 700; font-size: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .tool:hover { border-color: var(--fuchs); }
+  .tool.del { color: var(--danger); flex: 0 0 auto; padding: 0 16px; }
+  .tool.del:hover { border-color: var(--danger); background: var(--danger-bg); }
+  .new-mark { outline: 3px dashed var(--bernstein); outline-offset: 4px; border-radius: 16px; }
+
+  section { padding: 26px 18px 0; display: flex; flex-direction: column; gap: 12px; }
+  section h2 { font-size: 21px; }
+  .card { background: #fff; border-radius: 20px; padding: 4px 16px; }
+  .ing { display: flex; gap: 14px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--linie); font-weight: 600; }
+  .ing:last-child { border-bottom: 0; }
+  .ing .q { width: 86px; flex-shrink: 0; text-align: right; font-weight: 700; }
+  .ghost-block { background: #ffffff80; border: 2px dashed var(--rand); border-radius: 20px; padding: 16px; font-size: 14px; font-weight: 600; color: var(--schoko-2); text-align: center; }
+
+  .actions { position: sticky; bottom: 0; margin-top: 26px; padding: 14px 18px calc(22px + env(safe-area-inset-bottom, 0px)); background: var(--creme); border-top: 1px solid var(--rand); display: flex; gap: 10px; }
+  .primary, .secondary { min-height: 52px; border-radius: 16px; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; }
+  .primary { flex-grow: 1; border: 0; background: var(--schoko); color: var(--creme); }
+  .secondary { background: #fff; border: 2px solid var(--rand); }
+
+  @media (min-width: 768px) {
+    .detail-stage { padding: 40px 24px; }
+    .list-behind { display: grid; position: absolute; inset: 0; padding: 40px; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 20px; opacity: .35; filter: blur(1px); pointer-events: none; }
+    .list-behind div { background: #fff; border-radius: 22px; height: 240px; }
+    .dialog { position: relative; z-index: 2; min-height: 0; max-width: 1040px; margin: 0 auto; border-radius: 28px; box-shadow: 0 30px 80px rgba(46,26,17,.35); display: grid; grid-template-columns: 400px 1fr; overflow: hidden; }
+    .left { display: flex; flex-direction: column; border-right: 1px solid var(--rand); }
+    .right { display: block; padding-bottom: 26px; }
+    .hero { height: 260px; }
+    .head { margin-top: 0; border-radius: 0; padding: 20px 22px 0; }
+    .grip { display: none; }
+    .actions { position: static; margin-top: auto; border-top: 0; padding: 22px; }
+  }
+
+  /* =========================================================
+     2 · BEARBEITEN (Aufbau wie recipe-create)
+     ========================================================= */
+  .board { max-width: 1180px; margin: 0 auto; padding: 22px 16px 40px; display: flex; flex-direction: column; gap: 18px; }
+  .back-link { font-size: 13.5px; font-weight: 600; color: var(--schoko-2); text-decoration: none; background: none; border: 0; padding: 10px 0; min-height: 44px; align-self: flex-start; }
+  .page-head h1 { font-size: 30px; }
+  .page-head p { margin: 4px 0 0; color: var(--schoko-2); font-weight: 500; }
+  .layout { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  @media (min-width: 900px) { .layout { grid-template-columns: minmax(0,1fr) 320px; align-items: start; } .board { padding: 30px 34px 50px; } }
+
+  .form-card { background: #fff; border-radius: 24px; padding: 22px; box-shadow: 0 8px 18px rgba(90,52,35,.08); display: flex; flex-direction: column; gap: 20px; }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .f-label { font-weight: 700; font-size: 14px; }
+  .optional { font-weight: 600; color: var(--schoko-2); font-size: 12.5px; margin-left: 4px; }
+  .inp { width: 100%; min-height: 46px; border: 2px solid var(--rand); border-radius: 14px; padding: 10px 12px; font: inherit; font-weight: 500; color: var(--schoko); background: #fff; }
+  .inp:focus { outline: none; border-color: var(--bernstein); }
+  .hint { margin: 0; font-size: 12.5px; font-weight: 600; color: var(--schoko-2); }
+
+  .img-field { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }
+  .img-thumb { width: 96px; height: 96px; border-radius: 16px; background: var(--foto); display: flex; align-items: center; justify-content: center; font-size: 44px; position: relative; overflow: hidden; }
+  .img-thumb.empty { background: var(--linie); font-size: 13px; font-weight: 700; color: var(--schoko-2); text-align: center; }
+  .img-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .img-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip-btn { min-height: 40px; border-radius: 12px; border: 2px solid var(--rand); background: #fff; padding: 0 12px; font-weight: 700; font-size: 13px; }
+  .chip-btn.del { color: var(--danger); }
+
+  /* Zutaten mit Abweichungen */
+  .ing-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .ing-info { background: var(--bernstein-hell); color: #6b3d0c; border-radius: 12px; padding: 9px 12px; font-size: 13px; font-weight: 600; }
+  .ing-rows { display: flex; flex-direction: column; gap: 8px; }
+  .ing-row { border-radius: 14px; padding: 6px; margin: 0 -6px; }
+  .ing-row .inputs { display: grid; grid-template-columns: 12px 96px minmax(0,1fr) 44px; gap: 8px; align-items: center; }
+  .ing-row .st { width: 10px; height: 10px; border-radius: 5px; }
+  .ing-row.changed .st { background: var(--fuchs); }
+  .ing-row.added .st { background: var(--gruen-punkt); }
+  .ing-row.changed { background: #fff6ee; }
+  .ing-row.added { background: #f3faf5; }
+  .ing-x { width: 44px; height: 44px; border-radius: 12px; border: 0; background: var(--linie); color: var(--schoko-2); font-size: 20px; font-weight: 700; }
+  .ing-x:hover { background: var(--danger-bg); color: var(--danger); }
+  .ing-note { margin: 4px 0 0 20px; font-size: 12.5px; font-weight: 600; color: var(--schoko-2); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .ing-note s { color: var(--schoko-2); }
+  .ing-note .tag-added { color: var(--gruen); font-weight: 700; }
+  .undo { border: 0; background: none; padding: 6px 4px; min-height: 32px; color: var(--fuchs-text); font-weight: 700; font-size: 12.5px; }
+  .ing-row.removed .inputs { grid-template-columns: 12px minmax(0,1fr) auto; column-gap: 12px; }
+  .ing-row.removed .gone { color: #a08878; font-weight: 600; padding: 10px 0; }
+  .ing-row.removed .gone b { font-weight: 700; margin-right: 8px; }
+  .ing-row.removed .gone small { margin-left: 8px; font-size: 12px; font-weight: 700; }
+  .ing-row.removed .st { border: 2px solid #a08878; }
+  .ing-add { min-height: 46px; border: 2px dashed var(--rand); border-radius: 14px; background: none; color: var(--fuchs-text); font-weight: 700; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; font-weight: 700; color: var(--schoko-2); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 5px; margin-right: 5px; vertical-align: -1px; }
+
+  .segmented { display: inline-flex; gap: 4px; padding: 4px; background: var(--creme); border-radius: 14px; align-self: flex-start; }
+  .segmented button { min-height: 40px; border: 0; border-radius: 10px; padding: 0 14px; background: none; font-weight: 700; font-size: 13.5px; color: var(--schoko-2); }
+  .segmented button[aria-pressed="true"] { background: #fff; color: var(--schoko); box-shadow: 0 2px 6px rgba(90,52,35,.12); }
+
+  .form-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding-top: 4px; }
+  .btn { min-height: 48px; border-radius: 14px; padding: 0 20px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; }
+  .btn-primary { background: var(--fuchs); color: #fff; box-shadow: 0 3px 0 #c85a2c; }
+  .btn-primary:disabled { opacity: .45; box-shadow: none; cursor: default; }
+  .btn-secondary { background: #fff; border: 2px solid var(--rand); }
+  .dirty { font-size: 13px; font-weight: 700; color: var(--fuchs-text); margin-left: auto; }
+
+  .danger-zone { border: 2px solid var(--danger-bg); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 10px; background: #fff; }
+  .danger-zone strong { font-weight: 700; }
+  .danger-zone p { margin: 0; font-size: 13px; font-weight: 600; color: var(--schoko-2); }
+  .btn-danger-outline { min-height: 44px; border-radius: 14px; border: 2px solid var(--danger); background: #fff; color: var(--danger); font-weight: 700; }
+
+  .preview-label { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--schoko-2); margin-bottom: 8px; }
+  .preview-card { background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 8px 18px rgba(90,52,35,.1); }
+  .pc-image { height: 150px; background: var(--foto); display: flex; align-items: center; justify-content: center; font-size: 64px; position: relative; }
+  .pc-source { position: absolute; left: 10px; bottom: 10px; background: #fff; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; }
+  .pc-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .pc-title { font-family: var(--font-display); font-weight: 600; font-size: 19px; }
+  .pc-ings { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ing-chip { background: var(--creme); border-radius: 999px; padding: 4px 10px; font-size: 12.5px; font-weight: 600; }
+  .aside-stack { display: flex; flex-direction: column; gap: 16px; }
+  @media (min-width: 900px) { .aside-stack { position: sticky; top: 76px; } }
+
+  /* =========================================================
+     3 · LÖSCHEN (Dialog über der Detailansicht)
+     ========================================================= */
+  .scrim { position: fixed; inset: 0; z-index: 300; background: rgba(46,26,17,.45); display: none; align-items: flex-end; justify-content: center; }
+  .scrim.on { display: flex; }
+  .sheet { width: 100%; max-width: 460px; background: #fff; border-radius: 28px 28px 0 0; padding: 26px 20px calc(20px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; animation: up .22s ease; }
+  @media (min-width: 768px) { .scrim { align-items: center; } .sheet { border-radius: 28px; padding: 28px; } }
+  @keyframes up { from { transform: translateY(40px); opacity: 0; } }
+  .sheet-top { display: flex; gap: 14px; align-items: center; }
+  .sheet-thumb { width: 64px; height: 64px; border-radius: 18px; background: var(--foto); display: flex; align-items: center; justify-content: center; font-size: 34px; flex-shrink: 0; }
+  .sheet h2 { font-size: 24px; }
+  .sheet .sub { margin: 2px 0 0; font-weight: 600; color: var(--schoko-2); font-size: 14px; }
+  .consequences { list-style: none; margin: 0; padding: 12px 14px; background: var(--danger-bg); border-radius: 16px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; }
+  .consequences li { display: flex; gap: 10px; }
+  .consequences b { font-weight: 700; }
+  .consequences.blocked { background: var(--bernstein-hell); color: #6b3d0c; }
+  .sheet > div { display: flex; flex-direction: column; gap: 14px; }
+  .sheet > div[hidden] { display: none; }
+  .keep { margin: 0; font-size: 13px; font-weight: 600; color: var(--schoko-2); }
+  .sheet-actions { display: grid; gap: 10px; }
+  .btn-danger { min-height: 52px; border: 0; border-radius: 16px; background: var(--danger); color: #fff; font-weight: 700; font-size: 15px; box-shadow: 0 3px 0 #a63e2c; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 400; background: var(--schoko); color: var(--creme); border-radius: 16px; padding: 14px 18px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,.25); display: none; width: max-content; max-width: calc(100% - 32px); }
+  .toast.on { display: block; }
+
+  .proto-note { max-width: 1180px; margin: 0 auto; padding: 0 16px 30px; font-size: 12.5px; font-weight: 600; color: var(--schoko-2); }
+</style>
+</head>
+<body>
+
+<div class="proto" role="toolbar" aria-label="Prototyp-Steuerung">
+  <span class="lbl">Screen</span>
+  <div class="grp">
+    <button type="button" data-screen="detail" aria-pressed="true">1 · Rezept</button>
+    <button type="button" data-screen="edit" aria-pressed="false">2 · Bearbeiten</button>
+    <button type="button" data-screen="delete" aria-pressed="false">3 · Löschen</button>
+  </div>
+  <span class="sp"></span>
+  <span class="lbl">Menüplan</span>
+  <div class="grp">
+    <button type="button" data-meals="1" aria-pressed="true">Mit Mahlzeiten</button>
+    <button type="button" data-meals="0" aria-pressed="false">Ohne</button>
+  </div>
+  <span class="lbl">Login</span>
+  <div class="grp">
+    <button type="button" data-role="parent" aria-pressed="true">Eltern</button>
+    <button type="button" data-role="child" aria-pressed="false">Kind</button>
+  </div>
+</div>
+
+<!-- ===================== 1 · REZEPT ===================== -->
+<div class="screen on" id="screen-detail">
+  <div class="detail-stage">
+    <div class="list-behind" aria-hidden="true"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <div class="dialog" role="dialog" aria-labelledby="d-title">
+      <div class="left">
+        <div class="hero">
+          🍝
+          <button type="button" class="rbtn close" aria-label="Schliessen">✕</button>
+          <button type="button" class="rbtn like" aria-label="Mama mag das">👍</button>
+        </div>
+        <div class="head">
+          <div class="grip" aria-hidden="true"></div>
+          <div class="chips"><span class="chip src">🔗 Fooby</span><span class="chip ok">✓ Zutaten da</span></div>
+          <h1 id="d-title" class="js-title">Spaghetti Bolognese</h1>
+          <div class="stats">
+            <div class="stat"><b id="st-cooked">7×</b><span>gekocht</span></div>
+            <div class="stat"><b id="st-planned">2</b><span>geplant</span></div>
+            <div class="stat"><b>3/4</b><span>mögen es</span></div>
+          </div>
+          <!-- NEU -->
+          <div class="recipe-tools new-mark parent-only">
+            <button type="button" class="tool" data-go="edit">✏️ Bearbeiten</button>
+            <button type="button" class="tool del" data-go="delete" aria-label="Rezept löschen">🗑️ Löschen</button>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="primary">📅 Einplanen</button>
+          <button type="button" class="secondary">Heute gekocht</button>
+        </div>
+      </div>
+      <div class="right">
+        <section class="ingredients-section">
+          <h2>Zutaten</h2>
+          <div class="card">
+            <div class="ing"><span class="q">500 g</span><span>Spaghetti</span></div>
+            <div class="ing"><span class="q">400 g</span><span>Hackfleisch</span></div>
+            <div class="ing"><span class="q">200 ml</span><span>Milch <small class="muted">statt <s>200 ml Rahm</s></small></span></div>
+            <div class="ing"><span class="q">2</span><span>Karotten</span></div>
+            <div class="ing"><span class="q">800 g</span><span>gehackte Tomaten</span></div>
+          </div>
+        </section>
+        <section class="more-sections">
+          <div class="ghost-block">Auf dem Menüplan · Wer mag's? · Herkunft — unverändert</div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 2 · BEARBEITEN ===================== -->
+<div class="screen" id="screen-edit">
+  <div class="board">
+    <button type="button" class="back-link" data-go="detail">← Zurück zum Rezept</button>
+    <div class="page-head">
+      <h1>Rezept bearbeiten</h1>
+      <p>Änderungen gelten sofort für die ganze Familie</p>
+    </div>
+
+    <div class="layout">
+      <form class="form-card" onsubmit="event.preventDefault(); save();">
+        <div class="field">
+          <label class="f-label" for="e-title">Name des Rezepts</label>
+          <input id="e-title" class="inp" type="text" value="Spaghetti Bolognese" required>
+          <p class="hint" id="title-err" hidden style="color:var(--danger)">Bitte einen Namen eingeben.</p>
+        </div>
+
+        <div class="field">
+          <label class="f-label" for="e-url">Link zum Rezept <span class="optional">optional</span></label>
+          <input id="e-url" class="inp" type="url" inputmode="url" value="https://fooby.ch/de/rezepte/19811/spaghetti-bolognese">
+        </div>
+
+        <div class="field">
+          <span class="f-label">Bild</span>
+          <div class="img-field">
+            <div class="img-thumb" id="img-thumb">🍝</div>
+            <div class="img-side">
+              <label class="hint" for="e-img" style="font-weight:700;color:var(--schoko)">Bild-Link <span class="optional">optional</span></label>
+              <input id="e-img" class="inp" type="url" inputmode="url" value="https://…supabase.co/storage/v1/object/public/recipe-images/…/a8f3.jpg">
+              <div class="img-actions">
+                <button type="button" class="chip-btn del" id="img-remove">✕ Bild entfernen</button>
+              </div>
+            </div>
+          </div>
+          <p class="hint">Neuen Link einfügen ersetzt das Bild. Ein Bild aus dem Import wird dabei aus dem Speicher gelöscht.</p>
+        </div>
+
+        <div class="field">
+          <div class="ing-head">
+            <span class="f-label">Zutaten <span class="optional">Menge und Zutat</span></span>
+            <span class="muted" id="ing-summary"></span>
+          </div>
+          <div class="ing-info">✎ Das Originalrezept bleibt gespeichert. Änderungen erscheinen in der Ansicht als „statt …“, „ergänzt“ oder „weggelassen“.</div>
+          <div class="ing-rows" id="ing-rows"></div>
+          <button type="button" class="ing-add" id="ing-add">+ Zutat</button>
+          <div class="legend">
+            <span><i style="background:var(--fuchs)"></i>angepasst</span>
+            <span><i style="background:var(--gruen-punkt)"></i>ergänzt</span>
+            <span><i style="border:2px solid #a08878"></i>weggelassen</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="f-label">Zutaten im Haus?</span>
+          <div class="segmented" id="avail">
+            <button type="button" aria-pressed="true">✓ Alles da</button>
+            <button type="button" aria-pressed="false">Fehlt was</button>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="save-btn" disabled>Speichern</button>
+          <button type="button" class="btn btn-secondary" data-go="detail">Abbrechen</button>
+          <span class="dirty" id="dirty" hidden>● Ungespeicherte Änderungen</span>
+        </div>
+      </form>
+
+      <aside class="aside-stack">
+        <div>
+          <div class="preview-label">Vorschau</div>
+          <div class="preview-card">
+            <div class="pc-image" id="pc-image">🍝<span class="pc-source">Fooby</span></div>
+            <div class="pc-body">
+              <div class="pc-title js-title">Spaghetti Bolognese</div>
+              <div class="pc-ings" id="pc-ings"></div>
+            </div>
+          </div>
+        </div>
+        <div class="danger-zone parent-only">
+          <strong>Rezept löschen</strong>
+          <p id="dz-text">Geht nur, solange das Rezept nie auf dem Menüplan stand.</p>
+          <button type="button" class="btn-danger-outline" data-go="delete">🗑️ Rezept löschen…</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 3 · LÖSCHEN ===================== -->
+<div class="scrim" id="scrim">
+  <div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="del-title" aria-describedby="del-desc">
+    <!-- Variante A: Rezept hat Mahlzeiten → gesperrt -->
+    <div id="del-blocked">
+      <div class="sheet-top">
+        <div class="sheet-thumb" aria-hidden="true">🍝</div>
+        <div>
+          <h2 id="del-title-b">Löschen geht nicht</h2>
+          <p class="sub">„<span class="js-title">Spaghetti Bolognese</span>“ steht auf dem Menüplan.</p>
+        </div>
+      </div>
+      <ul class="consequences blocked">
+        <li><span>📅</span><span><b>2 geplante Mahlzeiten</b> (Do Mittag, Sa Abend)</span></li>
+        <li><span>✓</span><span><b>7× gekocht</b></span></li>
+      </ul>
+      <p class="keep">Das Rezept wurde schon gekocht und bleibt deshalb für den Verlauf erhalten.</p>
+      <div class="sheet-actions">
+        <button type="button" class="btn btn-secondary" data-close>Schliessen</button>
+      </div>
+    </div>
+    <!-- Variante B: keine Mahlzeiten → löschen -->
+    <div id="del-ok" hidden>
+      <div class="sheet-top">
+        <div class="sheet-thumb" aria-hidden="true">🍝</div>
+        <div>
+          <h2 id="del-title">Rezept löschen?</h2>
+          <p class="sub" id="del-desc">„<span class="js-title">Spaghetti Bolognese</span>“ ist danach für die ganze Familie weg.</p>
+        </div>
+      </div>
+      <ul class="consequences">
+        <li><span>🧺</span><span>Zutaten und Abweichungen</span></li>
+        <li><span>👍</span><span>Bewertungen und Wünsche von 3 Personen</span></li>
+        <li><span>🖼️</span><span>Das gespeicherte Foto</span></li>
+      </ul>
+      <p class="keep">Das lässt sich nicht rückgängig machen. Das Originalrezept auf Fooby bleibt bestehen.</p>
+      <div class="sheet-actions">
+        <button type="button" class="btn-danger" id="confirm-del">Endgültig löschen</button>
+        <button type="button" class="btn btn-secondary" data-close>Abbrechen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<p class="proto-note">Prototyp · Die gestrichelte gelbe Markierung zeigt, was in der Detailansicht neu ist. Mit „Kind“ sieht man den Kinder-Login (weder Bearbeiten noch Löschen). „Menüplan“ schaltet zwischen einem Rezept mit und ohne Mahlzeiten um: Nur ohne Mahlzeiten lässt es sich löschen. Es wird nichts gespeichert.</p>
+
+<script>
+  // ---------- Zutaten: Zustand wie recipe_ingredients ----------
+  // original_* null = ergänzt; name null = weggelassen
+  const initial = [
+    { id: 1, quantity: '500 g', name: 'Spaghetti', oq: '500 g', on: 'Spaghetti' },
+    { id: 2, quantity: '400 g', name: 'Hackfleisch', oq: '400 g', on: 'Hackfleisch' },
+    { id: 3, quantity: '200 ml', name: 'Milch', oq: '200 ml', on: 'Rahm' },
+    { id: 4, quantity: '1', name: null, oq: '1', on: 'Zwiebel' },
+    { id: 5, quantity: '2', name: 'Karotten', oq: '2', on: 'Karotten' },
+    { id: 6, quantity: '800 g', name: 'gehackte Tomaten', oq: '800 g', on: 'gehackte Tomaten' },
+  ];
+  let rows = structuredClone(initial);
+  let nextId = 100;
+  let dirty = false;
+
+  const status = (r) => r.on == null ? 'added' : r.name == null ? 'removed'
+    : (r.quantity || '') !== (r.oq || '') || r.name !== r.on ? 'changed' : 'original';
+  const label = (q, n) => [q, n].filter(Boolean).join(' ');
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function renderRows() {
+    const box = document.getElementById('ing-rows');
+    box.innerHTML = rows.map((r, i) => {
+      const s = status(r);
+      if (s === 'removed') {
+        return `<div class="ing-row removed" data-i="${i}">
+          <div class="inputs"><span class="st" aria-hidden="true"></span>
+            <span class="gone"><s><b>${esc(r.oq)}</b>${esc(r.on)}</s><small>weggelassen</small></span>
+            <button type="button" class="undo" data-act="restore">↺ zurückholen</button></div></div>`;
+      }
+      let note = '';
+      if (s === 'changed') note = `<div class="ing-note">statt <s>${esc(label(r.oq, r.on))}</s><button type="button" class="undo" data-act="reset">↺ wie im Original</button></div>`;
+      if (s === 'added') note = `<div class="ing-note"><span class="tag-added">ergänzt</span></div>`;
+      const xLabel = s === 'added' ? 'entfernen' : 'weglassen';
+      return `<div class="ing-row ${s}" data-i="${i}">
+        <div class="inputs"><span class="st" aria-hidden="true"></span>
+          <input class="inp" data-f="quantity" value="${esc(r.quantity)}" placeholder="Menge" aria-label="Menge ${i + 1}">
+          <input class="inp" data-f="name" value="${esc(r.name)}" placeholder="Zutat" aria-label="Zutat ${i + 1}">
+          <button type="button" class="ing-x" data-act="x" aria-label="Zutat ${i + 1} ${xLabel}" title="${s === 'added' ? 'Entfernen' : 'Weglassen (Original bleibt sichtbar)'}">×</button>
+        </div>${note}</div>`;
+    }).join('');
+    renderSummary();
+  }
+
+  function renderSummary() {
+    const c = (st) => rows.filter((r) => status(r) === st).length;
+    const parts = [[c('changed'), 'angepasst'], [c('added'), 'ergänzt'], [c('removed'), 'weggelassen']].filter(([n]) => n).map(([n, l]) => `${n} ${l}`);
+    document.getElementById('ing-summary').textContent = parts.length ? parts.join(' · ') : 'wie im Original';
+    document.getElementById('pc-ings').innerHTML = rows.filter((r) => r.name).map((r) => `<span class="ing-chip">${r.quantity ? `<b>${esc(r.quantity)}</b> ` : ''}${esc(r.name)}</span>`).join('') || '<span class="muted">Noch keine Zutaten</span>';
+  }
+
+  function markDirty() {
+    dirty = true;
+    const title = document.getElementById('e-title').value.trim();
+    document.getElementById('dirty').hidden = false;
+    document.getElementById('save-btn').disabled = !title;
+    document.getElementById('title-err').hidden = !!title;
+    document.querySelectorAll('.js-title').forEach((el) => (el.textContent = title || 'Rezept'));
+  }
+
+  document.getElementById('ing-rows').addEventListener('input', (e) => {
+    const row = e.target.closest('.ing-row'); if (!row) return;
+    const r = rows[+row.dataset.i];
+    const v = e.target.value.trim();
+    // Leeres Namensfeld bleibt '' (nicht null), damit die Zeile nicht verschwindet
+    r[e.target.dataset.f] = e.target.dataset.f === 'name' ? v : v || null;
+    // Statuswechsel (z. B. original → angepasst) sichtbar machen, ohne den Fokus zu verlieren
+    const before = row.className;
+    const s = status(r);
+    if (!before.includes(s)) {
+      const f = e.target.dataset.f, pos = e.target.selectionStart;
+      renderRows();
+      const inp = document.querySelector(`.ing-row[data-i="${row.dataset.i}"] input[data-f="${f}"]`);
+      if (inp) { inp.focus(); inp.setSelectionRange(pos, pos); }
+    } else renderSummary();
+    markDirty();
+  });
+
+  document.getElementById('ing-rows').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-act]'); if (!btn) return;
+    const i = +btn.closest('.ing-row').dataset.i;
+    const r = rows[i];
+    if (btn.dataset.act === 'x') {
+      if (r.on == null) rows.splice(i, 1);          // ergänzt → wirklich entfernen
+      else { r.name = null; r.quantity = null; }    // aus dem Original → weggelassen
+    }
+    if (btn.dataset.act === 'restore' || btn.dataset.act === 'reset') { r.name = r.on; r.quantity = r.oq; }
+    renderRows(); markDirty();
+  });
+
+  document.getElementById('ing-add').addEventListener('click', () => {
+    rows.push({ id: nextId++, quantity: null, name: '', oq: null, on: null });
+    renderRows(); markDirty();
+    const last = document.querySelectorAll('.ing-row');
+    last[last.length - 1].querySelector('input').focus();
+  });
+
+  document.getElementById('e-title').addEventListener('input', markDirty);
+  document.getElementById('e-url').addEventListener('input', markDirty);
+  document.getElementById('e-img').addEventListener('input', markDirty);
+  document.getElementById('img-remove').addEventListener('click', () => {
+    document.getElementById('e-img').value = '';
+    const t = document.getElementById('img-thumb'); t.classList.add('empty'); t.textContent = 'Kein Foto';
+    document.getElementById('pc-image').firstChild.textContent = '🍲';
+    document.getElementById('img-remove').hidden = true;
+    markDirty();
+  });
+  document.getElementById('avail').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    document.querySelectorAll('#avail button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    markDirty();
+  });
+
+  function save() {
+    dirty = false;
+    document.getElementById('dirty').hidden = true;
+    document.getElementById('save-btn').disabled = true;
+    go('detail');
+    toast('✓ Rezept gespeichert');
+  }
+
+  // ---------- Navigation im Prototyp ----------
+  let current = 'detail';
+  function go(screen) {
+    if (screen === 'delete') {
+      if (current === 'edit') { /* Dialog öffnet über dem Formular */ } else showScreen('detail');
+      document.getElementById('scrim').classList.add('on');
+      const box = document.getElementById(hasMeals ? 'del-blocked' : 'del-ok');
+      box.querySelector('.btn-secondary').focus();
+      mark('delete');
+      return;
+    }
+    closeDelete(false);
+    showScreen(screen);
+  }
+  function showScreen(screen) {
+    current = screen;
+    document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === 'screen-' + screen));
+    mark(screen);
+    window.scrollTo({ top: 0 });
+  }
+  function mark(screen) { document.querySelectorAll('[data-screen]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.screen === screen)); }
+  function closeDelete(restoreMark = true) {
+    document.getElementById('scrim').classList.remove('on');
+    if (restoreMark) mark(current);
+  }
+
+  document.addEventListener('click', (e) => {
+    const s = e.target.closest('[data-screen]'); if (s) return go(s.dataset.screen);
+    const g = e.target.closest('[data-go]'); if (g) return go(g.dataset.go);
+  });
+  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => closeDelete()));
+  document.getElementById('scrim').addEventListener('click', (e) => { if (e.target.id === 'scrim') closeDelete(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDelete(); });
+  document.getElementById('confirm-del').addEventListener('click', () => {
+    closeDelete(false);
+    showScreen('detail');
+    toast('🗑️ „' + (document.getElementById('e-title').value.trim() || 'Rezept') + '“ gelöscht — zurück in der Rezeptliste');
+  });
+
+  // ---------- Mahlzeiten ----------
+  let hasMeals = true;
+  document.querySelectorAll('[data-meals]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-meals]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    hasMeals = b.dataset.meals === '1';
+    document.getElementById('del-blocked').hidden = !hasMeals;
+    document.getElementById('del-ok').hidden = hasMeals;
+    document.getElementById('st-cooked').textContent = hasMeals ? '7×' : '0×';
+    document.getElementById('st-planned').textContent = hasMeals ? '2' : '0';
+    document.querySelector('#screen-detail .ghost-block').textContent = hasMeals
+      ? 'Auf dem Menüplan · Wer mag\'s? · Herkunft — unverändert'
+      : 'Noch nicht eingeplant · Wer mag\'s? · Herkunft — unverändert';
+  }));
+
+  // ---------- Rolle ----------
+  document.querySelectorAll('[data-role]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-role]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    const parent = b.dataset.role === 'parent';
+    document.querySelectorAll('.parent-only').forEach((el) => (el.hidden = !parent));
+    ['edit', 'delete'].forEach((k) => {
+      const btn = document.querySelector(`[data-screen="${k}"]`);
+      btn.disabled = !parent; btn.style.opacity = parent ? '' : '.4';
+    });
+    if (!parent) go('detail');
+  }));
+
+  let tt;
+  function toast(text) {
+    const t = document.getElementById('toast');
+    t.textContent = text; t.classList.add('on');
+    clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 3500);
+  }
+
+  renderRows();
+</script>
+</body>
+</html>

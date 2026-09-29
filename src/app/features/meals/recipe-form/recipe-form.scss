@@ -1,0 +1,384 @@
+/* Recipe form — "Rezept importieren" (unchanged) and "Rezept bearbeiten"
+   (design/prototypes/fuxis-plan-rezept-bearbeiten.html). */
+
+:host {
+  display: block;
+}
+
+.card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 22px;
+  box-shadow: 0 16px 32px -18px var(--shadow-warm);
+}
+
+.field {
+  margin-bottom: 20px;
+}
+
+.f-label {
+  display: block;
+  margin-bottom: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--brown-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+
+  &.small {
+    margin-bottom: 0;
+    font-size: 11.5px;
+  }
+
+  .optional {
+    margin-left: 4px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    opacity: 0.8;
+  }
+}
+
+input {
+  width: 100%;
+  border: 2px solid var(--cream-deep);
+  background: var(--cream);
+  border-radius: 13px;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--brown);
+  outline: none;
+
+  &:focus {
+    border-color: var(--orange);
+  }
+
+  &.invalid {
+    border-color: var(--danger);
+  }
+}
+
+/* Picture (editing): thumbnail | link + "✕ Bild entfernen" */
+.img-field {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.img-thumb {
+  width: 96px;
+  height: 96px;
+  border-radius: 16px;
+  background: var(--cream-deep) center / cover;
+
+  &.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--brown-soft);
+    text-align: center;
+  }
+}
+
+.img-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.chip-btn {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 2px solid var(--cream-deep);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+
+  &.del {
+    color: var(--danger);
+
+    &:hover {
+      border-color: var(--danger);
+      background: #fbe4df;
+    }
+  }
+}
+
+/* Ingredient rows: quantity | name | × (editing: status dot first) */
+.ing-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+
+.ing-summary {
+  margin-bottom: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--brown-soft);
+}
+
+.ing-info {
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff3d6;
+  color: #7a5307;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ing-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 0.35fr) minmax(0, 1fr) 44px;
+  gap: 8px;
+  align-items: center;
+}
+
+.ing-row {
+  &.original,
+  &.changed,
+  &.added,
+  &.removed {
+    margin: 0 -6px;
+    padding: 6px;
+    border-radius: 14px;
+
+    .inputs {
+      grid-template-columns: 10px minmax(0, 0.35fr) minmax(0, 1fr) 44px;
+    }
+  }
+
+  &.changed {
+    background: #fff6ee;
+  }
+
+  &.added {
+    background: #f3faf5;
+  }
+
+  &.removed .inputs {
+    grid-template-columns: 10px minmax(0, 1fr) auto;
+    column-gap: 12px;
+  }
+}
+
+.st {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+
+  .changed & {
+    background: var(--orange);
+  }
+
+  .added & {
+    background: var(--mint-deep);
+  }
+
+  .removed & {
+    border: 2px solid var(--brown-soft);
+  }
+}
+
+.ing-remove {
+  height: 44px;
+  border: none;
+  border-radius: 13px;
+  background: var(--cream);
+  color: var(--brown-soft);
+  font-size: 18px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--cream-deep);
+  }
+
+  .ing-row:is(.original, .changed, .added) &:hover {
+    background: #fbe4df;
+    color: var(--danger);
+  }
+}
+
+.gone {
+  padding: 10px 0;
+  font-weight: 600;
+  color: var(--brown-soft);
+
+  b {
+    margin-right: 4px;
+    font-weight: 700;
+  }
+
+  small {
+    margin-left: 8px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+}
+
+.ing-note {
+  margin: 4px 0 0 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--brown-soft);
+}
+
+.tag-added {
+  font-weight: 700;
+  color: var(--mint-deep);
+}
+
+.undo {
+  min-height: 44px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--orange-deep);
+  cursor: pointer;
+}
+
+.ing-add {
+  margin-top: 8px;
+  padding: 8px 14px;
+  min-height: 44px;
+  border: 2px dashed rgba(90, 52, 35, 0.22);
+  border-radius: 13px;
+  background: transparent;
+  color: var(--brown-soft);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--orange);
+    color: var(--orange-deep);
+  }
+}
+
+.legend {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brown-soft);
+
+  .lg {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 5px;
+    border-radius: 50%;
+    vertical-align: -1px;
+
+    &.changed {
+      background: var(--orange);
+    }
+
+    &.added {
+      background: var(--mint-deep);
+    }
+
+    &.removed {
+      border: 2px solid var(--brown-soft);
+    }
+  }
+}
+
+.hint {
+  margin: 6px 2px 0;
+  font-size: 12px;
+  color: var(--brown-soft);
+
+  &.error {
+    color: var(--danger);
+  }
+}
+
+.segmented button {
+  min-height: 40px;
+}
+
+.message {
+  margin-top: 20px;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.btn {
+  min-height: 44px;
+  border: none;
+  padding: 13px 22px;
+  border-radius: 14px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14.5px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  flex: 1;
+  background: var(--orange);
+  color: #fff;
+  box-shadow: 0 14px 26px -10px rgba(232, 112, 60, 0.55);
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.btn-secondary {
+  background: var(--cream);
+  color: var(--brown);
+}
+
+.dirty {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--orange-deep);
+}
+
+@media (max-width: 520px) {
+  .ing-row:is(.original, .changed, .added) .inputs {
+    grid-template-columns: 10px minmax(0, 0.45fr) minmax(0, 1fr) 44px;
+    gap: 6px;
+  }
+}

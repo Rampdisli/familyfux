@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { TaskPool } from '../../tasks/task-pool';
+import { Toast } from '../../toast/toast';
 import { MealTabs } from '../meal-tabs/meal-tabs';
 import { Meals, Recipe, cssImage } from '../meals';
 import { RecipeCard } from '../recipe-card/recipe-card';
@@ -12,7 +13,7 @@ type Sort = 'smart' | 'cooked' | 'alpha';
 /** "Was gibt's zu essen?" — design/prototypes/fuxis-plan-mahlzeiten.html */
 @Component({
   selector: 'app-recipes',
-  imports: [MealTabs, RecipeCard, RouterLink, RouterOutlet, WhoPicker],
+  imports: [MealTabs, RecipeCard, RouterLink, RouterOutlet, Toast, WhoPicker],
   templateUrl: './recipes.html',
   styleUrl: './recipes.scss',
 })

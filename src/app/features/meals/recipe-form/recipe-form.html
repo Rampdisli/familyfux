@@ -1,0 +1,213 @@
+<form class="card" (submit)="$event.preventDefault(); submit()">
+  <div class="field">
+    <label class="f-label" for="recipe-title">Name des Rezepts</label>
+    <input
+      id="recipe-title"
+      type="text"
+      placeholder="z. B. Spaghetti Bolognese"
+      required
+      [class.invalid]="editing() && titleMissing()"
+      [value]="draft().title"
+      (input)="patch({ title: $any($event.target).value })"
+    />
+    @if (editing() && titleMissing()) {
+      <p class="hint error">Bitte einen Namen eingeben.</p>
+    }
+  </div>
+
+  <div class="field">
+    <label class="f-label" for="recipe-url">Link zum Rezept <span class="optional">optional</span></label>
+    <input
+      id="recipe-url"
+      type="url"
+      inputmode="url"
+      placeholder="https://fooby.ch/de/rezepte/…"
+      [class.invalid]="urlInvalid()"
+      [value]="draft().url"
+      (input)="patch({ url: $any($event.target).value })"
+    />
+    @if (urlInvalid()) {
+      <p class="hint error">Bitte einen vollständigen Link mit https:// eingeben.</p>
+    }
+  </div>
+
+  @if (editing()) {
+    <div class="field">
+      <span class="f-label">Bild</span>
+      <div class="img-field">
+        @if (image(); as src) {
+          <div class="img-thumb" [style.background-image]="background(src)"></div>
+        } @else {
+          <div class="img-thumb empty">Kein Foto</div>
+        }
+        <div class="img-side">
+          <label class="f-label small" for="recipe-image">Bild-Link <span class="optional">optional</span></label>
+          <input
+            id="recipe-image"
+            type="url"
+            inputmode="url"
+            placeholder="https://…/bild.jpg"
+            [class.invalid]="imageInvalid()"
+            [value]="draft().imageUrl"
+            (input)="patch({ imageUrl: $any($event.target).value })"
+          />
+          @if (draft().imageUrl) {
+            <button type="button" class="chip-btn del" (click)="patch({ imageUrl: '' })">✕ Bild entfernen</button>
+          }
+        </div>
+      </div>
+      @if (imageInvalid()) {
+        <p class="hint error">Bitte einen vollständigen Link mit https:// eingeben.</p>
+      } @else {
+        <p class="hint">Neuen Link einfügen ersetzt das Bild. Ein Bild aus dem Import wird dabei aus dem Speicher gelöscht.</p>
+      }
+    </div>
+  } @else {
+    <div class="field">
+      <label class="f-label" for="recipe-image">Bild-Link <span class="optional">optional</span></label>
+      <input
+        id="recipe-image"
+        type="url"
+        inputmode="url"
+        placeholder="https://…/bild.jpg"
+        [class.invalid]="imageInvalid()"
+        [value]="draft().imageUrl"
+        (input)="patch({ imageUrl: $any($event.target).value })"
+      />
+      @if (imageInvalid()) {
+        <p class="hint error">Bitte einen vollständigen Link mit https:// eingeben.</p>
+      } @else {
+        <p class="hint">Rechtsklick bzw. langes Tippen aufs Rezeptbild → „Bildadresse kopieren“.</p>
+      }
+    </div>
+  }
+
+  <div class="field">
+    <div class="ing-head">
+      <span class="f-label">Zutaten <span class="optional">Menge und Zutat</span></span>
+      @if (editing()) {
+        <span class="ing-summary">{{ summary() }}</span>
+      }
+    </div>
+    @if (editing()) {
+      <p class="ing-info">
+        ✎ Das Originalrezept bleibt gespeichert. Änderungen erscheinen in der Ansicht als „statt …“, „ergänzt“ oder
+        „weggelassen“.
+      </p>
+    }
+    <div class="ing-rows">
+      @for (row of draft().rows; track $index; let i = $index) {
+        @let s = editing() ? status(row) : null;
+        <div class="ing-row {{ s ?? '' }}">
+          @if (s === 'removed') {
+            <div class="inputs">
+              <span class="st" aria-hidden="true"></span>
+              <span class="gone">
+                <s><b>{{ row.originalQuantity }}</b> {{ row.originalName }}</s>
+                <small>weggelassen</small>
+              </span>
+              <button type="button" class="undo" (click)="resetRow(i)">↺ zurückholen</button>
+            </div>
+          } @else {
+            <div class="inputs">
+              @if (s) {
+                <span class="st" aria-hidden="true"></span>
+              }
+              <input
+                class="ing-qty-input"
+                type="text"
+                [placeholder]="i === 0 && !editing() ? '200 g' : 'Menge'"
+                [attr.aria-label]="'Menge ' + (i + 1)"
+                [value]="row.quantity"
+                (input)="setRow(i, 'quantity', $any($event.target).value)"
+              />
+              <input
+                type="text"
+                [placeholder]="i === 0 && !editing() ? 'Spaghetti' : 'Zutat'"
+                [attr.aria-label]="'Zutat ' + (i + 1)"
+                [value]="row.name ?? ''"
+                (input)="setRow(i, 'name', $any($event.target).value)"
+                (keydown.enter)="$event.preventDefault(); addRow()"
+              />
+              @if (s && s !== 'added') {
+                <button
+                  type="button"
+                  class="ing-remove"
+                  title="Weglassen (Original bleibt sichtbar)"
+                  [attr.aria-label]="'Zutat ' + (i + 1) + ' weglassen'"
+                  (click)="removeRow(i)"
+                >
+                  ×
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="ing-remove"
+                  [attr.title]="s ? 'Entfernen' : null"
+                  [attr.aria-label]="'Zutat ' + (i + 1) + ' entfernen'"
+                  (click)="removeRow(i)"
+                >
+                  ×
+                </button>
+              }
+            </div>
+            @if (s === 'changed') {
+              <div class="ing-note">
+                statt <s>{{ original(row) }}</s>
+                <button type="button" class="undo" (click)="resetRow(i)">↺ wie im Original</button>
+              </div>
+            } @else if (s === 'added') {
+              <div class="ing-note"><span class="tag-added">ergänzt</span></div>
+            }
+          }
+        </div>
+      }
+    </div>
+    <button type="button" class="ing-add" (click)="addRow()">+ Zutat</button>
+    @if (editing()) {
+      <div class="legend">
+        <span><i class="lg changed"></i>angepasst</span>
+        <span><i class="lg added"></i>ergänzt</span>
+        <span><i class="lg removed"></i>weggelassen</span>
+      </div>
+    } @else {
+      <p class="hint">Menge leer lassen, wenn es keine gibt (z. B. Salz).</p>
+    }
+  </div>
+
+  <div class="field">
+    <span class="f-label">Zutaten im Haus?</span>
+    <div class="segmented" role="group" aria-label="Zutaten im Haus?">
+      <button
+        type="button"
+        [class.active]="draft().available"
+        [attr.aria-pressed]="draft().available"
+        (click)="patch({ available: true })"
+      >
+        ✓ Alles da
+      </button>
+      <button
+        type="button"
+        [class.active]="!draft().available"
+        [attr.aria-pressed]="!draft().available"
+        (click)="patch({ available: false })"
+      >
+        Fehlt was
+      </button>
+    </div>
+  </div>
+
+  @if (errorMessage(); as message) {
+    <p class="message error">Konnte das Rezept nicht speichern: {{ message }}</p>
+  }
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary" [disabled]="!canSave()">
+      {{ saving() ? 'Speichere…' : submitLabel() }}
+    </button>
+    <a [routerLink]="cancelLink()" class="btn btn-secondary">Abbrechen</a>
+    @if (editing() && changed()) {
+      <span class="dirty">● Ungespeicherte Änderungen</span>
+    }
+  </div>
+</form>
