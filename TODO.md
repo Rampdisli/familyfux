@@ -7,8 +7,9 @@ Offene Punkte aus der Arbeit an Fuxis Plan.
 - [ ] **Belohnungen anlegen:** Es gibt keine Startdaten; die Familie legt Belohnungen und Preise unter
       „Belohnungen verwalten“ oder per Claude an. `supabase/seed.sql` ist nur für die Entwicklung.
 
-- [ ] **Rezepte bearbeiten und löschen** — zurückgestellt. Braucht ein Bearbeiten-Formular
-      (Basis: `/essen/neu`) und in Supabase eine Delete-Policy samt Grant für `recipes`.
+- [ ] **Rezepte bearbeiten und löschen** — spezifiziert in `design/rezept-bearbeiten-loeschen.md`,
+      Prototyp `design/prototypes/fuxis-plan-rezept-bearbeiten.html`. Braucht ein Bearbeiten-Formular
+      (Basis: `/essen/neu`), `update_recipe` und in Supabase eine Delete-Policy samt Grant für `recipes`.
 
 - [ ] **Alte Zutaten-Spalte entfernen,** sobald App 0.3.0 und MCP-Server 0.6.0 auf dem NAS laufen:
       `recipes.ingredients` ist nur noch eine automatisch gepflegte Kopie von `recipe_ingredients`
