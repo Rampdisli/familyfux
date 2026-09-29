@@ -19,7 +19,7 @@
 }
 
 <div class="actions">
-  <button type="button" class="done-btn" (click)="pickerOpen.set(true)">
+  <button type="button" class="done-btn" (click)="done()">
     @if (cheer(); as name) {
       +{{ task().reward }} ⭐ für {{ name }}!
     } @else {

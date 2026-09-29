@@ -28,7 +28,24 @@ export class RepeatableCard {
     [...this.task().today].reverse().map((completion) => ({ completion, member: this.pool.member(completion.member_id) })),
   );
 
-  protected readonly last = computed(() => this.doers()[0]);
+  /** Person picked in the brown bar: "Erledigt!" counts for them right away. */
+  protected readonly selected = computed(() => this.pool.selectedMember());
+
+  /** What "↩︎" takes back: the latest completion today — of the picked person, if any. */
+  protected readonly last = computed(() => {
+    const selected = this.selected();
+    return selected ? this.doers().find((d) => d.completion.member_id === selected.id) : this.doers()[0];
+  });
+
+  /** "✓ Erledigt!": for the picked person directly, otherwise ask who. */
+  protected done(): void {
+    const selected = this.selected();
+    if (selected) {
+      this.complete(selected.id);
+    } else {
+      this.pickerOpen.set(true);
+    }
+  }
 
   private cheerTimer?: ReturnType<typeof setTimeout>;
 
@@ -40,7 +57,7 @@ export class RepeatableCard {
     void this.pool.complete(this.task().id, memberId);
   }
 
-  /** Takes back the latest completion of today. */
+  /** Takes back the latest completion of today (of the picked person, if any). */
   protected undo(): void {
     const last = this.last();
     if (last) {
