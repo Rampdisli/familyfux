@@ -89,6 +89,22 @@ export interface RepeatableTask {
   today: TodayCompletion[];
 }
 
+/** Where the person picked in the brown bar is remembered on this device. */
+const SELECTED_MEMBER_KEY = 'fuxi.selectedMemberId';
+
+function readSelectedMember(): string | null {
+  try {
+    return localStorage.getItem(SELECTED_MEMBER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** "Mias", "Klaus'" — German genitive, e.g. for "Mias Aufgaben". */
+export function possessive(name: string): string {
+  return /[sxzß]$/i.test(name) ? `${name}’` : `${name}s`;
+}
+
 /** Stars can be fractional when shared: 1.5 → "1,5". */
 export function formatStars(stars: number): string {
   return stars.toLocaleString('de-DE', { maximumFractionDigits: 2 });
@@ -117,7 +133,7 @@ export class TaskPool {
         throw new Error(refresh.error.message, { cause: refresh.error });
       }
 
-      const [members, pool, stars, repeatable, completions] = await Promise.all([
+      const [members, pool, stars, balances, repeatable, completions] = await Promise.all([
         supabase
           .from('family_members')
           .select('id, family_id, user_id, name, emoji, color, role')
@@ -130,6 +146,7 @@ export class TaskPool {
           .order('due_date')
           .order('title'),
         supabase.from('member_week_stars').select('member_id, stars'),
+        supabase.from('member_balance').select('member_id, balance'),
         supabase
           .from('tasks')
           .select('id, title, emoji, color, reward')
@@ -151,7 +168,13 @@ export class TaskPool {
         : { data: [], error: null };
 
       const error =
-        members.error ?? pool.error ?? stars.error ?? repeatable.error ?? completions.error ?? claims.error;
+        members.error ??
+        pool.error ??
+        stars.error ??
+        balances.error ??
+        repeatable.error ??
+        completions.error ??
+        claims.error;
       if (error) {
         // PostgrestError is a plain object; resource() needs an Error to expose its message.
         throw new Error(error.message, { cause: error });
@@ -180,6 +203,9 @@ export class TaskPool {
         stars: Object.fromEntries(
           (stars.data ?? []).map((s) => [s.member_id, Number(s.stars)]),
         ) as Partial<Record<string, number>>,
+        balances: Object.fromEntries(
+          (balances.data ?? []).map((b) => [b.member_id, Number(b.balance)]),
+        ) as Partial<Record<string, number>>,
       };
     },
   });
@@ -187,11 +213,55 @@ export class TaskPool {
   readonly family = computed(() => this.data.value()?.family ?? []);
   readonly tasks = computed(() => this.data.value()?.tasks ?? []);
   readonly repeatable = computed(() => this.data.value()?.repeatable ?? []);
+  /** Stars earned this week, per member id. */
   readonly stars = computed(() => this.data.value()?.stars ?? {});
+  /** Guthaben per member id: all stars ever earned minus rewards bought (member_balance). */
+  readonly balances = computed(() => this.data.value()?.balances ?? {});
 
   /** The signed-in user's own member entry. */
   readonly me = computed(() => this.family().find((m) => m.user_id === this.auth.user()?.id));
   readonly isParent = computed(() => this.me()?.role === 'parent');
+  /** Signed in with a kid's own account: the brown bar is fixed to them. */
+  readonly isChildLogin = computed(() => this.me()?.role === 'child');
+
+  /** Person picked in the brown bar by a parent; null = "Alle". */
+  private readonly chosenMemberId = signal<string | null>(readSelectedMember());
+
+  /**
+   * The person the pages are about: a kid login is always themselves,
+   * otherwise whoever was picked in the brown bar (null = "Alle").
+   */
+  readonly selectedMemberId = computed<string | null>(() => {
+    const me = this.me();
+    if (me?.role === 'child') {
+      return me.id;
+    }
+    const id = this.chosenMemberId();
+    return id && this.member(id) ? id : null;
+  });
+
+  readonly selectedMember = computed(() => this.member(this.selectedMemberId()));
+
+  /** Picks a person in the brown bar (null = "Alle"); remembered on this device. Kid logins can't switch. */
+  selectMember(id: string | null): void {
+    if (this.isChildLogin()) {
+      return;
+    }
+    this.chosenMemberId.set(id);
+    try {
+      if (id) {
+        localStorage.setItem(SELECTED_MEMBER_KEY, id);
+      } else {
+        localStorage.removeItem(SELECTED_MEMBER_KEY);
+      }
+    } catch {
+      // Private mode etc.: the choice just isn't remembered.
+    }
+  }
+
+  balance(memberId: string | null | undefined): number {
+    return (memberId && this.balances()[memberId]) || 0;
+  }
 
   member(id: string | null | undefined): FamilyMember | undefined {
     return this.family().find((m) => m.id === id);
@@ -302,6 +372,18 @@ export class TaskPool {
 
   removeMember(id: string): Promise<string | null> {
     return this.mutate(supabase.from('family_members').delete().eq('id', id));
+  }
+
+  /** Links a member to the account with this email (kid logins); parents only. Resolves to an error message, if any. */
+  linkAccount(memberId: string, email: string): Promise<string | null> {
+    return this.mutate(supabase.rpc('link_member_account', { p_member_id: memberId, p_email: email.trim() }));
+  }
+
+  /** Removes a member's login link again; parents only, never their own. */
+  async unlinkAccount(memberId: string): Promise<string | null> {
+    const { data, error } = await supabase.rpc('unlink_member_account', { p_member_id: memberId });
+    this.data.reload();
+    return error?.message ?? (data ? null : 'Das Konto ist schon gelöst, oder du darfst es nicht lösen.');
   }
 
   /** Runs a write, reloads the pool and resolves to the error message, if any. */

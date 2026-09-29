@@ -1,15 +1,16 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RepeatableCard } from '../repeatable-card/repeatable-card';
 import { TaskCard } from '../task-card/task-card';
-import { TaskPool, formatStars } from '../task-pool';
+import { TaskPool, possessive } from '../task-pool';
 
 /** Finished entries stay visible this long, so a wrong tick can still be undone. */
 const DONE_VISIBLE_MS = 60_000;
 
 @Component({
   selector: 'app-task-list',
-  imports: [RepeatableCard, RouterLink, TaskCard],
+  imports: [NgTemplateOutlet, RepeatableCard, RouterLink, TaskCard],
   templateUrl: './task-list.html',
   styleUrl: './task-list.scss',
 })
@@ -23,6 +24,20 @@ export class TaskList {
     const cutoff = this.now() - DONE_VISIBLE_MS;
     return this.pool.tasks().filter((t) => !t.is_done || !t.done_at || Date.parse(t.done_at) > cutoff);
   });
+
+  /** Person picked in the brown bar; null = "Alle". */
+  protected readonly person = computed(() => this.pool.selectedMember());
+
+  /** "Mias Aufgaben": everything the person takes part in, finished ones too (until they fade out). */
+  protected readonly mine = computed(() => {
+    const id = this.person()?.id;
+    return this.visibleTasks().filter((t) => t.claims.some((c) => c.member_id === id));
+  });
+
+  /** "Noch frei": nobody took them yet. */
+  protected readonly free = computed(() => this.visibleTasks().filter((t) => t.claims.length === 0));
+
+  protected readonly possessive = computed(() => possessive(this.person()?.name ?? ''));
 
   constructor() {
     // Re-evaluate right when the next finished entry's minute is up.
@@ -52,9 +67,5 @@ export class TaskList {
   /** "Immer wieder" button: jumps down to the repeatable tasks. */
   protected jumpToRepeatable(section: HTMLElement): void {
     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  protected stars(stars: number): string {
-    return formatStars(stars);
   }
 }

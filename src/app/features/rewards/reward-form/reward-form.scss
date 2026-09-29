@@ -1,0 +1,261 @@
+/* Reward form — like task-create.scss; design/prototypes/fuxis-plan-belohnungen.html.
+   Inside "Belohnungen verwalten" the host sets the --rf-* colours to white on cream. */
+
+:host {
+  display: block;
+  --segmented-bg: var(--rf-segmented-bg, var(--cream));
+}
+
+.field {
+  margin-bottom: 20px;
+}
+
+.f-label {
+  display: block;
+  margin-bottom: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--brown-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.optional {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+input[type='text'],
+.unit-grid input {
+  width: 100%;
+  border: 2px solid var(--cream-deep);
+  background: var(--rf-field-bg, var(--cream));
+  border-radius: 13px;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--brown);
+  outline: none;
+
+  &:focus {
+    border-color: var(--orange);
+  }
+}
+
+/* Icon / colour pickers */
+.swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.icon-swatch,
+.color-swatch {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 12px;
+  border: 2.5px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.icon-swatch.active {
+  border-color: var(--orange);
+}
+
+.color-swatch {
+  border-radius: 50%;
+  // Tile tints are pale; the ring keeps them visible on cream.
+  box-shadow: inset 0 0 0 1px rgba(90, 52, 35, 0.18);
+
+  &.active {
+    border-color: var(--brown);
+
+    &::after {
+      content: '✓';
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--brown);
+    }
+  }
+}
+
+.seg-lg button {
+  padding: 9px 16px;
+  font-size: 13.5px;
+}
+
+/* − 20 ⭐ + / − 6× + (like app-reward-stepper) */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 14px;
+  background: var(--rf-stepper-bg, var(--cream));
+
+  button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 10px;
+    background: var(--rf-stepper-button-bg, #fff);
+    font: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--orange-deep);
+    cursor: pointer;
+    box-shadow: 0 4px 10px var(--shadow-warm);
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .val {
+    min-width: 2.5ch;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+  }
+}
+
+.stepper.big input {
+  width: 4ch;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: right;
+  color: inherit;
+  outline: none;
+  appearance: textfield;
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  &:focus {
+    border-bottom: 2px solid var(--orange);
+  }
+}
+
+/* Pro Kauf / In Einheiten */
+.type-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.type-btn {
+  border: 2.5px solid var(--cream-deep);
+  background: var(--rf-field-bg, var(--cream));
+  border-radius: 16px;
+  padding: 14px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+
+  &.active {
+    border-color: var(--orange);
+    background: #fff;
+    box-shadow: 0 10px 22px -14px var(--shadow-warm);
+  }
+}
+
+.tb-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--brown);
+}
+
+.tb-sub {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--brown-soft);
+}
+
+.unit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--brown-soft);
+
+  /* Live summary "Im Shop: …" */
+  &.strong {
+    margin: 0 0 4px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #fff3d6;
+    color: #7a5307;
+    font-weight: 600;
+    font-size: 13px;
+  }
+}
+
+.message {
+  margin-top: 16px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.btn {
+  border: none;
+  padding: 13px 22px;
+  border-radius: 14px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  flex: 1;
+  background: var(--orange);
+  color: #fff;
+  box-shadow: 0 14px 26px -10px rgba(232, 112, 60, 0.55);
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.btn-secondary {
+  background: var(--rf-secondary-bg, var(--cream));
+  color: var(--brown);
+}
+
+@media (max-width: 760px) {
+  .unit-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stepper button {
+    width: 44px;
+    height: 44px;
+  }
+}

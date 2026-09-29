@@ -1,0 +1,41 @@
+@if (pool.isChildLogin()) {
+  @if (pool.me(); as m) {
+    <div class="wb-pills" #pills>
+      <div class="wb-pill active">
+        <span class="av av-{{ m.color }}">{{ m.emoji }}</span>
+        <span class="text">
+          <span class="nm">{{ m.name }}</span>
+          <span class="sb">{{ balance(m.id) }} ⭐</span>
+        </span>
+      </div>
+    </div>
+  }
+} @else {
+  <div class="wb-pills" role="group" aria-label="Person wählen" #pills>
+    <button
+      type="button"
+      class="wb-pill"
+      [class.active]="pool.selectedMemberId() === null"
+      [attr.aria-pressed]="pool.selectedMemberId() === null"
+      (click)="pool.selectMember(null)"
+    >
+      <span class="av all">👨‍👩‍👧‍👦</span>
+      <span class="text"><span class="nm">Alle</span></span>
+    </button>
+    @for (m of pool.family(); track m.id) {
+      <button
+        type="button"
+        class="wb-pill"
+        [class.active]="pool.selectedMemberId() === m.id"
+        [attr.aria-pressed]="pool.selectedMemberId() === m.id"
+        (click)="pool.selectMember(m.id)"
+      >
+        <span class="av av-{{ m.color }}">{{ m.emoji }}</span>
+        <span class="text">
+          <span class="nm">{{ m.name }}</span>
+          <span class="sb">{{ balance(m.id) }} ⭐</span>
+        </span>
+      </button>
+    }
+  </div>
+}

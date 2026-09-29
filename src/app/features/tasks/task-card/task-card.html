@@ -27,12 +27,13 @@
           class="done-toggle"
           [class.done]="p.claim.is_done"
           [attr.aria-pressed]="p.claim.is_done"
+          [disabled]="locked(p.claim)"
           (click)="toggleDone(p.claim)"
         >
           <span class="dot">{{ p.claim.is_done ? '✓' : '' }}</span>
           {{ p.member?.name ?? 'Ehemaliges Mitglied' }}
         </button>
-        @if (!p.claim.is_done) {
+        @if (!p.claim.is_done && !locked(p.claim)) {
           <button
             type="button"
             class="leave"
@@ -46,11 +47,11 @@
       </div>
     }
   </div>
-  @if (available().length && !task().is_done) {
+  @if (available().length && !task().is_done && !selected()) {
     <button type="button" class="join-btn" (click)="pickerOpen.set(true)">+ Mitmachen</button>
   }
 } @else {
-  <button type="button" class="claim-btn" (click)="pickerOpen.set(true)">Ich mach’s!</button>
+  <button type="button" class="claim-btn" (click)="claim()">Ich mach’s!</button>
 }
 
 @if (pickerOpen()) {

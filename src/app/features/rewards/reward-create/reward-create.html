@@ -1,0 +1,25 @@
+<div class="board">
+  <a routerLink="/belohnungen/verwalten" class="back-link">← Zurück zu Belohnungen verwalten</a>
+
+  <div class="page-head">
+    <h1>Neue Belohnung</h1>
+    <p>Lege fest, wie die Belohnung im Shop aussieht und was sie kostet</p>
+  </div>
+
+  <div class="layout">
+    <div class="card">
+      <app-reward-form
+        [(draft)]="draft"
+        [saving]="saving()"
+        [errorMessage]="errorMessage()"
+        (save)="save($event)"
+        (cancel)="cancel()"
+      />
+    </div>
+
+    <aside class="preview-sticky">
+      <div class="preview-label">Vorschau im Shop</div>
+      <div app-reward-card class="preview" [reward]="preview()"></div>
+    </aside>
+  </div>
+</div>

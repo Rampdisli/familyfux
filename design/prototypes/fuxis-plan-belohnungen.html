@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fuxis Plan Belohnungen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tokens 1:1 aus src/styles.scss */
+:root{
+  --cream:#fcefe3; --cream-deep:#f7e3cf; --orange:#e8703c; --orange-deep:#c85a2c; --amber:#f6b93b;
+  --brown:#5a3423; --brown-soft:#8a6250; --mint:#b8e6c4; --mint-deep:#4fa868; --lilac:#dcc6f2;
+  --sky:#bfe3f5; --rose:#f5c6ce; --peach:#f9d8b4; --lemon:#fbe29a; --danger:#d2543e;
+  --shadow-warm:rgba(90,52,35,.16);
+  --font-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-display:'Fredoka',var(--font-body);
+}
+*{box-sizing:border-box}
+html{min-height:100%;background:linear-gradient(160deg,#fdf5ec 0%,var(--cream) 60%,var(--cream-deep) 100%)}
+body{margin:0;font-family:var(--font-body);color:var(--brown)}
+button{font:inherit;color:inherit;cursor:pointer}
+.av-mint{background:var(--mint)}.av-lilac{background:var(--lilac)}.av-sky{background:var(--sky)}.av-lemon{background:var(--lemon)}.av-rose{background:var(--rose)}.av-peach{background:var(--peach)}
+.tile-peach{background:#fdebd9}.tile-mint{background:#e4f7e9}.tile-lilac{background:#f2e4ff}.tile-sky{background:#e1f3fa}.tile-rose{background:#fde6ea}.tile-lemon{background:#fff3d6}
+.segmented{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:12px;background:var(--segmented-bg,var(--cream))}
+.segmented button{border:none;background:transparent;padding:7px 12px;border-radius:9px;font-weight:600;font-size:13px;color:var(--brown-soft)}
+.segmented button.active{background:#fff;color:var(--brown);box-shadow:0 4px 10px var(--shadow-warm)}
+
+/* Braune Leiste: wer ist gerade dran (für alle Seiten) */
+.whobar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 16px;background:var(--brown);color:var(--cream);box-shadow:0 8px 20px -12px rgba(0,0,0,.4)}
+.wb-label{font-size:13px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.wb-pills{display:flex;gap:6px;padding:4px;border-radius:16px;background:rgba(255,255,255,.1);overflow-x:auto;scrollbar-width:none}
+.wb-pills::-webkit-scrollbar{display:none}
+.wb-pill{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border:none;border-radius:12px;background:transparent;color:var(--cream);text-align:left}
+.wb-pill .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+.wb-pill .av.all{background:rgba(255,255,255,.18)}
+.wb-pill .nm{font-weight:700;font-size:13.5px;line-height:1.1}
+.wb-pill .sb{font-size:11px;opacity:.8;font-weight:500}
+.wb-pill:hover{background:rgba(255,255,255,.08)}
+div.wb-pill:hover{background:#fff}
+.wb-pill .sb{white-space:nowrap}
+.wb-label .sub{display:none}
+.done-toggle:disabled{cursor:default;opacity:.75}
+.wb-pill.active{background:#fff;color:var(--brown);box-shadow:0 4px 10px rgba(0,0,0,.18)}
+.wb-pill.active .av.all{background:var(--cream)}
+@media (max-width:640px){.whobar{justify-content:flex-start;padding:8px 12px;gap:8px}.wb-label .txt{display:none}.wb-pills{background:none;padding:0;flex:1}}
+.neu{display:inline-block;margin-left:8px;padding:2px 7px;border-radius:6px;background:var(--orange);color:#fff;font-family:var(--font-body);font-size:10.5px;font-weight:700;letter-spacing:.4px;vertical-align:middle}
+
+/* Navigation — wie src/app/app.scss */
+.topnav{max-width:1240px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:22px 34px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+.brand-mark{width:38px;height:38px;border-radius:50% 50% 50% 14px;background:linear-gradient(135deg,var(--amber),var(--orange));box-shadow:0 8px 16px var(--shadow-warm)}
+.brand-name{font-family:var(--font-display);font-weight:600;font-size:18px;color:var(--orange-deep);white-space:nowrap}
+.nav-pills{display:flex;gap:6px;background:#fff;padding:6px;border-radius:20px;box-shadow:0 10px 24px -12px var(--shadow-warm)}
+.nav-pill{position:relative;display:flex;align-items:center;gap:8px;padding:11px 18px;border-radius:15px;font-weight:600;font-size:14px;color:var(--brown-soft);text-decoration:none;white-space:nowrap;border:none;background:none}
+.nav-pill .ic{font-size:17px}
+.nav-pill.active{background:linear-gradient(135deg,var(--amber),var(--orange));color:#fff;box-shadow:0 10px 20px -8px rgba(232,112,60,.55)}
+.nav-pill .badge{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--brown);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.nav-right{position:relative;display:flex;gap:12px}
+.login-chip{display:flex;align-items:center;gap:8px;height:42px;padding:0 14px 0 6px;border:none;border-radius:14px;background:#fff;font-weight:600;font-size:14px;box-shadow:0 8px 18px var(--shadow-warm)}
+.login-chip .av,.login-menu .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+.login-menu{position:absolute;top:52px;right:0;z-index:25;width:240px;background:#fff;border-radius:18px;padding:10px;display:flex;flex-direction:column;gap:6px;box-shadow:0 20px 40px -14px rgba(90,52,35,.45)}
+.lm-title{font-size:12.5px;font-weight:600;color:var(--brown-soft);padding:2px 4px 4px}
+.login-menu .p-opt.on{outline:2px solid var(--orange)}
+.lm-role{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--brown-soft)}
+@media (max-width:640px){.lc-name{display:none}.login-chip{padding:0 6px}}
+.icon-btn{width:42px;height:42px;border:none;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 8px 18px var(--shadow-warm)}
+.bottom-bar{display:none}
+@media (max-width:900px){.nav-pills .label{display:none}.nav-pill{padding:11px 13px}}
+@media (max-width:640px){
+  .topnav{padding:18px 18px 14px}.nav-pills{display:none}
+  main{padding-bottom:96px}
+  .bottom-bar{position:fixed;inset:auto 0 0;z-index:10;display:flex;justify-content:space-around;background:#fff;padding:10px 10px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -8px 24px -12px var(--shadow-warm)}
+  .bottom-item{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 8px;color:var(--brown-soft);font-size:10.5px;font-weight:600;border:none;background:none}
+  .bottom-item .ic{font-size:22px}
+  .bottom-item.active{color:var(--orange-deep)}
+  .bottom-item .badge{position:absolute;top:0;right:4px;min-width:18px;height:18px;border-radius:9px;background:var(--brown);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+}
+
+/* Seitenrahmen */
+.board{max-width:980px;margin:0 auto;padding:0 34px 50px;display:flex;flex-direction:column;gap:22px}
+@media (max-width:640px){.board{padding:0 16px 40px}}
+.back-link{align-self:flex-start;font-size:13.5px;font-weight:600;color:var(--brown-soft);text-decoration:none;background:none;border:none;padding:0}
+.block-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;padding:0 2px}
+.block-head h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:17px}
+.block-head span{font-size:12.5px;color:var(--brown-soft)}
+.message{margin:0;padding:18px;text-align:center;font-size:13.5px;color:var(--brown-soft);background:#fff;border-radius:18px}
+
+/* Familien-Chips — wie Aufgaben-Pool */
+.family-strip{display:flex;flex-wrap:wrap;gap:14px}
+.fam-chip{display:flex;align-items:center;gap:10px;background:#fff;padding:9px 16px 9px 9px;border-radius:30px;box-shadow:0 8px 18px var(--shadow-warm);border:2.5px solid transparent;text-align:left}
+.fam-chip .av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px}
+.fam-chip .name{font-family:var(--font-display);font-weight:600;font-size:14.5px}
+.fam-chip .stars{font-size:12px;color:var(--brown-soft);font-weight:500}
+.fam-chip.selected{border-color:var(--orange)}
+
+/* SHOP */
+.pool-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.pool-head h1{margin:0;font-family:var(--font-display);font-weight:600;font-size:25px}
+.pool-head span{font-size:13.5px;color:var(--brown-soft)}
+.pool-head > div > span{display:block;margin-top:2px}
+.hero{display:flex;align-items:center;gap:18px;padding:18px 22px;border-radius:24px;background:linear-gradient(135deg,var(--amber),var(--orange));color:#fff;box-shadow:0 16px 30px -16px rgba(232,112,60,.7)}
+.hero .fuxi{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:34px;flex-shrink:0}
+.hero .big{font-family:var(--font-display);font-weight:600;font-size:34px;line-height:1.05}
+.hero .say{margin-top:4px;font-size:14px;font-weight:600;opacity:.95}
+.reward-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+@media (max-width:640px){.hero .big{font-size:26px}.hero{padding:16px}.hero .fuxi{width:52px;height:52px;font-size:28px}.reward-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+.reward-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:16px;background:#fff;border:none;border-radius:22px;box-shadow:0 12px 26px -18px var(--shadow-warm);text-align:left;transition:transform .15s ease}
+.reward-card:hover{transform:translateY(-2px)}
+.reward-card .r-icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:27px}
+.reward-card .r-name{font-family:var(--font-display);font-weight:600;font-size:16px;line-height:1.2}
+.reward-card .r-unit{font-size:12.5px;color:var(--brown-soft)}
+.price{margin-top:auto;display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:12px;background:var(--cream);font-family:var(--font-display);font-weight:600;font-size:15px}
+.reward-card.short{opacity:.62}
+.reward-card:disabled{cursor:default}
+.reward-card:disabled:hover{transform:none}
+.hero.muted-hero{background:linear-gradient(135deg,#8a6250,var(--brown))}
+.hero .big.small{font-size:24px}
+.reward-card .missing{font-size:12px;font-weight:600;color:var(--brown-soft)}
+
+/* Dialog */
+.overlay{position:fixed;inset:0;z-index:30;background:rgba(90,52,35,.45);display:flex;align-items:center;justify-content:center;padding:20px}
+.overlay.anim{animation:fade .18s ease}
+.dialog{width:100%;max-width:420px;background:#fff;border-radius:28px;padding:26px 24px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;box-shadow:0 30px 60px -20px rgba(90,52,35,.5)}
+.dialog h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:23px}
+.dialog .d-icon{width:78px;height:78px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:40px}
+.dialog .sub{font-size:13.5px;color:var(--brown-soft)}
+.for{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:20px;background:var(--cream);font-size:13px;font-weight:600}
+.for .av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px}
+/* wie app-reward-stepper */
+.stepper{display:inline-flex;align-items:center;gap:12px;padding:6px 8px;border-radius:14px;background:var(--cream)}
+.stepper button{width:30px;height:30px;border:none;border-radius:10px;background:#fff;font-size:17px;font-weight:700;color:var(--orange-deep);box-shadow:0 4px 10px var(--shadow-warm)}
+.stepper button:disabled{opacity:.4;cursor:not-allowed}
+.stepper .val{font-family:var(--font-display);font-weight:600;font-size:16px;min-width:2.5ch}
+.sum{width:100%;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-radius:16px;background:var(--cream);font-size:14px;font-weight:600}
+.sum b{font-family:var(--font-display);font-weight:600;font-size:20px}
+.primary{width:100%;height:50px;border:none;border-radius:16px;background:linear-gradient(135deg,var(--amber),var(--orange));color:#fff;font-weight:700;font-size:15.5px;box-shadow:0 10px 20px -8px rgba(232,112,60,.55)}
+.primary:disabled{background:var(--cream-deep);color:var(--brown-soft);box-shadow:none;cursor:not-allowed}
+.ghost{border:none;background:none;font-weight:600;font-size:14px;color:var(--brown-soft);padding:8px}
+@media (max-width:640px){.overlay{align-items:flex-end;padding:0}.dialog{max-width:none;border-radius:28px 28px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom))}.overlay.anim .dialog{animation:up .22s ease}}
+@keyframes fade{from{opacity:0}}@keyframes up{from{transform:translateY(100%)}}
+
+/* AUFGABEN-POOL — wie task-list.scss / task-card.scss */
+.page{max-width:1240px;margin:0 auto;padding:0 34px 40px;display:flex;flex-direction:column;gap:24px}
+@media (max-width:520px){.page{padding-inline:16px}}
+.fam-chip{transition:transform .15s ease,opacity .15s ease}
+.fam-chip:hover{transform:translateY(-2px)}
+.fam-chip.dim{opacity:.5}
+@media (max-width:640px){.family-strip{flex-wrap:nowrap;overflow-x:auto;margin:0 -16px;padding:4px 16px 14px;scrollbar-width:none}.family-strip::-webkit-scrollbar{display:none}.fam-chip{flex-shrink:0}}
+.filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 12px 10px 10px;background:#fff;border-radius:18px;box-shadow:0 8px 18px -12px var(--shadow-warm)}
+.filter-bar .av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px}
+.fb-text{flex:1;font-size:14px}
+.fb-link{border:none;background:none;padding:6px 4px;font-weight:700;font-size:13.5px;color:var(--orange-deep)}
+.fb-clear{border:none;padding:9px 14px;border-radius:12px;background:var(--cream);font-weight:700;font-size:13px}
+.pool-actions{display:flex;gap:10px}
+.manage-tasks{padding:10px 16px;border-radius:14px;background:#fff;border:none;font-weight:700;font-size:13.5px;box-shadow:0 8px 18px var(--shadow-warm)}
+.new-task{padding:10px 16px;border-radius:14px;background:var(--orange);color:#fff;border:none;font-weight:700;font-size:13.5px;box-shadow:0 10px 20px -10px rgba(232,112,60,.55)}
+.pool-head h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:21px}
+.pool-grid{margin-top:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+@media (max-width:980px){.pool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.pool-grid{gap:12px}}
+.section-title{display:flex;align-items:center;gap:12px}
+.section-icon{width:40px;height:40px;border-radius:13px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 8px 18px -10px var(--shadow-warm)}
+.task-card{position:relative;background:#fff;border-radius:22px;padding:18px;border:2px dashed rgba(90,52,35,.22);display:flex;flex-direction:column;gap:12px;min-height:168px;transition:border-color .2s ease,opacity .2s ease}
+.task-card.claimed{border-style:solid;border-color:transparent}
+.task-card.completed{opacity:.55}
+.task-card.completed .tc-name{text-decoration:line-through}
+.tc-icon{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.tc-name{font-family:var(--font-display);font-weight:600;font-size:15.5px;line-height:1.25}
+.tc-reward{font-size:12.5px;color:var(--brown-soft)}
+.claim-badges{position:absolute;top:14px;right:14px;display:flex;flex-direction:row-reverse}
+.claim-badge{margin-left:-8px;border:2px solid #fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 4px 10px var(--shadow-warm)}
+.claim-btn{margin-top:auto;background:var(--orange);color:#fff;border:none;padding:10px 0;border-radius:13px;font-weight:600;font-size:13.5px}
+.claim-btn:hover{background:var(--orange-deep)}
+.participants{margin-top:auto;display:flex;flex-direction:column;gap:6px}
+.participant{display:flex;gap:6px}
+.leave{flex-shrink:0;width:34px;border:none;border-radius:13px;background:var(--cream);color:var(--brown-soft);font-size:16px}
+.leave:hover{background:var(--cream-deep)}
+.join-btn{padding:8px 0;border:2px dashed rgba(90,52,35,.22);border-radius:13px;background:transparent;color:var(--brown-soft);font-weight:600;font-size:12.5px}
+.join-btn:hover{border-color:var(--orange);color:var(--orange-deep)}
+.done-toggle{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:10px 12px;border:none;border-radius:13px;background:var(--cream);font-weight:600;font-size:13.5px;text-align:left}
+.done-toggle .dot{width:20px;height:20px;border-radius:50%;border:2px solid rgba(90,52,35,.25);background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.done-toggle.done .dot{background:var(--mint-deep);border-color:var(--mint-deep);color:#fff}
+.picker{position:absolute;inset:0;z-index:1;background:#fff;border-radius:22px;display:flex;flex-direction:column;padding:14px;gap:8px;box-shadow:0 20px 34px -14px var(--shadow-warm);overflow-y:auto}
+.p-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.p-title{font-size:12.5px;color:var(--brown-soft);font-weight:600}
+.p-close{border:none;background:none;color:var(--brown-soft);font-size:18px;line-height:1}
+.p-opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--cream);font-weight:600;font-size:13.5px;border:none;text-align:left}
+.p-opt .av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px}
+.tc-head{display:flex;justify-content:space-between;align-items:flex-start}
+.counter{font-size:12.5px;color:var(--brown-soft);padding:5px 10px;border-radius:10px;background:var(--cream)}
+.counter b{color:var(--brown)}
+.counter.zero{opacity:.6}
+.doers{display:flex;flex-wrap:wrap;gap:4px}
+.doer{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px}
+.actions{margin-top:auto;display:flex;gap:6px}
+.done-btn{flex:1;background:var(--mint-deep);color:#fff;border:none;padding:10px 0;border-radius:13px;font-weight:600;font-size:13.5px}
+.repeatable-section{padding-top:4px}
+
+/* BELOHNUNGEN VERWALTEN — wie task-admin.scss / task-create.scss */
+.board.wide{max-width:1080px}
+.page-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.page-head h1{margin:0;font-family:var(--font-display);font-weight:600;font-size:26px}
+.page-head p{margin:4px 0 0;font-size:13.5px;color:var(--brown-soft)}
+.lock-note{display:flex;align-items:center;gap:7px;background:#fff;padding:9px 14px;border-radius:14px;font-size:12.5px;font-weight:600;color:var(--brown-soft);box-shadow:0 8px 18px var(--shadow-warm)}
+.filter-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.filter-tabs{display:flex;gap:4px;background:#fff;padding:5px;border-radius:14px;box-shadow:0 8px 18px var(--shadow-warm)}
+.filter-tabs button{border:none;background:transparent;padding:8px 16px;border-radius:10px;font-weight:600;font-size:13px;color:var(--brown-soft)}
+.filter-tabs button.active{background:var(--orange);color:#fff}
+.add-link{padding:11px 18px;border:none;border-radius:14px;background:var(--orange);color:#fff;font-weight:700;font-size:13.5px;box-shadow:0 14px 26px -12px rgba(232,112,60,.55)}
+.mcp-note{margin:-6px 0 0;font-size:13px;color:var(--brown-soft)}
+.adm-list{display:flex;flex-direction:column;gap:12px}
+.adm-card{background:#fff;border-radius:20px;box-shadow:0 14px 28px -18px var(--shadow-warm);overflow:hidden}
+.adm-card.deleted{opacity:.6}
+.adm-row{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.adm-row .t-icon{width:46px;height:46px;border-radius:14px;font-size:21px}
+.t-main{flex:1;min-width:0}
+.adm-row .t-name{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:15.5px}
+.t-badge{padding:3px 8px;border-radius:8px;background:var(--cream);color:var(--brown-soft);font-family:var(--font-body);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.t-badge.units{background:#fff3d6;color:#a0680a}
+.t-badge.deleted-badge{background:#fbe4df;color:var(--danger)}
+.t-sub{margin-top:3px;font-size:12.5px;color:var(--brown-soft)}
+.t-reward{font-weight:700;font-size:13.5px;color:var(--orange-deep);white-space:nowrap;text-align:right}
+.t-mode{display:block;font-size:10.5px;font-weight:600;color:var(--brown-soft)}
+.t-actions{display:flex;gap:6px;flex-shrink:0}
+.a-btn{width:34px;height:34px;border:none;border-radius:10px;background:var(--cream);font-size:14px;display:flex;align-items:center;justify-content:center}
+.a-btn.del{background:#fbe4df;color:var(--danger)}
+.a-btn.del.confirm{background:var(--danger);color:#fff}
+.a-btn.restore{background:#e4f7e9}
+.chevron{font-size:12px;color:var(--brown-soft);transition:transform .2s ease;display:inline-block}
+.chevron.open{transform:rotate(180deg)}
+.history-panel{border-top:1px solid var(--cream);padding:4px 16px 16px 76px}
+.history-entry{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;border-bottom:1px solid var(--cream)}
+.history-entry:last-child{border-bottom:none}
+.he-person{width:26px;height:26px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px}
+.he-date{flex:1;color:var(--brown-soft)}
+.he-date b{font-weight:600;color:var(--brown)}
+.he-stars{font-weight:700;font-size:12.5px;color:var(--brown)}
+.history-empty{padding:10px 0;font-size:12.5px;color:var(--brown-soft)}
+.edit-panel{padding:18px;background:var(--cream);--segmented-bg:var(--cream-deep)}
+.edit-panel input{background:#fff}
+.layout{display:grid;grid-template-columns:1.5fr 1fr;gap:22px;align-items:start}
+.card{background:#fff;border-radius:24px;padding:22px;box-shadow:0 16px 32px -18px var(--shadow-warm)}
+.field{margin-bottom:20px}
+.f-label{display:block;margin-bottom:9px;font-size:12.5px;font-weight:700;color:var(--brown-soft);text-transform:uppercase;letter-spacing:.3px}
+.optional{font-weight:600;text-transform:none;letter-spacing:0}
+.field input[type=text],.unit-grid input{width:100%;border:2px solid var(--cream-deep);background:var(--cream);border-radius:13px;padding:11px 14px;font:inherit;font-size:14.5px;font-weight:600;color:var(--brown);outline:none}
+.edit-panel .field input[type=text],.edit-panel .unit-grid input{background:#fff}
+.field input:focus{border-color:var(--orange)}
+.swatch-row{display:flex;flex-wrap:wrap;gap:9px}
+.icon-swatch,.color-swatch{width:38px;height:38px;padding:0;border-radius:12px;border:2.5px solid transparent;display:flex;align-items:center;justify-content:center;font-size:17px}
+.icon-swatch.active{border-color:var(--orange)}
+.color-swatch{border-radius:50%;box-shadow:inset 0 0 0 1px rgba(90,52,35,.18)}
+.color-swatch.active{border-color:var(--brown)}
+.color-swatch.active::after{content:'✓';font-size:13px;font-weight:700;color:var(--brown)}
+.seg-lg button{padding:9px 16px;font-size:13.5px}
+.stepper.big .val{display:flex;align-items:center;gap:4px}
+.stepper.big input{width:4ch;border:none;background:transparent;font:inherit;text-align:right;color:inherit;outline:none;-moz-appearance:textfield;appearance:textfield}
+.stepper.big input::-webkit-inner-spin-button,.stepper.big input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.stepper.big input:focus{border-bottom:2px solid var(--orange)}
+.edit-panel .stepper{background:#fff}.edit-panel .stepper button{background:var(--cream)}
+.type-toggle{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.type-btn{border:2.5px solid var(--cream-deep);background:var(--cream);border-radius:16px;padding:14px;text-align:left}
+.type-btn.active{border-color:var(--orange);background:#fff;box-shadow:0 10px 22px -14px var(--shadow-warm)}
+.edit-panel .type-btn{background:#fff}
+.tb-title{font-family:var(--font-display);font-weight:600;font-size:15px}
+.tb-sub{margin-top:2px;font-size:11.5px;color:var(--brown-soft)}
+.unit-grid{display:grid;grid-template-columns:1fr 1.3fr auto;gap:12px;align-items:end}
+.hint{margin:8px 0 0;font-size:12px;color:var(--brown-soft)}
+.hint.strong{margin:0 0 4px;padding:10px 14px;border-radius:12px;background:#fff3d6;color:#7a5307;font-weight:600;font-size:13px}
+.form-actions{display:flex;gap:10px;margin-top:22px}
+.btn{border:none;padding:13px 22px;border-radius:14px;font-weight:700;font-size:14.5px}
+.btn-primary{flex:1;background:var(--orange);color:#fff;box-shadow:0 14px 26px -10px rgba(232,112,60,.55)}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed}
+.btn-secondary{background:var(--cream);color:var(--brown)}
+.edit-panel .btn-secondary{background:#fff}
+.preview-sticky{position:sticky;top:90px}
+.preview-label{margin-bottom:12px;font-size:12.5px;font-weight:700;color:var(--brown-soft);text-transform:uppercase;letter-spacing:.3px}
+.reward-card.preview{max-width:240px;cursor:default}
+.reward-card.preview:hover{transform:none}
+@media (max-width:760px){.layout{grid-template-columns:1fr}.preview-sticky{position:static;order:-1}.unit-grid{grid-template-columns:1fr 1fr}.history-panel{padding-left:16px}.adm-row{flex-wrap:wrap}.adm-row .t-main{flex-basis:calc(100% - 60px)}.t-actions{margin-left:auto}}
+
+/* FORTSCHRITT — wie progress.scss */
+.person-head{display:flex;align-items:center;gap:16px}
+.person-head h1{margin:0;font-family:var(--font-display);font-weight:600;font-size:25px}
+.person-head p{margin:2px 0 0;font-size:13.5px;color:var(--brown-soft)}
+.p-avatar{width:62px;height:62px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 10px 20px var(--shadow-warm)}
+.assigned-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.assigned-card{display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border-radius:18px;box-shadow:0 12px 26px -18px var(--shadow-warm);transition:opacity .22s ease,transform .22s ease}
+.assigned-card.leaving{opacity:0;transform:scale(.94)}
+.a-icon{width:42px;height:42px;flex-shrink:0;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:21px}
+.a-body{flex:1;min-width:0}
+.a-name{font-family:var(--font-display);font-weight:600;font-size:14.5px}
+.a-reward{font-size:12.5px;color:var(--brown-soft);font-weight:600;margin-top:2px}
+.a-cost{font-size:12.5px;color:var(--orange-deep);font-weight:700;margin-top:2px}
+.a-check{width:30px;height:30px;flex-shrink:0;border:2.5px solid rgba(90,52,35,.22);border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;color:transparent}
+.a-check:hover,.a-check:focus-visible{border-color:var(--mint-deep);color:var(--mint-deep)}
+.a-wait{font-size:11.5px;font-weight:600;color:var(--brown-soft);text-align:right;max-width:76px;line-height:1.25}
+.stat-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.stat-row.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:760px){.stat-row,.stat-row.three{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat-tile{background:#fff;border-radius:20px;padding:16px 18px;box-shadow:0 12px 26px -16px var(--shadow-warm)}
+.stat-tile.gold{background:linear-gradient(135deg,#fff6df,#ffe7b8)}
+.s-label{font-size:12.5px;font-weight:600;color:var(--brown-soft)}
+.s-value{margin-top:4px;font-family:var(--font-display);font-weight:600;font-size:26px}
+.s-value .unit{margin-left:3px;font-family:var(--font-body);font-size:15px}
+.chart-card{background:#fff;border-radius:24px;padding:20px 22px;box-shadow:0 12px 26px -16px var(--shadow-warm)}
+.chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.chart-head h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:17px}
+.bars{display:flex;align-items:flex-end;gap:6px;height:120px;border-bottom:1px solid #f1e3d4}
+.bars div{flex:1;background:var(--orange);border-radius:4px 4px 0 0;opacity:.9}
+.day-heading{margin:18px 0 8px 4px;font-size:12.5px;font-weight:700;color:var(--brown-soft);text-transform:uppercase;letter-spacing:.4px}
+.task-row{display:flex;align-items:center;gap:12px;margin-bottom:8px;padding:12px 14px;background:#fff;border-radius:16px;box-shadow:0 8px 18px -14px var(--shadow-warm)}
+.task-row.spend{background:#fff9f3}
+.t-icon{width:40px;height:40px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;background:var(--cream)}
+.t-body{flex:1;min-width:0}
+.t-name{font-family:var(--font-display);font-weight:600;font-size:14.5px}
+.t-time{font-size:12px;color:var(--brown-soft);margin-top:1px}
+.t-time .ok{color:var(--mint-deep);font-weight:600}
+.t-time .open{color:var(--orange-deep);font-weight:600}
+.t-stars{flex-shrink:0;font-weight:700;font-size:13.5px;color:var(--orange-deep);white-space:nowrap}
+.t-stars.minus{color:var(--brown)}
+.t-remove{flex-shrink:0;min-width:36px;height:36px;padding:0 8px;border:none;border-radius:12px;background:var(--cream);font-size:14px}
+.t-remove:hover{background:var(--cream-deep)}
+.t-remove.confirm{background:var(--danger);color:#fff;font-size:12px;font-weight:700}
+.history-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.history-head h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:19px}
+.placeholder{padding:40px 20px;text-align:center;background:#fff;border-radius:24px;color:var(--brown-soft);font-size:14px}
+</style>
+</head>
+<body>
+<div class="whobar" id="whobar" role="region" aria-label="Wer ist dran?"></div>
+<div id="app"></div>
+
+<script>
+(function(){
+  var FAMILY = [
+    {id:'mia', name:'Mia', emoji:'🦊', color:'mint', role:'child', week:17, balance:85},
+    {id:'leo', name:'Leo', emoji:'🐻', color:'sky', role:'child', week:9, balance:42},
+    {id:'mama', name:'Mama', emoji:'🌻', color:'lemon', role:'parent', week:6, balance:64},
+    {id:'papa', name:'Papa', emoji:'🦉', color:'lilac', role:'parent', week:4, balance:38}
+  ];
+  // Belohnungen: Preise später über MCP gepflegt (Beispielwerte ausser Tablet)
+  // Belohnungen: in der App aus public.rewards, gepflegt über „Belohnungen verwalten“ oder den MCP-Server
+  var REWARDS = [
+    {id:'tablet', emoji:'📱', color:'peach', name:'Tabletzeit', cat:'screen', price:20, amount:5, unitLabel:'Minuten', desc:'', max:6, active:true, count:14},
+    {id:'game', emoji:'🎮', color:'sky', name:'Gamezeit', cat:'screen', price:40, amount:10, unitLabel:'Minuten', desc:'', max:6, active:true, count:6},
+    {id:'serie', emoji:'📺', color:'lilac', name:'Serienfolge', cat:'screen', price:30, amount:1, unitLabel:'Folge', desc:'', max:3, active:true, count:4},
+    {id:'dessert', emoji:'🍨', color:'rose', name:'Dessert aussuchen', cat:'food', price:25, amount:null, unitLabel:'', desc:'beim Abendessen', max:1, active:true, count:3},
+    {id:'menu', emoji:'🍕', color:'lemon', name:'Wunsch-Menü', cat:'food', price:45, amount:null, unitLabel:'', desc:'du wählst das Essen', max:1, active:true, count:1},
+    {id:'wach', emoji:'🌙', color:'lilac', name:'Länger aufbleiben', cat:'fun', price:35, amount:15, unitLabel:'Minuten', desc:'', max:2, active:true, count:5},
+    {id:'film', emoji:'🎬', color:'peach', name:'Filmabend', cat:'fun', price:60, amount:null, unitLabel:'', desc:'du wählst den Film', max:1, active:true, count:2},
+    {id:'ausflug', emoji:'🏞️', color:'mint', name:'Ausflug wählen', cat:'fun', price:150, amount:null, unitLabel:'', desc:'am Wochenende', max:1, active:true, count:0},
+    {id:'kino', emoji:'🍿', color:'rose', name:'Kinobesuch', cat:'fun', price:200, amount:null, unitLabel:'', desc:'mit Mama oder Papa', max:1, active:false, count:1}
+  ];
+  var REWARD_ICONS = ['📱','🎮','📺','🎧','🍨','🍕','🧁','🍿','🌙','🎬','🏞️','🎲','🎨','⚽','🏊','🎁'];
+  var COLORS = ['mint','lilac','sky','rose','peach','lemon'];
+  var CAT_LABEL = {screen:'Bildschirm', food:'Essen', fun:'Erlebnisse'};
+  function plural(u, n){ return n===1 ? u : (/e$/.test(u) ? u+'n' : u); }
+  function unitText(r){ return r.amount ? r.amount+' '+plural(r.unitLabel, r.amount) : r.desc; }
+  function amountText(r, q){ return (q*r.amount)+' '+plural(r.unitLabel, q*r.amount); }
+  function qtyLabel(r, q){ return r.amount ? r.name+' · '+amountText(r, q) : r.name; }
+  var CATS = [['all','Alle'],['screen','Bildschirm'],['food','Essen'],['fun','Erlebnisse']];
+
+  var S = {
+    login:(/^#(mia|leo|mama|papa)$/.exec(location.hash)||/[?&]login=(mia|leo|mama|papa)/.exec(location.search)||[0,'mama'])[1], loginMenu:false, cur:'all', view:'pool', picker:null, cat:'all', sel:null, qty:1, bought:null,
+    filter:'all', armed:null, leaving:null, seq:0,
+    purchases:[
+      {id:'p1', member:'mia', rid:'tablet', label:'Tabletzeit · 15 Minuten', cost:60, time:'14:10', day:0, doneBy:null},
+      {id:'p2', member:'mia', rid:'dessert', label:'Dessert aussuchen', cost:25, time:'17:45', day:1, doneBy:null},
+      {id:'p3', member:'mia', rid:'tablet', label:'Tabletzeit · 5 Minuten', cost:20, time:'10:20', day:2, doneBy:'Mama'}
+    ]
+  };
+  var EARNED = [
+    {day:0, emoji:'🦷', title:'Zähne putzen', time:'13:09', stars:2},
+    {day:1, emoji:'🌱', title:'Pflanzen gießen', time:'16:27', stars:2},
+    {day:1, emoji:'🧸', title:'Zimmer aufräumen', time:'09:27', stars:3},
+    {day:2, emoji:'🐕', title:'Hund füttern', time:'12:22', stars:4},
+    {day:2, emoji:'🍽️', title:'Tisch decken', time:'09:17', stars:1}
+  ];
+  var DAYS = ['Heute','Gestern','Freitag, 25. September'];
+
+  function member(id){ return FAMILY.filter(function(m){return m.id===id;})[0]; }
+  function reward(id){ return REWARDS.filter(function(r){return r.id===id;})[0]; }
+  // Rolle kommt vom Login: Eltern-Konto darf wechseln und abhaken, Kinder-Konto ist auf sich selbst beschränkt
+  function isParent(){ return member(S.login).role==='parent'; }
+  function kidMode(){ return member(S.login).role==='child'; }
+  function curName(){ return member(S.login).name; }
+  function openCount(){ return S.purchases.filter(function(p){return !p.doneBy;}).length; }
+
+  // ---------- Shell ----------
+  var NAV = [
+    ['pool','🗂️','Aufgaben-Pool','Aufgaben'],
+    ['shop','🎁','Belohnungen','Belohnungen'],
+    ['profil','👤','Profil','Profil'],
+    ['essen','🍝','Essen','Essen']
+  ];
+  function shell(inner){
+    var active = S.view.indexOf('shop')===0 ? 'shop' : S.view;
+    var badge = isParent() && openCount() ? '<span class="badge" title="offene Belohnungen">'+openCount()+'</span>' : '';
+    var h = '<nav class="topnav"><a class="brand" href="#" data-a="view" data-v="pool"><span class="brand-mark"></span><span class="brand-name">Fuxis Plan</span></a><div class="nav-pills">';
+    NAV.forEach(function(n){
+      h += '<button class="nav-pill'+(active===n[0]?' active':'')+'" data-a="view" data-v="'+n[0]+'" title="'+n[2]+'"><span class="ic">'+n[1]+'</span><span class="label">'+n[2]+'</span>'
+        +(n[0]==='shop'?badge:'')+'</button>';
+    });
+    h += '</div><div class="nav-right">'
+      +(isParent()?'<button class="icon-btn" title="Familie verwalten" aria-label="Familie verwalten">🔒</button>':'')
+      +'<button class="icon-btn" title="Abmelden" aria-label="Abmelden">👋</button></div></nav>';
+    h += '<nav class="bottom-bar">';
+    NAV.forEach(function(n){
+      h += '<button class="bottom-item'+(active===n[0]?' active':'')+'" data-a="view" data-v="'+n[0]+'"><span class="ic">'+n[1]+'</span>'+n[3]+(n[0]==='shop'?badge:'')+'</button>';
+    });
+    h += '</nav><main>'+inner+'</main>';
+    return h;
+  }
+
+  // ---------- Aufgaben-Pool: Auswahl in der braunen Leiste filtert ----------
+  var TASKS = [
+    {id:'t1', emoji:'🎒', color:'peach', title:'Schultasche packen', reward:3, mode:'each', rep:false, claims:[{m:'mia',done:false}]},
+    {id:'t2', emoji:'🍽️', color:'lemon', title:'Tisch decken', reward:2, mode:'each', rep:true, claims:[{m:'mia',done:false}]},
+    {id:'t3', emoji:'🧺', color:'lilac', title:'Wäsche zusammenlegen', reward:6, mode:'split', rep:false, claims:[{m:'leo',done:true},{m:'mia',done:false}]},
+    {id:'t4', emoji:'🐕', color:'sky', title:'Hund füttern', reward:4, mode:'each', rep:true, claims:[{m:'leo',done:false}]},
+    {id:'t5', emoji:'🌱', color:'mint', title:'Pflanzen gießen', reward:2, mode:'each', rep:true, claims:[]},
+    {id:'t6', emoji:'🗑️', color:'rose', title:'Müll rausbringen', reward:2, mode:'each', rep:true, claims:[]},
+    {id:'t7', emoji:'🧹', color:'peach', title:'Küche wischen', reward:4, mode:'each', rep:false, claims:[{m:'mama',done:false}]},
+    {id:'t8', emoji:'🚲', color:'sky', title:'Fahrrad putzen', reward:5, mode:'each', rep:false, claims:[{m:'papa',done:true},{m:'leo',done:true}]},
+    {id:'t9', emoji:'🛏️', color:'lilac', title:'Bett frisch beziehen', reward:3, mode:'each', rep:false, claims:[]},
+    {id:'t10', emoji:'📚', color:'lemon', title:'Bücher zurückbringen', reward:2, mode:'each', rep:false, claims:[]}
+  ];
+  var REPEAT = [
+    {id:'r1', emoji:'🦷', color:'mint', title:'Zähne putzen', reward:1, today:['mia','leo','mia']},
+    {id:'r2', emoji:'🧸', color:'peach', title:'Spielsachen wegräumen', reward:2, today:['leo']},
+    {id:'r3', emoji:'📖', color:'lilac', title:'Vorlesen', reward:2, today:['mama']}
+  ];
+  function addStars(mid, n){
+    var m = member(mid); if (!m) return;
+    m.week = Math.round((m.week+n)*10)/10;
+    if (m.balance!=null) m.balance = Math.round((m.balance+n)*10)/10;
+  }
+  function share(t){ return t.mode==='split' ? Math.round(t.reward/t.claims.length*10)/10 : t.reward; }
+  function taskCard(t){
+    var claimed = t.claims.length>0, allDone = claimed && t.claims.every(function(c){return c.done;});
+    var avail = FAMILY.filter(function(m){ return !t.claims.some(function(c){return c.m===m.id;}); });
+    var h = '<div class="task-card'+(claimed?' claimed':'')+(allDone?' completed':'')+'"><div class="tc-icon tile-'+t.color+'">'+t.emoji+'</div>';
+    if (claimed) h += '<div class="claim-badges">'+t.claims.map(function(c){var m=member(c.m);return '<div class="claim-badge av-'+m.color+'" title="'+m.name+'">'+m.emoji+'</div>';}).join('')+'</div>';
+    h += '<div class="tc-name">'+t.title+'</div><div class="tc-reward">'+(t.mode==='split'?t.reward+' ⭐ werden geteilt':'+'+t.reward+' ⭐')+(t.rep?' · 🔁':'')+'</div>';
+    if (claimed){
+      h += '<div class="participants">'+t.claims.map(function(c){
+        var m = member(c.m);
+        var locked = kidMode() && c.m!==S.cur;
+        return '<div class="participant"><button class="done-toggle'+(c.done?' done':'')+'" aria-pressed="'+c.done+'"'+(locked?' disabled':' data-a="tdone" data-v="'+t.id+'|'+c.m+'"')+'><span class="dot">'+(c.done?'✓':'')+'</span>'+m.name+'</button>'
+          +(c.done||locked?'':'<button class="leave" title="Aussteigen" aria-label="'+m.name+' steigt aus" data-a="tleave" data-v="'+t.id+'|'+c.m+'">×</button>')+'</div>';
+      }).join('')+'</div>';
+      if (avail.length && !allDone && S.cur==='all') h += '<button class="join-btn" data-a="tpick" data-v="'+t.id+'">+ Mitmachen</button>';
+    } else if (S.cur==='all') {
+      h += '<button class="claim-btn" data-a="tpick" data-v="'+t.id+'">Ich mach’s!</button>';
+    } else {
+      h += '<button class="claim-btn" data-a="tjoin" data-v="'+t.id+'|'+S.cur+'">Ich mach’s!</button>';
+    }
+    if (S.picker===t.id){
+      h += '<div class="picker"><div class="p-head"><span class="p-title">'+(claimed?'Wer macht mit?':'Wer nimmt sich das?')+'</span><button class="p-close" aria-label="Schließen" data-a="tpickclose">×</button></div>'
+        +avail.map(function(m){return '<button class="p-opt" data-a="tjoin" data-v="'+t.id+'|'+m.id+'"><span class="av av-'+m.color+'">'+m.emoji+'</span>'+m.name+'</button>';}).join('')+'</div>';
+    }
+    return h+'</div>';
+  }
+  function repeatCard(rt){
+    var one = S.cur==='all' ? null : S.cur;
+    var last = one ? (rt.today.indexOf(one)>=0 ? one : null) : rt.today[rt.today.length-1];
+    var h = '<div class="task-card claimed"><div class="tc-head"><div class="tc-icon tile-'+rt.color+'">'+rt.emoji+'</div><div class="counter'+(rt.today.length?'':' zero')+'"><b>'+rt.today.length+'×</b> heute</div></div>'
+      +'<div class="tc-name">'+rt.title+'</div><div class="tc-reward">+'+rt.reward+' ⭐ pro Mal</div>';
+    if (rt.today.length) h += '<div class="doers">'+rt.today.map(function(id){var m=member(id);return '<span class="doer av-'+m.color+'" title="'+m.name+'">'+m.emoji+'</span>';}).join('')+'</div>';
+    h += '<div class="actions"><button class="done-btn" data-a="'+(one?'rdone':'tpick')+'" data-v="'+rt.id+(one?'|'+one:'')+'">✓ Erledigt!</button>'
+      +(last?'<button class="leave" title="Letzte Erledigung rückgängig machen" aria-label="Letzte Erledigung rückgängig machen" data-a="rundo" data-v="'+rt.id+(one?'|'+one:'')+'">↩︎</button>':'')+'</div>';
+    if (S.picker===rt.id){
+      h += '<div class="picker"><div class="p-head"><span class="p-title">Wer hat’s gemacht?</span><button class="p-close" aria-label="Schließen" data-a="tpickclose">×</button></div>'
+        +FAMILY.map(function(m){return '<button class="p-opt" data-a="rdone" data-v="'+rt.id+'|'+m.id+'"><span class="av av-'+m.color+'">'+m.emoji+'</span>'+m.name+'</button>';}).join('')+'</div>';
+    }
+    return h+'</div>';
+  }
+  function poolView(){
+    var f = S.cur==='all' ? null : S.cur, fm = f ? member(f) : null;
+    var h = '<div class="page">';
+    function head(tag, title, sub, extra, icon){
+      return '<div class="pool-head"><div'+(icon?' class="section-title"><div class="section-icon" aria-hidden="true">'+icon+'</div><div':'')+'><'+tag+'>'+title+'</'+tag+'><span>'+sub+'</span></div>'+(icon?'</div>':'')+(extra||'')+'</div>';
+    }
+    if (!fm){
+      h += '<section>'+head('h1','Aufgaben-Pool','frei für alle — nimm dir, was dir liegt',
+        isParent()?'<div class="pool-actions"><button class="manage-tasks">Verwalten</button><button class="new-task">+ Neue Aufgabe</button></div>':'')
+        +'<div class="pool-grid">'+TASKS.map(taskCard).join('')+'</div></section>';
+    } else {
+      var poss = fm.name+(/[sxzß]$/i.test(fm.name)?'’':'s');
+      var mine = TASKS.filter(function(t){ return t.claims.some(function(c){return c.m===f;}); });
+      var free = TASKS.filter(function(t){ return !t.claims.length; });
+      h += '<section>'+head('h1', poss+' Aufgaben', 'übernommen — abhaken, wenn’s erledigt ist')
+        +(mine.length ? '<div class="pool-grid">'+mine.map(taskCard).join('')+'</div>'
+          : '<p class="message" style="margin-top:14px">Noch nichts übernommen — nimm dir unten eine freie Aufgabe 🦊</p>')+'</section>';
+      h += '<section>'+head('h2','Noch frei','noch niemand hat sie genommen — tipp auf „Ich mach’s!“','','🙋')
+        +(free.length ? '<div class="pool-grid">'+free.map(taskCard).join('')+'</div>'
+          : '<p class="message" style="margin-top:14px">Alles vergeben — super! 🎉</p>')+'</section>';
+    }
+    h += '<section class="repeatable-section">'+head('h2','Immer wieder','so oft es anfällt — jedes Mal gibt’s Sterne','','🔁')
+      +'<div class="pool-grid">'+REPEAT.map(repeatCard).join('')+'</div></section>';
+    return h+'</div>';
+  }
+  function placeholder(icon, title){
+    return '<div class="board"><div class="placeholder">'+icon+' '+title+' — unverändert</div></div>';
+  }
+
+  // ---------- Belohnungen (neu) ----------
+  function shopView(){
+    var b = member(S.cur), kid = b && b.role==='child';
+    var h = '<div class="board">';
+    h += '<div class="pool-head"><div><h1>Belohnungen</h1><span>Tausche deine Sterne ein</span></div>'
+      +(isParent()?'<div class="pool-actions"><button class="manage-tasks" data-a="view" data-v="shop-admin">Verwalten</button><button class="new-task" data-a="rnew">+ Neue Belohnung</button></div>':'')+'</div>';
+    if (kid){
+      var next = REWARDS.filter(function(r){return r.active && r.price>b.balance;}).sort(function(x,y){return x.price-y.price;})[0];
+      h += '<div class="hero"><div class="fuxi" aria-hidden="true">🦊</div><div><div class="big">'+b.name+' hat '+b.balance+' ⭐</div>'
+        +'<div class="say">'+(next?'Fuxi: „Noch '+(next.price-b.balance)+' ⭐ bis '+next.name+'!“':'Fuxi: „Du kannst dir alles aussuchen!“')+'</div></div></div>';
+    } else {
+      h += '<div class="hero muted-hero"><div class="fuxi" aria-hidden="true">🦊</div><div><div class="big small">Wer möchte einlösen?</div>'
+        +'<div class="say">Fuxi: „Wähl oben in der braunen Leiste ein Kind aus.“</div></div></div>';
+    }
+    h += '<div class="block-head"><div class="segmented" role="group" aria-label="Kategorie">'+CATS.map(function(c){
+      return '<button class="'+(S.cat===c[0]?'active':'')+'" data-a="cat" data-v="'+c[0]+'">'+c[1]+'</button>';}).join('')+'</div></div>';
+    h += '<div class="reward-grid">';
+    REWARDS.filter(function(r){return r.active && (S.cat==='all'||r.cat===S.cat);}).forEach(function(r){
+      var ok = kid && b.balance>=r.price;
+      h += '<button class="reward-card'+(kid&&!ok?' short':'')+'"'+(kid?' data-a="open" data-v="'+r.id+'"':' disabled')+'><div class="r-icon tile-'+r.color+'">'+r.emoji+'</div>'
+        +'<div><div class="r-name">'+r.name+'</div><div class="r-unit">'+unitText(r)+'</div></div>'
+        +'<span class="price">'+r.price+' ⭐</span>'+(kid&&!ok?'<span class="missing">noch '+(r.price-b.balance)+' ⭐</span>':'')+'</button>';
+    });
+    h += '</div></div>';
+    if (S.sel && kid) h += dialog();
+    return h;
+  }
+  function dialog(){
+    var r = reward(S.sel), b = member(S.cur);
+    var h = '<div class="overlay'+(S.anim?' anim':'')+'" data-a="close"><div class="dialog" role="dialog" aria-modal="true" aria-label="Belohnung einlösen" data-stop="1">';
+    if (S.bought){
+      h += '<div class="d-icon tile-mint">✅</div><h2>Gekauft!</h2><div style="font-weight:600">'+S.bought+' für '+b.name+'</div>'
+        +'<div class="sub">Einlösen, sobald Mama oder Papa es in '+b.name+'s Profil abhakt.<br>Neues Guthaben: <b>'+b.balance+' ⭐</b></div>'
+        +'<button class="primary" data-a="close">Super!</button><button class="ghost" data-a="view" data-v="profil">Zu '+b.name+'s Profil</button>';
+    } else {
+      var cost = r.price*S.qty, rest = b.balance-cost, ok = rest>=0;
+      h += '<div class="d-icon tile-'+r.color+'">'+r.emoji+'</div><h2>'+r.name+'</h2><div class="sub">'+unitText(r)+' für '+r.price+' ⭐</div>'
+        +'<span class="for"><span class="av av-'+b.color+'">'+b.emoji+'</span>für '+b.name+'</span>';
+      if (r.amount && r.max>1) h += '<div class="stepper"><button data-a="dec" aria-label="Weniger"'+(S.qty<=1?' disabled':'')+'>−</button><span class="val">'+S.qty+'×</span><button data-a="inc" aria-label="Mehr"'+(S.qty>=r.max?' disabled':'')+'>+</button></div>'
+        +'<div style="font-weight:600">= '+amountText(r,S.qty)+'</div>';
+      h += '<div class="sum"><span>Kostet</span><b>'+cost+' ⭐</b></div>'
+        +'<div class="sub" style="font-weight:600;color:'+(ok?'var(--brown-soft)':'var(--danger)')+'">'+(ok?'Danach bleiben '+rest+' ⭐':'Es fehlen noch '+(-rest)+' ⭐')+'</div>'
+        +'<button class="primary" data-a="buy"'+(ok?'':' disabled')+'>Einlösen</button><button class="ghost" data-a="close">Abbrechen</button>';
+    }
+    return h+'</div></div>';
+  }
+
+  // ---------- Belohnungen verwalten (nur Eltern) ----------
+  function draftFrom(r){
+    return r ? {name:r.name, emoji:r.emoji, color:r.color, cat:r.cat, price:r.price, mode:r.amount?'units':'single',
+                amount:r.amount||5, unitLabel:r.unitLabel||'Minuten', desc:r.desc||'', max:r.amount?r.max:6}
+             : {name:'', emoji:'🎁', color:'peach', cat:'fun', price:20, mode:'single', amount:5, unitLabel:'Minuten', desc:'', max:6};
+  }
+  function draftAsReward(d){
+    return {name:d.name.trim()||'Neue Belohnung', emoji:d.emoji, color:d.color, cat:d.cat, price:d.price||0,
+            amount:d.mode==='units'?(d.amount||0):null, unitLabel:d.unitLabel.trim(), desc:d.desc.trim(), max:d.mode==='units'?d.max:1};
+  }
+  function draftValid(d){
+    return !!d.name.trim() && d.price>=1 && d.price<=999 && (d.mode==='single' || (d.amount>=1 && !!d.unitLabel.trim()));
+  }
+  function draftHint(d){
+    var r = draftAsReward(d);
+    if (d.mode!=='units') return 'Im Shop: „'+r.name+'“ für '+r.price+' ⭐, einmal pro Kauf.';
+    if (!(r.amount>=1) || !r.unitLabel) return 'Menge und Einheit ausfüllen.';
+    return 'Im Shop: '+r.price+' ⭐ für '+unitText(r)+(r.max>1?' · bis '+r.max+'× pro Kauf = '+amountText(r,r.max)+' für '+(r.price*r.max)+' ⭐':'')+'.';
+  }
+  function previewCard(d){
+    var r = draftAsReward(d);
+    return '<div class="reward-card preview"><div class="r-icon tile-'+r.color+'">'+r.emoji+'</div><div><div class="r-name">'+r.name+'</div><div class="r-unit">'+(unitText(r)||'&nbsp;')+'</div></div><span class="price">'+r.price+' ⭐</span></div>';
+  }
+  function rewardForm(d, isNew){
+    var h = '<div class="field"><label class="f-label" for="rf-name">Name der Belohnung</label><input id="rf-name" type="text" maxlength="40" placeholder="z. B. Tabletzeit" value="'+d.name.replace(/"/g,'&quot;')+'" data-f="name"></div>';
+    h += '<div class="field"><span class="f-label">Symbol</span><div class="swatch-row">'+REWARD_ICONS.map(function(i){
+      return '<button class="icon-swatch tile-'+d.color+(d.emoji===i?' active':'')+'" aria-pressed="'+(d.emoji===i)+'" data-a="df" data-v="emoji|'+i+'">'+i+'</button>';}).join('')+'</div></div>';
+    h += '<div class="field"><span class="f-label">Farbe</span><div class="swatch-row">'+COLORS.map(function(c){
+      return '<button class="color-swatch tile-'+c+(d.color===c?' active':'')+'" aria-pressed="'+(d.color===c)+'" aria-label="'+c+'" data-a="df" data-v="color|'+c+'"></button>';}).join('')+'</div></div>';
+    h += '<div class="field"><span class="f-label">Kategorie</span><div class="segmented seg-lg" role="group" aria-label="Kategorie">'+['screen','food','fun'].map(function(c){
+      return '<button class="'+(d.cat===c?'active':'')+'" data-a="df" data-v="cat|'+c+'">'+CAT_LABEL[c]+'</button>';}).join('')+'</div></div>';
+    h += '<div class="field"><label class="f-label" for="rf-price">Preis</label><div class="stepper big"><button data-a="dprice" data-v="-5" aria-label="5 Sterne weniger"'+(d.price<=5?' disabled':'')+'>−</button>'
+      +'<span class="val"><input id="rf-price" type="number" min="1" max="999" value="'+d.price+'" data-f="price"> ⭐</span><button data-a="dprice" data-v="5" aria-label="5 Sterne mehr"'+(d.price>=995?' disabled':'')+'>+</button></div>'
+      +'<p class="hint">Die Knöpfe ändern um 5 ⭐, die Zahl kannst du auch direkt eintippen (1–999).</p></div>';
+    h += '<div class="field"><span class="f-label">Art</span><div class="type-toggle">'
+      +'<button class="type-btn'+(d.mode==='single'?' active':'')+'" aria-pressed="'+(d.mode==='single')+'" data-a="df" data-v="mode|single"><div class="tb-title">Pro Kauf</div><div class="tb-sub">z. B. Dessert aussuchen, Filmabend</div></button>'
+      +'<button class="type-btn'+(d.mode==='units'?' active':'')+'" aria-pressed="'+(d.mode==='units')+'" data-a="df" data-v="mode|units"><div class="tb-title">In Einheiten</div><div class="tb-sub">z. B. 5 Minuten Tabletzeit, mehrfach kaufbar</div></button></div></div>';
+    if (d.mode==='units'){
+      h += '<div class="field unit-grid"><div><label class="f-label" for="rf-amount">Menge pro Einheit</label><input id="rf-amount" type="number" min="1" max="999" value="'+d.amount+'" data-f="amount"></div>'
+        +'<div><label class="f-label" for="rf-unit">Einheit</label><input id="rf-unit" type="text" maxlength="20" placeholder="Minuten" value="'+d.unitLabel.replace(/"/g,'&quot;')+'" data-f="unitLabel"></div>'
+        +'<div><span class="f-label">Höchstens pro Kauf</span><div class="stepper"><button data-a="dmax" data-v="-1" aria-label="Weniger"'+(d.max<=1?' disabled':'')+'>−</button><span class="val">'+d.max+'×</span><button data-a="dmax" data-v="1" aria-label="Mehr"'+(d.max>=10?' disabled':'')+'>+</button></div></div></div>';
+    } else {
+      h += '<div class="field"><label class="f-label" for="rf-desc">Beschreibung <span class="optional">(optional)</span></label><input id="rf-desc" type="text" maxlength="40" placeholder="z. B. beim Abendessen" value="'+d.desc.replace(/"/g,'&quot;')+'" data-f="desc"></div>';
+    }
+    h += '<p class="hint strong" id="rf-hint">'+draftHint(d)+'</p>';
+    if (!isNew) h += '<p class="hint">Neue Preise gelten ab sofort für neue Käufe. Bereits gekaufte Belohnungen behalten ihren Preis.</p>';
+    h += '<div class="form-actions"><button class="btn btn-primary" id="rf-save" data-a="dsave"'+(draftValid(d)?'':' disabled')+'>'+(isNew?'Belohnung erstellen':'Speichern')+'</button><button class="btn btn-secondary" data-a="dcancel">Abbrechen</button></div>';
+    return h;
+  }
+  function adminView(){
+    var f = S.adminFilter || 'all';
+    var list = REWARDS.filter(function(r){ return f==='all' || (f==='active' ? r.active : !r.active); });
+    var h = '<div class="board wide"><button class="back-link" data-a="view" data-v="shop">← Zurück zu den Belohnungen</button>'
+      +'<div class="page-head"><div><h1>Belohnungen verwalten</h1><p>Preise, Einheiten und bisherige Einlösungen</p></div><div class="lock-note">🔒 Nur für Eltern sichtbar</div></div>'
+      +'<div class="filter-row"><div class="filter-tabs" role="group" aria-label="Filter">'
+      +[['all','Alle'],['active','Aktiv'],['archived','Archiviert']].map(function(x){return '<button class="'+(f===x[0]?'active':'')+'" data-a="afilter" data-v="'+x[0]+'">'+x[1]+'</button>';}).join('')
+      +'</div><button class="add-link" data-a="rnew">+ Neue Belohnung</button></div>'
+      +'<p class="mcp-note">💬 Geht auch mit Claude: „Leg eine Belohnung an: 10 Minuten Gamezeit für 40 Sterne.“</p><div class="adm-list">';
+    if (!list.length) h += '<p class="message">Keine Belohnungen in dieser Ansicht.</p>';
+    list.forEach(function(r){
+      h += '<div class="adm-card'+(r.active?'':' deleted')+'">';
+      if (S.editId===r.id){
+        h += '<div class="edit-panel">'+rewardForm(S.draft,false)+'</div>';
+      } else {
+        var armed = S.armArch===r.id;
+        h += '<div class="adm-row"><div class="t-icon tile-'+r.color+'">'+r.emoji+'</div><div class="t-main"><div class="t-name">'+r.name
+          +'<span class="t-badge">'+CAT_LABEL[r.cat]+'</span>'+(r.amount?'<span class="t-badge units">In Einheiten</span>':'')+(r.active?'':'<span class="t-badge deleted-badge">Archiviert</span>')+'</div>'
+          +'<div class="t-sub">'+(r.amount?'bis '+r.max+'× pro Kauf':(r.desc||'pro Kauf'))+' · '+r.count+'× eingelöst</div></div>'
+          +'<div class="t-reward">'+r.price+' ⭐<span class="t-mode">'+(r.amount?'pro '+unitText(r):'pro Kauf')+'</span></div><div class="t-actions">';
+        if (r.active){
+          h += '<button class="a-btn" title="Bearbeiten" aria-label="'+r.name+' bearbeiten" data-a="redit" data-v="'+r.id+'">✏️</button>'
+            +'<button class="a-btn del'+(armed?' confirm':'')+'" title="'+(armed?'Wirklich archivieren?':'Archivieren')+'" aria-label="'+(armed?'Wirklich archivieren: ':'Archivieren: ')+r.name+'" data-a="rarchive" data-v="'+r.id+'">'+(armed?'✓':'🗄️')+'</button>';
+        } else {
+          h += '<button class="a-btn restore" title="Wiederherstellen" aria-label="'+r.name+' wiederherstellen" data-a="rrestore" data-v="'+r.id+'">↩️</button>';
+        }
+        h += '<button class="a-btn" title="Einlösungen anzeigen" aria-label="Einlösungen anzeigen" aria-expanded="'+(S.histId===r.id)+'" data-a="rhist" data-v="'+r.id+'"><span class="chevron'+(S.histId===r.id?' open':'')+'">▾</span></button></div></div>';
+        if (S.histId===r.id){
+          var ps = S.purchases.filter(function(p){return p.rid===r.id;});
+          h += '<div class="history-panel">'+(ps.length ? ps.map(function(p){ var k = member(p.member);
+            return '<div class="history-entry"><span class="he-person av-'+k.color+'">'+k.emoji+'</span><span class="he-date"><b>'+k.name+'</b> · '+p.label.replace(r.name+' · ','')+' · '+DAYS[p.day].replace(/,.*/,'')+', '+p.time+' Uhr · '+(p.doneBy?'eingelöst ✓':'noch offen')+'</span><span class="he-stars">−'+p.cost+' ⭐</span></div>'; }).join('')
+            : '<div class="history-empty">In den letzten 30 Tagen nicht eingelöst.</div>')+'</div>';
+        }
+      }
+      h += '</div>';
+    });
+    return h+'</div></div>';
+  }
+  function newRewardView(){
+    return '<div class="board wide"><button class="back-link" data-a="view" data-v="shop-admin">← Zurück zu Belohnungen verwalten</button>'
+      +'<div class="page-head"><div><h1>Neue Belohnung</h1><p>Lege fest, wie die Belohnung im Shop aussieht und was sie kostet</p></div></div>'
+      +'<div class="layout"><div class="card">'+rewardForm(S.draft,true)+'</div>'
+      +'<div class="preview-sticky"><div class="preview-label">Vorschau im Shop</div><div id="rf-preview">'+previewCard(S.draft)+'</div></div></div></div>';
+  }
+  function refreshDraftUI(){
+    var pv = document.getElementById('rf-preview'); if (pv) pv.innerHTML = previewCard(S.draft);
+    var hn = document.getElementById('rf-hint'); if (hn) hn.textContent = draftHint(S.draft);
+    var sv = document.getElementById('rf-save'); if (sv) sv.disabled = !draftValid(S.draft);
+  }
+  document.addEventListener('input', function(e){
+    var f = e.target.getAttribute && e.target.getAttribute('data-f'); if (!f || !S.draft) return;
+    S.draft[f] = e.target.type==='number' ? (parseInt(e.target.value,10)||0) : e.target.value;
+    refreshDraftUI();
+  });
+  document.addEventListener('change', function(e){
+    var f = e.target.getAttribute && e.target.getAttribute('data-f'); if (!f || !S.draft || e.target.type!=='number') return;
+    S.draft[f] = Math.min(999, Math.max(1, parseInt(e.target.value,10)||1)); render();
+  });
+
+  // ---------- Profil (neu, eigener Menüpunkt; ersetzt /fortschritt/:memberId) ----------
+  function openRewardsBlock(list, many){
+    var h = '<section style="display:flex;flex-direction:column;gap:12px"><div class="block-head"><h2>'+(many?'Offene Belohnungen der Kinder':'Offene Belohnungen')+'</h2><span>'
+      +(isParent()?'gekauft, aber noch nicht eingelöst — abhaken, sobald erledigt':'gekauft — Mama oder Papa hakt ab, wenn du sie einlöst')+'</span></div><div class="assigned-row">';
+    if (!list.length) h += '<div class="message" style="grid-column:1/-1">Keine offenen Belohnungen 🎁</div>';
+    list.forEach(function(p){
+      var r = reward(p.rid), k = member(p.member);
+      h += '<div class="assigned-card'+(S.leaving===p.id?' leaving':'')+'"><div class="a-icon tile-'+r.color+'">'+r.emoji+'</div><div class="a-body"><div class="a-name">'+p.label+'</div><div class="a-cost">'
+        +(many?k.emoji+' '+k.name+' · ':'')+'−'+p.cost+' ⭐ · '+DAYS[p.day].replace(/,.*/,'').toLowerCase()+'</div></div>'
+        +(isParent()?'<button class="a-check" data-a="redeem" data-v="'+p.id+'" title="Als eingelöst abhaken" aria-label="'+p.label+' als eingelöst abhaken">✓</button>':'<span class="a-wait">wartet auf Mama/Papa</span>')+'</div>';
+    });
+    return h+'</div></section>';
+  }
+  function progressView(){
+    var m = member(S.cur);
+    var allOpen = S.purchases.filter(function(p){return !p.doneBy;});
+    if (!m){
+      return '<div class="board"><div class="hero muted-hero"><div class="fuxi" aria-hidden="true">🦊</div><div><div class="big small">Wessen Profil?</div>'
+        +'<div class="say">Fuxi: „Wähl oben in der braunen Leiste eine Person aus.“</div></div></div>'+openRewardsBlock(allOpen, true)+'</div>';
+    }
+    var kid = m.role==='child';
+    var mine = S.purchases.filter(function(p){return p.member===m.id;});
+    var h = '<div class="board">';
+    h += '<div class="person-head"><div class="p-avatar av-'+m.color+'">'+m.emoji+'</div><div><h1>'+m.name+'</h1><p>Sterne, Aufgaben'+(kid?' und Belohnungen':'')+' im Überblick</p></div></div>';
+
+    h += kid ? openRewardsBlock(mine.filter(function(p){return !p.doneBy;}), false) : openRewardsBlock(allOpen, true);
+
+    h += '<div class="block-head"><h2>Statistik</h2><span>letzte 14 Tage</span></div><div class="stat-row">'
+      +'<div class="stat-tile gold"><div class="s-label">Guthaben</div><div class="s-value">'+m.balance+' <span class="unit">⭐</span></div></div>'
+      +'<div class="stat-tile"><div class="s-label">Sterne diese Woche</div><div class="s-value">'+m.week+' <span class="unit">⭐</span></div></div>'
+      +'<div class="stat-tile"><div class="s-label">Aufgaben erledigt</div><div class="s-value">23 <span class="unit">14 Tage</span></div></div>'
+      +'<div class="stat-tile"><div class="s-label">Bester Tag</div><div class="s-value">Sa <span class="unit">6 ⭐</span></div></div></div>';
+
+    h += '<div class="chart-card"><div class="chart-head"><h2>Verdiente Sterne</h2><div class="segmented"><button class="active">14 Tage</button><button>30 Tage</button></div></div><div class="bars">'
+      +[1,1,3,6,2,4,4,1,5,4,3,6,6,2].map(function(v){return '<div style="height:'+(v/6*100)+'%"></div>';}).join('')+'</div></div>';
+
+    // Verlauf: bestehende Liste + Abzüge
+    h += '<section><div class="history-head"><h2>Sterne-Verlauf</h2><div class="segmented" role="group" aria-label="Filter">'
+      +(kid?[['all','Alle'],['earn','Verdient'],['spend','Eingelöst']]:[]).map(function(f){return '<button class="'+(S.filter===f[0]?'active':'')+'" data-a="filter" data-v="'+f[0]+'">'+f[1]+'</button>';}).join('')
+      +'</div></div>';
+    DAYS.forEach(function(label, d){
+      var rows = [];
+      if (S.filter!=='earn' && kid) mine.filter(function(p){return p.day===d;}).forEach(function(p){ rows.push({t:p.time, html:spendRow(p)}); });
+      if (S.filter!=='spend') EARNED.filter(function(e){return e.day===d;}).forEach(function(e,i){ rows.push({t:e.time, html:earnRow(e,d+'-'+i)}); });
+      if (!rows.length) return;
+      rows.sort(function(a,b){return a.t<b.t?1:-1;});
+      h += '<div class="day-heading">'+label+'</div>'+rows.map(function(r){return r.html;}).join('');
+    });
+    h += '</section></div>';
+    return h;
+  }
+  function earnRow(e,id){
+    return '<div class="task-row"><div class="t-icon">'+e.emoji+'</div><div class="t-body"><div class="t-name">'+e.title+'</div><div class="t-time">erledigt um '+e.time+' Uhr</div></div>'
+      +'<div class="t-stars">+'+e.stars+' ⭐</div>'+(isParent()?'<button class="t-remove" title="Aus dem Verlauf löschen" aria-label="Löschen: '+e.title+'">🗑️</button>':'')+'</div>';
+  }
+  function spendRow(p){
+    var r = reward(p.rid);
+    var status = p.doneBy ? '<span class="ok">✓ eingelöst, abgehakt von '+p.doneBy+'</span>' : '<span class="open">noch nicht eingelöst</span>';
+    var armed = S.armed===p.id;
+    return '<div class="task-row spend"><div class="t-icon tile-'+r.color+'">'+r.emoji+'</div><div class="t-body"><div class="t-name">'+p.label+'</div><div class="t-time">gekauft um '+p.time+' Uhr · '+status+'</div></div>'
+      +'<div class="t-stars minus">−'+p.cost+' ⭐</div>'
+      +(isParent()&&!p.doneBy?'<button class="t-remove'+(armed?' confirm':'')+'" data-a="undo" data-v="'+p.id+'" title="'+(armed?'Wirklich stornieren? Die Sterne kommen zurück.':'Kauf stornieren')+'" aria-label="Kauf stornieren: '+p.label+'">'+(armed?'Storno?':'↩️')+'</button>':'')+'</div>';
+  }
+
+  // ---------- Render + Events ----------
+  function render(){
+    // Guthaben: alle verdienten Sterne minus eingelöste Belohnungen
+    function starsTag(m){ return '<span class="sb">'+m.balance+' ⭐</span>'; }
+    var wb = document.getElementById('whobar');
+    if (kidMode()){
+      var k = member(S.cur);
+      wb.innerHTML = '<div class="wb-pills"><div class="wb-pill active"><span class="av av-'+k.color+'">'+k.emoji+'</span><span><span class="nm">'+k.name+'</span><br>'+starsTag(k)+'</span></div></div>'
+;
+    } else wb.innerHTML = '<div class="wb-pills" role="group" aria-label="Person wählen">'
+      +'<button class="wb-pill'+(S.cur==='all'?' active':'')+'" data-a="cur" data-v="all" aria-pressed="'+(S.cur==='all')+'"><span class="av all">👨‍👩‍👧‍👦</span><span><span class="nm">Alle</span></span></button>'
+      +FAMILY.map(function(m){
+        return '<button class="wb-pill'+(S.cur===m.id?' active':'')+'" data-a="cur" data-v="'+m.id+'" aria-pressed="'+(S.cur===m.id)+'"><span class="av av-'+m.color+'">'+m.emoji+'</span><span><span class="nm">'+m.name+'</span><br>'+starsTag(m)+'</span></button>';
+      }).join('')+'</div>';
+    var inner = S.view==='shop' ? shopView() : (S.view==='shop-admin' && isParent()) ? adminView() : (S.view==='shop-new' && isParent()) ? newRewardView() : S.view==='profil' ? progressView() : S.view==='pool' ? poolView()
+      : placeholder('🍝','Essen');
+    document.getElementById('app').innerHTML = shell(inner);
+    // aktive Person in der braunen Leiste sichtbar halten (Handy: seitlich scrollbar)
+    var pills = document.querySelector('.wb-pills'), act = pills && pills.querySelector('.wb-pill.active');
+    if (act){ var l = act.offsetLeft - pills.offsetLeft, rgt = l + act.offsetWidth;
+      if (l < pills.scrollLeft) pills.scrollLeft = l - 8; else if (rgt > pills.scrollLeft + pills.clientWidth) pills.scrollLeft = rgt - pills.clientWidth + 8; }
+  }
+
+  document.addEventListener('click', function(e){
+    var el = e.target.closest('[data-a]'); if (!el) return;
+    var a = el.getAttribute('data-a'), v = el.getAttribute('data-v');
+    if (el.classList.contains('overlay') && e.target.closest('[data-stop]')) return;
+    e.preventDefault();
+    var b = member(S.cur);
+    if (a!=='rarchive') S.armArch = null;
+    switch(a){
+      case 'loginmenu': S.loginMenu = !S.loginMenu; break;
+      case 'login':
+        S.login = v; S.loginMenu = false; S.sel = null; S.picker = null; S.armed = null;
+        S.cur = member(v).role==='child' ? v : 'all';
+        break;
+      case 'view': S.view = v; S.sel = null; S.picker = null; S.editId = null; S.histId = null; S.armArch = null; window.scrollTo(0,0); break;
+      case 'cur': if (kidMode()) return; S.cur = v; S.sel = null; S.bought = null; S.picker = null; S.armed = null; if (!isParent()) S.filter = S.filter; break;
+      case 'cat': S.cat = v; break;
+      case 'afilter': S.adminFilter = v; S.editId = null; break;
+      case 'rnew': S.draft = draftFrom(null); S.editId = null; S.view = 'shop-new'; window.scrollTo(0,0); break;
+      case 'redit': S.editId = v; S.draft = draftFrom(reward(v)); S.histId = null; S.armArch = null; break;
+      case 'rhist': S.histId = S.histId===v ? null : v; break;
+      case 'rarchive': if (S.armArch!==v){ S.armArch = v; break; } reward(v).active = false; S.armArch = null; break;
+      case 'rrestore': reward(v).active = true; break;
+      case 'df': (function(){ var x = v.split('|'); S.draft[x[0]] = x[1]; if (x[0]==='mode' && x[1]==='units' && S.draft.max<2) S.draft.max = 6; })(); break;
+      case 'dprice': S.draft.price = Math.min(999, Math.max(1, (S.draft.price||0) + parseInt(v,10))); break;
+      case 'dmax': S.draft.max = Math.min(10, Math.max(1, S.draft.max + parseInt(v,10))); break;
+      case 'dcancel': if (S.view==='shop-new') S.view = 'shop-admin'; S.editId = null; S.draft = null; break;
+      case 'dsave':
+        if (!draftValid(S.draft)) return;
+        var nr = draftAsReward(S.draft);
+        if (S.view==='shop-new'){ S.seq++; nr.id = 'nr'+S.seq; nr.active = true; nr.count = 0; REWARDS.push(nr); S.view = 'shop-admin'; S.adminFilter = 'all'; window.scrollTo(0,0); }
+        else { var old = reward(S.editId); for (var k in nr) old[k] = nr[k]; S.editId = null; }
+        S.draft = null;
+        break;
+      case 'open': S.sel = v; S.qty = 1; S.bought = null; S.anim = true; render(); S.anim = false; return;
+      case 'inc': if (S.qty<6) S.qty++; break;
+      case 'dec': if (S.qty>1) S.qty--; break;
+      case 'close': S.sel = null; S.bought = null; break;
+      case 'buy':
+        var r = reward(S.sel), cost = r.price*S.qty; if (b.balance<cost) return;
+        b.balance -= cost; S.seq++;
+        var label = qtyLabel(r,S.qty); r.count++;
+        var now = new Date(), hh = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+        S.purchases.unshift({id:'n'+S.seq, member:b.id, rid:r.id, label:label, cost:cost, time:hh, day:0, doneBy:null});
+        S.bought = qtyLabel(r,S.qty);
+        break;
+      case 'redeem':
+        S.leaving = v; render();
+        setTimeout(function(){ S.purchases.forEach(function(p){ if(p.id===v) p.doneBy=curName(); }); S.leaving=null; render(); }, 220);
+        return;
+      case 'undo':
+        if (S.armed!==v){ S.armed = v; break; }
+        S.armed = null;
+        S.purchases = S.purchases.filter(function(p){ if (p.id===v){ member(p.member).balance += p.cost; return false; } return true; });
+        break;
+      case 'filter': S.filter = v; break;
+      case 'tpick': S.picker = v; break;
+      case 'tpickclose': S.picker = null; break;
+      case 'tjoin': (function(){ var x=v.split('|'), t=TASKS.filter(function(t){return t.id===x[0];})[0];
+        t.claims.push({m:x[1], done:false}); S.picker=null; })(); break;
+      case 'tleave': (function(){ var x=v.split('|'), t=TASKS.filter(function(t){return t.id===x[0];})[0];
+        t.claims = t.claims.filter(function(c){return c.m!==x[1];}); })(); break;
+      case 'tdone': (function(){ var x=v.split('|'), t=TASKS.filter(function(t){return t.id===x[0];})[0];
+        t.claims.forEach(function(c){ if(c.m===x[1]){ c.done=!c.done; addStars(c.m, c.done?share(t):-share(t)); } }); })(); break;
+      case 'rdone': (function(){ var x=v.split('|'), rt=REPEAT.filter(function(t){return t.id===x[0];})[0];
+        rt.today.push(x[1]); addStars(x[1], rt.reward); S.picker=null; })(); break;
+      case 'rundo': (function(){ var x=v.split('|'), rt=REPEAT.filter(function(t){return t.id===x[0];})[0];
+        var i = x[1] ? rt.today.lastIndexOf(x[1]) : rt.today.length-1; if (i<0) return;
+        var id = rt.today.splice(i,1)[0]; addStars(id, -rt.reward); })(); break;
+      default: return;
+    }
+    render();
+  });
+  if (member(S.login).role==='child') S.cur = S.login;
+  document.addEventListener('keydown', function(e){ if (e.key==='Escape' && S.sel){ S.sel=null; S.bought=null; render(); } });
+  render();
+})();
+</script>
+</body>
+</html>

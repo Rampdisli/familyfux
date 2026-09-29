@@ -1,0 +1,342 @@
+/* "Belohnungen verwalten" — like task-admin.scss; design/prototypes/fuxis-plan-belohnungen.html */
+
+:host {
+  display: block;
+}
+
+.board {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 34px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.back-link {
+  align-self: flex-start;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--brown-soft);
+  text-decoration: none;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 26px;
+  }
+
+  p {
+    margin: 4px 0 0;
+    font-size: 13.5px;
+    color: var(--brown-soft);
+  }
+}
+
+.lock-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #fff;
+  padding: 9px 14px;
+  border-radius: 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--brown-soft);
+  box-shadow: 0 8px 18px var(--shadow-warm);
+}
+
+/* FILTER */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  background: #fff;
+  padding: 5px;
+  border-radius: 14px;
+  box-shadow: 0 8px 18px var(--shadow-warm);
+
+  button {
+    border: none;
+    background: transparent;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--brown-soft);
+    cursor: pointer;
+
+    &.active {
+      background: var(--orange);
+      color: #fff;
+    }
+  }
+}
+
+.mcp-note {
+  margin: -6px 0 0;
+  font-size: 13px;
+  color: var(--brown-soft);
+}
+
+.add-link {
+  padding: 11px 18px;
+  border-radius: 14px;
+  background: var(--orange);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+  box-shadow: 0 14px 26px -12px rgba(232, 112, 60, 0.55);
+}
+
+/* REWARD LIST */
+.adm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adm-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 14px 28px -18px var(--shadow-warm);
+  overflow: hidden;
+
+  &.deleted {
+    opacity: 0.6;
+  }
+}
+
+.adm-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.t-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+}
+
+.t-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+}
+
+.t-badge {
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: var(--cream);
+  color: var(--brown-soft);
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+
+  &.units {
+    background: #fff3d6;
+    color: #a0680a;
+  }
+
+  &.deleted-badge {
+    background: #fbe4df;
+    color: var(--danger);
+  }
+}
+
+.t-sub {
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--brown-soft);
+}
+
+.t-reward {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--orange-deep);
+  white-space: nowrap;
+}
+
+.t-reward {
+  text-align: right;
+}
+
+.t-mode {
+  display: block;
+  text-align: right;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--brown-soft);
+}
+
+.t-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.a-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: var(--cream);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &.del {
+    background: #fbe4df;
+    color: var(--danger);
+
+    &.confirm {
+      background: var(--danger);
+      color: #fff;
+    }
+  }
+
+  &.restore {
+    background: #e4f7e9;
+  }
+}
+
+.chevron {
+  font-size: 12px;
+  color: var(--brown-soft);
+  transition: transform 0.2s ease;
+
+  &.open {
+    transform: rotate(180deg);
+  }
+}
+
+/* HISTORY */
+.history-panel {
+  border-top: 1px solid var(--cream);
+  padding: 4px 16px 16px 76px;
+}
+
+.history-empty {
+  padding: 10px 0;
+  font-size: 12.5px;
+  color: var(--brown-soft);
+}
+
+.history-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--cream);
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.he-person {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.he-date {
+  flex: 1;
+  color: var(--brown-soft);
+
+  b {
+    font-weight: 600;
+    color: var(--brown);
+  }
+}
+
+.he-stars {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--orange-deep);
+}
+
+/* EDIT — the form on cream, its fields white */
+.edit-panel {
+  --rf-field-bg: #fff;
+  --rf-segmented-bg: var(--cream-deep);
+  --rf-stepper-bg: #fff;
+  --rf-stepper-button-bg: var(--cream);
+  --rf-secondary-bg: #fff;
+
+  padding: 18px;
+  background: var(--cream);
+}
+
+@media (max-width: 760px) {
+  .history-panel {
+    padding-left: 16px;
+  }
+
+  .adm-row {
+    flex-wrap: wrap;
+  }
+
+  .t-main {
+    flex-basis: calc(100% - 60px);
+  }
+
+  .t-actions {
+    margin-left: auto;
+  }
+
+  .a-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 560px) {
+  .board {
+    padding-inline: 18px;
+  }
+}

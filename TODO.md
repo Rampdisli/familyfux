@@ -1,8 +1,11 @@
 # Aufgabenliste
 
-Offene Punkte aus der Arbeit am Bereich „Essen“ (Branch `Essen`).
+Offene Punkte aus der Arbeit an Fuxis Plan.
 
 ## Offen
+
+- [ ] **Belohnungen anlegen:** Es gibt keine Startdaten; die Familie legt Belohnungen und Preise unter
+      „Belohnungen verwalten“ oder per Claude an. `supabase/seed.sql` ist nur für die Entwicklung.
 
 - [ ] **Rezepte bearbeiten und löschen** — zurückgestellt. Braucht ein Bearbeiten-Formular
       (Basis: `/essen/neu`) und in Supabase eine Delete-Policy samt Grant für `recipes`.
@@ -14,6 +17,18 @@ Offene Punkte aus der Arbeit am Bereich „Essen“ (Branch `Essen`).
       `recipes_split_text_ingredients`.
 
 ## Erledigt
+
+- [x] Belohnungen, Profil und Personenwahl (`design/belohnungen-profil.md`): braune Leiste mit
+      Guthaben, Navigation ohne Kalender, Aufgaben-Pool pro Person, `/belohnungen` mit Kauf-Dialog,
+      `/profil` statt `/fortschritt/:memberId` (leitet weiter), „Belohnungen verwalten“ und
+      „Neue Belohnung“; Migration `supabase/migrations/20260929150000_rewards.sql`, SQL-Test
+      `supabase/tests/rewards_test.sql`
+- [x] MCP-Server 0.8.0: `list_rewards`, `create_reward`, `update_reward`, `archive_reward`,
+      `restore_reward`, `list_open_redemptions`, `confirm_redemption`; `list_family_members` mit
+      Guthaben; Skript `npm run smoke:rewards` (lokale Supabase)
+- [x] Kinder-Login: Konto in „Familie verwalten“ per E-Mail verknüpfen; Kinder handeln im
+      Aufgaben-Pool nur für sich selbst; Migration `supabase/migrations/20260929160000_child_logins.sql`,
+      SQL-Test `supabase/tests/child_logins_test.sql`
 
 - [x] Designs Navigation, Rezepte und Wochenplan unter `design/prototypes/` abgelegt
 - [x] Essen umgesetzt: Rezepte (`/essen`), Wochenplan (`/essen/wochenplan`),

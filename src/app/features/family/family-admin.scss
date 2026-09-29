@@ -164,6 +164,78 @@
   }
 }
 
+/* LOGIN (own account, e.g. for kids) */
+.m-account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--brown-soft);
+}
+
+.acc {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.acc-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--cream);
+  font: inherit;
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--brown);
+  cursor: pointer;
+
+  &.confirm {
+    background: var(--danger);
+    color: #fff;
+  }
+}
+
+.link-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  input {
+    width: 100%;
+    border: 2px solid var(--cream-deep);
+    background: var(--cream);
+    border-radius: 12px;
+    padding: 9px 12px;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--brown);
+    outline: none;
+
+    &:focus {
+      border-color: var(--orange);
+    }
+  }
+}
+
+.acc-hint {
+  margin: 0;
+  font-size: 11.5px;
+}
+
+@media (max-width: 640px) {
+  .acc-btn,
+  .m-btn {
+    min-height: 44px;
+  }
+}
+
 /* EDIT FORM */
 .edit-panel {
   display: flex;

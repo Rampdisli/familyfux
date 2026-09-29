@@ -1,4 +1,8 @@
 @if (auth.isAuthenticated()) {
+  @if (pool.family().length) {
+    <app-member-bar />
+  }
+
   <nav class="topnav">
     <a routerLink="/tasks" class="brand">
       <span class="brand-mark"></span>
@@ -9,6 +13,9 @@
       @for (item of nav; track item.path) {
         <a class="nav-pill" [routerLink]="item.path" routerLinkActive="active" [title]="item.label">
           <span class="ic">{{ item.icon }}</span><span class="label">{{ item.label }}</span>
+          @if (badge(item); as count) {
+            <span class="badge" title="offene Belohnungen">{{ count }}</span>
+          }
         </a>
       }
     </div>
@@ -35,6 +42,9 @@
     @for (item of nav; track item.path) {
       <a class="bottom-item" [routerLink]="item.path" routerLinkActive="active">
         <span class="ic">{{ item.icon }}</span>{{ item.short }}
+        @if (badge(item); as count) {
+          <span class="badge" title="offene Belohnungen">{{ count }}</span>
+        }
       </a>
     }
   </nav>

@@ -157,6 +157,11 @@
   text-align: left;
   cursor: pointer;
 
+  &:disabled {
+    cursor: default;
+    opacity: 0.75;
+  }
+
   .dot {
     width: 20px;
     height: 20px;

@@ -8,7 +8,8 @@ collection ("Fuxis Plan") of the main Familyfux Supabase project:
   the last completion); when several members do it together, each earns the reward or they split it;
   optionally assigned to family members by name
 - `list_tasks` — the current pool: every task that is due, with reward, schedule and who takes part
-- `list_family_members` — family members with their stars this week
+- `list_family_members` — family members with their balance (all stars ever earned minus rewards
+  bought) and their stars this week
 - `claim_task` / `leave_task` — a family member joins a pool entry or steps out again
 - `set_task_done` — tick off a member's part (joins them first if needed); the entry is done once
   all participants are
@@ -16,6 +17,31 @@ collection ("Fuxis Plan") of the main Familyfux Supabase project:
 
 Repeatable tasks ("Immer wieder") show up in `list_tasks` with today's count; `set_task_done` with
 their `task_id` counts one more time (or takes the member's latest time today back).
+
+Rewards ("Belohnungen"; answers in short, speakable German):
+
+- `list_rewards` — what kids can buy with their stars: emoji, name, category, price, unit, description,
+  purchases in the last 30 days, archived yes/no and id (`include_archived`, `category`)
+- `create_reward` — new reward, per purchase or in units; title and price are required (Claude asks
+  otherwise), emoji / colour / category get defaults that the answer names; refuses a second active
+  reward with the same name and suggests `update_reward`
+- `update_reward` — changes only the given fields and answers before → after; `unit_amount: null`
+  turns it into a reward per purchase. Purchases already made keep their price
+- `archive_reward` / `restore_reward` — out of the shop and back (purchases stay); restoring fails if
+  an active reward with the same name exists meanwhile
+- `list_open_redemptions` — bought but not redeemed yet, per kid, with cost, time and purchase id
+- `confirm_redemption` — ticks a purchase off (`purchase_id`, or `member` + `reward`; the oldest open
+  one if there are several)
+
+Rewards are found by id or by name (case-insensitive); with several matches Claude asks back. Writing
+tools and `confirm_redemption` are for parents only (“Nur Eltern können Belohnungen ändern.”), RLS and
+the SQL functions check it again. For example:
+
+- „Leg eine Belohnung an: 10 Minuten Gamezeit für 40 Sterne.“ → `create_reward` with
+  `title: "Gamezeit", price: 40, unit_amount: 10, unit_label: "Minuten", category: "screen"`
+- „Neue Belohnung Pizza-Abend für 80 Sterne.“ → `create_reward` with `title: "Pizza-Abend", price: 80, category: "food"`
+- „Tabletzeit kostet jetzt 25 Sterne.“ → `update_reward` → „📱 Tabletzeit: 20 ⭐ → 25 ⭐ pro 5 Minuten.“
+- „Mia hat ihre Tabletzeit eingelöst.“ → `confirm_redemption` with `member: "Mia", reward: "Tabletzeit"`
 
 Recipe import ("Essen"):
 
@@ -63,6 +89,19 @@ npm run dev
 This serves the MCP endpoint at `http://localhost:3000/mcp` (Streamable HTTP transport) and
 the OAuth endpoints (`/authorize`, `/token`, `/register`, `/.well-known/oauth-*`) at the app
 root.
+
+## Smoke test for the reward tools
+
+`npm run smoke:rewards` plays create → update → archive → restore through a real MCP client against a
+**local** Supabase (`supabase start`, all migrations applied) and deletes its test reward again:
+
+```bash
+SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=<local anon key> \
+SMOKE_EMAIL=<parent account> SMOKE_PASSWORD=<password> npm run smoke:rewards
+```
+
+The account must be a parent in a family. It refuses hosted `*.supabase.co` projects.
+`npm run typecheck` checks the server and the script.
 
 ## Testing with ChatGPT
 

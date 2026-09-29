@@ -13,49 +13,85 @@
       erscheinen hier eure Aufgaben.
     </p>
   } @else {
-    <div class="family-strip">
-      @for (member of pool.family(); track member.id) {
-        <a class="fam-chip" [routerLink]="['/fortschritt', member.id]" [title]="'Fortschritt von ' + member.name">
-          <div class="av av-{{ member.color }}">{{ member.emoji }}</div>
-          <div>
-            <div class="name">{{ member.name }}</div>
-            <div class="stars">{{ stars(pool.stars()[member.id] ?? 0) }} ⭐ diese Woche</div>
-          </div>
-        </a>
-      }
-    </div>
-
-    <section>
-      <div class="pool-head">
-        <div>
-          <h1>Aufgaben-Pool</h1>
-          <span>frei für alle — nimm dir, was dir liegt</span>
-        </div>
-        <div class="pool-actions">
-          @if (pool.repeatable().length) {
-            <button type="button" class="jump-repeatable" (click)="jumpToRepeatable(repeatableSection)">
-              🔁 Immer wieder
-            </button>
-          }
-          @if (pool.isParent()) {
-            <a routerLink="/aufgaben" class="manage-tasks">Verwalten</a>
-            <a routerLink="/tasks/neu" class="new-task">+ Neue Aufgabe</a>
-          }
-        </div>
+    <ng-template #actions>
+      <div class="pool-actions">
+        @if (pool.repeatable().length) {
+          <button type="button" class="jump-repeatable" (click)="jumpToRepeatable(repeatableSection)">
+            🔁 Immer wieder
+          </button>
+        }
+        @if (pool.isParent()) {
+          <a routerLink="/aufgaben" class="manage-tasks">Verwalten</a>
+          <a routerLink="/tasks/neu" class="new-task">+ Neue Aufgabe</a>
+        }
       </div>
+    </ng-template>
 
-      @if (visibleTasks().length === 0) {
-        <p class="message">
-          {{ pool.tasks().length ? 'Alles erledigt — gut gemacht! 🎉' : 'Noch keine Aufgaben im Pool.' }}
-        </p>
-      } @else {
-        <div class="pool-grid">
-          @for (task of visibleTasks(); track task.id) {
-            <app-task-card [task]="task" />
-          }
+    @if (person()) {
+      <section>
+        <div class="pool-head">
+          <div>
+            <h1>{{ possessive() }} Aufgaben</h1>
+            <span>übernommen — abhaken, wenn’s erledigt ist</span>
+          </div>
+          <ng-container [ngTemplateOutlet]="actions" />
         </div>
-      }
-    </section>
+
+        @if (mine().length === 0) {
+          <p class="message">Noch nichts übernommen — nimm dir unten eine freie Aufgabe 🦊</p>
+        } @else {
+          <div class="pool-grid">
+            @for (task of mine(); track task.id) {
+              <app-task-card [task]="task" />
+            }
+          </div>
+        }
+      </section>
+
+      <section>
+        <div class="pool-head">
+          <div class="section-title">
+            <div class="section-icon" aria-hidden="true">🙋</div>
+            <div>
+              <h2>Noch frei</h2>
+              <span>noch niemand hat sie genommen — tipp auf „Ich mach’s!“</span>
+            </div>
+          </div>
+        </div>
+
+        @if (free().length === 0) {
+          <p class="message">Alles vergeben — super! 🎉</p>
+        } @else {
+          <div class="pool-grid">
+            @for (task of free(); track task.id) {
+              <app-task-card [task]="task" />
+            }
+          </div>
+        }
+      </section>
+    } @else {
+      <section>
+        <div class="pool-head">
+          <div>
+            <h1>Aufgaben-Pool</h1>
+            <span>frei für alle — nimm dir, was dir liegt</span>
+          </div>
+          <ng-container [ngTemplateOutlet]="actions" />
+        </div>
+
+        @if (visibleTasks().length === 0) {
+          <p class="message">
+            {{ pool.tasks().length ? 'Alles erledigt — gut gemacht! 🎉' : 'Noch keine Aufgaben im Pool.' }}
+          </p>
+        } @else {
+          <div class="pool-grid">
+            @for (task of visibleTasks(); track task.id) {
+              <app-task-card [task]="task" />
+            }
+          </div>
+        }
+      </section>
+    }
 
     <section id="immer-wieder" class="repeatable-section" #repeatableSection [hidden]="!pool.repeatable().length">
       <div class="pool-head">

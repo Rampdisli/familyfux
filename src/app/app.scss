@@ -1,4 +1,9 @@
-/* Navigation — design/prototypes/fuxis-plan-navigation.html */
+/* Navigation — design/prototypes/fuxis-plan-navigation.html, fuxis-plan-belohnungen.html */
+
+/* Block, so the sticky brown bar (app-member-bar) stays up over the whole page. */
+:host {
+  display: block;
+}
 
 .topnav {
   max-width: 1240px;
@@ -66,6 +71,24 @@
     color: #fff;
     box-shadow: 0 10px 20px -8px rgba(232, 112, 60, 0.55);
   }
+}
+
+/* Parents: open purchases on "Belohnungen". */
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--brown);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-right {
@@ -159,6 +182,15 @@
       align-items: center;
       justify-content: center;
       font-size: 21px;
+    }
+
+    .badge {
+      top: 0;
+      right: 4px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      font-size: 10px;
     }
 
     &.active {

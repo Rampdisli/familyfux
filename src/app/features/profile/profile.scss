@@ -1,4 +1,4 @@
-/* "Plan-Fortschritt" — design/prototypes/fuxis-plan-fortschritt.html */
+/* "Profil" — design/prototypes/fuxis-plan-belohnungen.html (from "Plan-Fortschritt", fuxis-plan-fortschritt.html) */
 
 :host {
   display: block;
@@ -13,14 +13,6 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
-}
-
-.back-link {
-  align-self: flex-start;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--brown-soft);
-  text-decoration: none;
 }
 
 /* PERSON HEADER */
@@ -55,7 +47,7 @@
   box-shadow: 0 10px 20px var(--shadow-warm);
 }
 
-/* ASSIGNED TASKS */
+/* OPEN REWARDS */
 .block-head {
   display: flex;
   flex-wrap: wrap;
@@ -85,7 +77,7 @@
 
 .assigned-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 12px;
 }
 
@@ -142,9 +134,21 @@
   line-height: 1.25;
 }
 
-.a-reward {
+.a-cost {
   margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--orange-deep);
+}
+
+/* Kid logins: a parent ticks it off. */
+.a-wait {
+  max-width: 76px;
+  flex-shrink: 0;
   font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: right;
   color: var(--brown-soft);
 }
 
@@ -172,7 +176,7 @@
 /* STAT TILES */
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -181,6 +185,11 @@
   border-radius: 20px;
   padding: 16px 18px;
   box-shadow: 0 12px 26px -16px var(--shadow-warm);
+}
+
+/* Guthaben */
+.stat-tile.gold {
+  background: linear-gradient(135deg, #fff6df, #ffe7b8);
 }
 
 .s-label {
@@ -333,8 +342,10 @@
 
 .history-head {
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
+  gap: 10px;
 
   h2 {
     margin: 0;
@@ -404,6 +415,27 @@
   font-size: 13.5px;
   color: var(--orange-deep);
   white-space: nowrap;
+
+  &.minus {
+    color: var(--brown);
+  }
+}
+
+/* A purchase in the history. */
+.task-row.spend {
+  background: #fff9f3;
+}
+
+.t-time {
+  .ok {
+    font-weight: 600;
+    color: var(--mint-deep);
+  }
+
+  .open {
+    font-weight: 600;
+    color: var(--orange-deep);
+  }
 }
 
 .task-row.removing {
@@ -432,6 +464,12 @@
     color: #fff;
     font-size: 12px;
     font-weight: 700;
+  }
+}
+
+@media (max-width: 760px) {
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
