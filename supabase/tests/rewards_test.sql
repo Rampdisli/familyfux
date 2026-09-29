@@ -1,4 +1,4 @@
--- Checks for supabase/migrations/20260929150000_rewards.sql.
+-- Checks for supabase/migrations/20260929150000_rewards.sql and 20260930090000_parents_redeem_rewards.sql.
 --
 -- Run against a local database with all migrations applied (never production):
 --   psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rewards_test.sql
@@ -24,6 +24,9 @@ insert into public.tasks (id, user_id, family_id, title, reward, is_repeatable)
 values ('30000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-00000000000a', '10000000-0000-0000-0000-000000000001', 'Zähne putzen', 10, true);
 insert into public.task_completions (task_id, member_id)
 select '30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-00000000000b' from generate_series(1, 3);
+-- Mama earns 10.
+insert into public.task_completions (task_id, member_id)
+values ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-00000000000a');
 
 insert into public.rewards (id, family_id, title, emoji, category, price, unit_amount, unit_label, max_quantity) values
   ('40000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'Tabletzeit', '📱', 'screen', 5, 5, 'Minuten', 6),
@@ -75,6 +78,7 @@ select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-00
 select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000001', 7)$$, 'Menge');
 select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000003', 1)$$, 'gibt es nicht mehr');
 select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000c', '40000000-0000-0000-0000-000000000001', 1)$$, 'nur für dich selbst');
+select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000001', 1)$$, 'nur für dich selbst');
 select pg_temp.expect_error($$insert into public.reward_purchases (family_id, member_id, title, emoji, color, quantity, label, cost) values ('10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-00000000000b', 'x', 'x', 'peach', 1, 'x', 1)$$, 'permission denied');
 select pg_temp.expect_error($$update public.reward_purchases set redeemed_at = now()$$, 'permission denied');
 select pg_temp.expect_error($$insert into public.rewards (family_id, title, price) values ('10000000-0000-0000-0000-000000000001', 'Eis', 10)$$, 'row-level security');
@@ -102,8 +106,10 @@ select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-00
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', true);
 
--- Parents buy for a kid, not for themselves.
-select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000001', 1)$$, 'nur Kinder');
+-- Parents buy for themselves too (20260930090000_parents_redeem_rewards.sql).
+select pg_temp.check(public.redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000001', 1) is not null, 'Mama buys for herself');
+select pg_temp.check((select balance from public.member_balance where member_id = '20000000-0000-0000-0000-00000000000a') = 5, 'Mama''s balance drops');
+select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000002', 1)$$, 'Nicht genug Sterne');
 select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000c', '40000000-0000-0000-0000-000000000001', 1)$$, 'Nicht genug Sterne');
 
 select pg_temp.check(public.confirm_redemption((select id from public.reward_purchases where cost = 15)), 'parent confirms');

@@ -196,12 +196,12 @@ const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
  */
 function createMcpServer(supabaseAccessToken: string, userId: string): McpServer {
   const server = new McpServer(
-    { name: 'familyfux-tasks', version: '0.8.0' },
+    { name: 'familyfux-tasks', version: '0.8.1' },
     {
       instructions:
         'Family chore pool, rewards and recipe collection ("Fuxis Plan"). Users often talk to you by voice, mostly in German: keep replies ' +
         'and follow-up questions short and speakable, and never invent details they did not give — ask instead. ' +
-        'Kids trade the stars they earn for rewards ("Belohnungen"); only parents change rewards or tick purchases off.',
+        'Family members trade the stars they earn for rewards ("Belohnungen"); only parents change rewards or tick purchases off.',
     },
   );
 
