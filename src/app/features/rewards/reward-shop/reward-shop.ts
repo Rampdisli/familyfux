@@ -16,9 +16,9 @@ interface Bought {
 /**
  * "Belohnungen" — design/prototypes/fuxis-plan-belohnungen.html
  *
- * The shop of the kid picked in the brown bar: kids buy for themselves,
- * parents for the picked kid (shared device). With "Alle" or a parent picked
- * the cards are only for looking.
+ * The shop of the person picked in the brown bar: kids buy for themselves,
+ * parents for themselves or the picked kid (shared device). With "Alle"
+ * picked the cards are only for looking.
  */
 @Component({
   selector: 'app-reward-shop',
@@ -48,22 +48,19 @@ export class RewardShop {
 
   private readonly dialog = viewChild<ElementRef<HTMLElement>>('dialog');
 
-  /** The kid who's shopping; null with "Alle" or a parent picked. */
-  protected readonly kid = computed(() => {
-    const member = this.pool.selectedMember();
-    return member?.role === 'child' ? member : null;
-  });
+  /** Who's shopping; null with "Alle". */
+  protected readonly buyer = computed(() => this.pool.selectedMember() ?? null);
 
-  private readonly kidId = computed(() => this.kid()?.id ?? null);
+  private readonly buyerId = computed(() => this.buyer()?.id ?? null);
 
-  protected readonly balance = computed(() => this.pool.balance(this.kidId()));
+  protected readonly balance = computed(() => this.pool.balance(this.buyerId()));
 
   protected readonly visible = computed(() => {
     const category = this.category();
     return this.rewards.active().filter((r) => category === 'all' || r.category === category);
   });
 
-  /** Cheapest reward the kid can't afford yet, for Fuxi's "Noch 65 ⭐ bis …". */
+  /** Cheapest reward the buyer can't afford yet, for Fuxi's "Noch 65 ⭐ bis …". */
   protected readonly next = computed(() =>
     this.rewards
       .active()
@@ -83,13 +80,13 @@ export class RewardShop {
 
     // Picking someone else in the brown bar closes the dialog (reloads after a purchase don't).
     effect(() => {
-      this.kidId();
+      this.buyerId();
       untracked(() => this.close());
     });
   }
 
   protected missing(reward: Reward): number {
-    return this.kid() ? Math.max(0, reward.price - this.balance()) : 0;
+    return this.buyer() ? Math.max(0, reward.price - this.balance()) : 0;
   }
 
   protected open(reward: Reward): void {
@@ -110,9 +107,9 @@ export class RewardShop {
   }
 
   protected async buy(): Promise<void> {
-    const kid = this.kid();
+    const buyer = this.buyer();
     const reward = this.selected();
-    if (!kid || !reward || this.rest() < 0 || this.buying()) {
+    if (!buyer || !reward || this.rest() < 0 || this.buying()) {
       return;
     }
 
@@ -120,7 +117,7 @@ export class RewardShop {
     this.errorMessage.set(null);
     const quantity = this.quantity();
     const balance = this.rest();
-    const error = await this.rewards.redeem(kid.id, reward.id, quantity);
+    const error = await this.rewards.redeem(buyer.id, reward.id, quantity);
     this.buying.set(false);
 
     if (error) {

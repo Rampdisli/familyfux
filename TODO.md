@@ -18,6 +18,10 @@ Offene Punkte aus der Arbeit an Fuxis Plan.
 
 ## Erledigt
 
+- [x] Auch Eltern können ihr Guthaben gegen Belohnungen einlösen (App 0.8.0, MCP-Server 0.8.1);
+      Migration `supabase/migrations/20260930090000_parents_redeem_rewards.sql` auf Supabase ausgeführt,
+      als Version `20260930090000` registriert
+
 - [x] Belohnungen, Profil und Personenwahl (`design/belohnungen-profil.md`): braune Leiste mit
       Guthaben, Navigation ohne Kalender, Aufgaben-Pool pro Person, `/belohnungen` mit Kauf-Dialog,
       `/profil` statt `/fortschritt/:memberId` (leitet weiter), „Belohnungen verwalten“ und

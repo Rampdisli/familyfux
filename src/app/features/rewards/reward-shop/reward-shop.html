@@ -17,7 +17,7 @@
   } @else if (!rewards.data.hasValue() || !pool.data.hasValue()) {
     <p class="message">Lade…</p>
   } @else {
-    @if (kid(); as k) {
+    @if (buyer(); as k) {
       <app-fuxi-hero>
         <span big>{{ k.name }} hat {{ stars(balance()) }} ⭐</span>
         <span say>
@@ -31,7 +31,7 @@
     } @else {
       <app-fuxi-hero muted>
         <span big>Wer möchte einlösen?</span>
-        <span say>Fuxi: „Wähl oben in der braunen Leiste ein Kind aus.“</span>
+        <span say>Fuxi: „Wähl oben in der braunen Leiste eine Person aus.“</span>
       </app-fuxi-hero>
     }
 
@@ -57,7 +57,7 @@
           app-reward-card
           [reward]="reward"
           [missing]="missing(reward)"
-          [disabled]="!kid()"
+          [disabled]="!buyer()"
           (click)="open(reward)"
         ></button>
       } @empty {
@@ -70,7 +70,7 @@
 </div>
 
 @if (selected(); as r) {
-  @if (kid(); as k) {
+  @if (buyer(); as k) {
     <div class="overlay" (click)="close()">
       <div
         #dialog
@@ -86,7 +86,11 @@
           <h2>Gekauft!</h2>
           <div class="strong">{{ b.text }} für {{ k.name }}</div>
           <div class="sub">
-            Einlösen, sobald Mama oder Papa es in {{ possessive(k.name) }} Profil abhakt.<br />
+            @if (k.role === 'child') {
+              Einlösen, sobald Mama oder Papa es in {{ possessive(k.name) }} Profil abhakt.<br />
+            } @else {
+              Nach dem Einlösen in {{ possessive(k.name) }} Profil abhaken.<br />
+            }
             Neues Guthaben: <b>{{ stars(b.balance) }} ⭐</b>
           </div>
           <button type="button" class="primary" (click)="close()">Super!</button>

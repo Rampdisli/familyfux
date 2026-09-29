@@ -20,7 +20,7 @@ their `task_id` counts one more time (or takes the member's latest time today ba
 
 Rewards ("Belohnungen"; answers in short, speakable German):
 
-- `list_rewards` — what kids can buy with their stars: emoji, name, category, price, unit, description,
+- `list_rewards` — what family members can buy with their stars: emoji, name, category, price, unit, description,
   purchases in the last 30 days, archived yes/no and id (`include_archived`, `category`)
 - `create_reward` — new reward, per purchase or in units; title and price are required (Claude asks
   otherwise), emoji / colour / category get defaults that the answer names; refuses a second active
@@ -29,7 +29,7 @@ Rewards ("Belohnungen"; answers in short, speakable German):
   turns it into a reward per purchase. Purchases already made keep their price
 - `archive_reward` / `restore_reward` — out of the shop and back (purchases stay); restoring fails if
   an active reward with the same name exists meanwhile
-- `list_open_redemptions` — bought but not redeemed yet, per kid, with cost, time and purchase id
+- `list_open_redemptions` — bought but not redeemed yet, per member, with cost, time and purchase id
 - `confirm_redemption` — ticks a purchase off (`purchase_id`, or `member` + `reward`; the oldest open
   one if there are several)
 

@@ -8,7 +8,7 @@
       <div class="p-avatar av-{{ m.color }}">{{ m.emoji }}</div>
       <div>
         <h1>{{ m.name }}</h1>
-        <p>{{ isKid() ? 'Sterne, Aufgaben und Belohnungen im Überblick' : 'Sterne, Aufgaben im Überblick' }}</p>
+        <p>Sterne, Aufgaben und Belohnungen im Überblick</p>
       </div>
     </div>
 
@@ -104,20 +104,18 @@
     <section class="history">
       <div class="history-head">
         <h2>Sterne-Verlauf</h2>
-        @if (isKid()) {
-          <div class="segmented" role="group" aria-label="Filter">
-            @for (f of historyFilters; track f.key) {
-              <button
-                type="button"
-                [class.active]="historyFilter() === f.key"
-                [attr.aria-pressed]="historyFilter() === f.key"
-                (click)="historyFilter.set(f.key)"
-              >
-                {{ f.label }}
-              </button>
-            }
-          </div>
-        }
+        <div class="segmented" role="group" aria-label="Filter">
+          @for (f of historyFilters; track f.key) {
+            <button
+              type="button"
+              [class.active]="historyFilter() === f.key"
+              [attr.aria-pressed]="historyFilter() === f.key"
+              (click)="historyFilter.set(f.key)"
+            >
+              {{ f.label }}
+            </button>
+          }
+        </div>
       </div>
 
       @if (removeError(); as message) {
@@ -187,7 +185,7 @@
       } @empty {
         @if (done.hasValue()) {
           <p class="message">
-            {{ historyFilter() === 'spent' && isKid() ? 'In den letzten ' + range() + ' Tagen nichts eingelöst.' : 'In den letzten ' + range() + ' Tagen noch nichts erledigt.' }}
+            {{ historyFilter() === 'spent' ? 'In den letzten ' + range() + ' Tagen nichts eingelöst.' : 'In den letzten ' + range() + ' Tagen noch nichts erledigt.' }}
           </p>
         }
       }
@@ -206,7 +204,7 @@
 <ng-template #openBlock let-many="many">
   <section class="assigned-block">
     <div class="block-head">
-      <h2>{{ many ? 'Offene Belohnungen der Kinder' : 'Offene Belohnungen' }}</h2>
+      <h2>{{ many ? 'Offene Belohnungen der Familie' : 'Offene Belohnungen' }}</h2>
       <span>
         {{ pool.isParent() ? 'gekauft, aber noch nicht eingelöst — abhaken, sobald erledigt' : 'gekauft — Mama oder Papa hakt ab, wenn du sie einlöst' }}
       </span>

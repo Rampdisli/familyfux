@@ -53,7 +53,7 @@ function startOfDay(date: Date): Date {
  *
  * Always about the person picked in the brown bar: open rewards, stats, the
  * stars they earned per day and the "Sterne-Verlauf" (earned stars, and for
- * kids their purchases). With "Alle" picked: the kids' open rewards only.
+ * their purchases). With "Alle" picked: the family's open rewards only.
  */
 @Component({
   selector: 'app-profile',
@@ -78,7 +78,7 @@ export class Profile {
     { key: 'spent', label: 'Eingelöst' },
   ];
 
-  /** Open rewards shown: the kid's own, or every kid's (parents, "Alle"). */
+  /** Open rewards shown: a kid's own, or the whole family's (parents tick them off; "Alle"). */
   protected readonly openRewards = computed(() => {
     const open = this.rewards.open();
     return this.isKid() ? open.filter((p) => p.member_id === this.memberId()) : open;
@@ -93,12 +93,11 @@ export class Profile {
   protected readonly removing = signal<string | null>(null);
   protected readonly removeError = signal<string | null>(null);
 
-  /** Everything the member finished and (kids) bought in the last 30 days (the longest range), newest first. */
+  /** Everything the member finished and bought in the last 30 days (the longest range), newest first. */
   protected readonly done = resource({
     // Depends on pool.tasks() / the open purchases so ticking off or buying elsewhere refreshes this page too.
     params: () => ({
       memberId: this.memberId(),
-      isKid: this.isKid(),
       poolTasks: this.pool.tasks(),
       open: this.rewards.open(),
     }),
@@ -110,14 +109,12 @@ export class Profile {
       const since = startOfDay(new Date());
       since.setDate(since.getDate() - 29);
 
-      const purchases = params.isKid
-        ? await supabase
-            .from('reward_purchases')
-            .select(PURCHASE_COLUMNS)
-            .eq('member_id', params.memberId)
-            .gte('purchased_at', since.toISOString())
-            .order('purchased_at', { ascending: false })
-        : { data: [], error: null };
+      const purchases = await supabase
+        .from('reward_purchases')
+        .select(PURCHASE_COLUMNS)
+        .eq('member_id', params.memberId)
+        .gte('purchased_at', since.toISOString())
+        .order('purchased_at', { ascending: false });
 
       if (purchases.error) {
         throw new Error(purchases.error.message, { cause: purchases.error });
@@ -193,7 +190,7 @@ export class Profile {
 
   /** "Sterne-Verlauf": earned stars and purchases, newest first, grouped by day ("Heute", "Gestern", "Mittwoch, 23. September"). */
   protected readonly history = computed(() => {
-    const filter = this.isKid() ? this.historyFilter() : 'earned';
+    const filter = this.historyFilter();
     const entries: HistoryEntry[] = [
       ...(filter === 'spent' ? [] : this.inRange().map((entry) => ({ kind: 'earned' as const, at: entry.done_at, entry }))),
       ...(filter === 'earned'
@@ -261,7 +258,7 @@ export class Profile {
     });
   });
 
-  /** Parents: the kid got it — the card fades out, the purchase counts as redeemed. */
+  /** Parents: they got it — the card fades out, the purchase counts as redeemed. */
   protected async confirm(purchase: Purchase): Promise<void> {
     this.leaving.set(purchase.id);
     this.confirmError.set(null);
