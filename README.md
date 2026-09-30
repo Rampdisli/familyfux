@@ -126,6 +126,13 @@ src/app/
   app.routes.ts            # lazy-loaded routes with guards
 ```
 
+## Factsheet
+
+`public/factsheet.html` is a standalone promo page for Fuxis Plan (screens from
+`design/prototypes/`, images embedded). The build copies it unchanged, so it is served at
+`/factsheet.html` (or `<BASE_HREF>/factsheet.html`) as a plain static file — no login needed,
+since it never goes through the Angular app or its route guards.
+
 ## Development server
 
 To start a local development server, run:
