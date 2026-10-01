@@ -19,6 +19,12 @@ Offene Punkte aus der Arbeit an Fuxis Plan.
       entfernt dann die Spalte und die Trigger `recipe_ingredients_sync_text` /
       `recipes_split_text_ingredients`.
 
+- [ ] **Eingelöste Belohnungen rückgängig machen können:** Falls eine Belohnung versehentlich als
+      eingelöst markiert wurde, sollen Eltern das zurücknehmen können.
+
+- [ ] **Rezepte und Aufgaben auch über den MCP-Server bearbeiten können:** nicht nur anlegen, sondern
+      auch bestehende Rezepte und Aufgaben über MCP-Tools ändern.
+
 ## Erledigt
 
 - [x] Rezepte bearbeiten und löschen, nur für Eltern (`design/rezept-bearbeiten-loeschen.md`, App 0.9.0):
