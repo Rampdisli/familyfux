@@ -5,7 +5,7 @@
 # files, the same for every target. Building for arm64 on the x86 CI runner
 # would otherwise run npm and the Angular build under QEMU, which takes many
 # minutes (or crashes). Only the nginx stage below is per target platform.
-FROM node:22-alpine AS build #FROM --platform=$BUILDPLATFORM node:22-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /app
 
 # The lock file is written by the npm version pinned in package.json's
