@@ -289,6 +289,9 @@ to *Authentication → URL Configuration* in the Supabase dashboard so the auth 
 and re-run the same command to roll out a new version. Do **not** set `BASE_HREF`: Cloud Run
 serves the app at the root of its URL.
 
+The MCP server deploys the same way as a second service, see
+[mcp-server/README.md](mcp-server/README.md#deploying-to-google-cloud-run-free-tier).
+
 Each deploy leaves the previous image in Artifact Registry (free up to 0.5 GB, roughly 20
 images of this size). A
 [cleanup policy](https://cloud.google.com/artifact-registry/docs/repositories/cleanup-policy)

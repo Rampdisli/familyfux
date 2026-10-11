@@ -65,6 +65,13 @@ client its own access token tied to the signed-in user's Supabase session. No cr
 stored in `.env` or anywhere on disk — RLS on the family tables applies exactly as it does in the
 Angular app, scoped to whichever account logged in.
 
+The authorization server itself is **stateless**: client ids, login requests, authorization
+codes, access and refresh tokens are sealed (AES-256-GCM, keyed from `TOKEN_SECRET`) and carry
+their own state, see `src/sealed.ts`. Restarts, redeploys and Cloud Run's scale-to-zero therefore
+do not log any connected client out, and several instances can share one secret. Revoking a
+token ends its Supabase session at once; the access token itself stays valid until it expires
+(at most one hour). Changing `TOKEN_SECRET` invalidates everything and every client reconnects.
+
 ## Setup
 
 ```bash
@@ -79,6 +86,9 @@ Fill in `.env`:
 - `PUBLIC_URL` — the public HTTPS URL this server is reachable at (an ngrok tunnel while
   testing, your NAS's domain once deployed there). This becomes the OAuth issuer, so it must
   match exactly what the MCP client connects to.
+- `TOKEN_SECRET` — random, at least 32 characters, e.g. `openssl rand -base64 48` (or
+  `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"`). Seals the
+  OAuth tokens, see above; keep it stable and private.
 
 Start it:
 
@@ -141,7 +151,48 @@ The server is plain Node/Express, so it runs on the NAS exactly as it does local
    or DSM's built-in **Reverse Proxy + DDNS**.
 4. Set `PUBLIC_URL` in `.env` to that permanent public URL instead of an ngrok URL.
 
+## Deploying to Google Cloud Run (free tier)
+
+The same Dockerfile deploys to [Cloud Run](https://cloud.google.com/run) and stays inside the
+always-free tier for family use (the same conditions as for the app: a Tier 1 region such as
+`europe-west1`, request-based billing with `--min-instances 0`, `--max-instances 1`; see the
+[root README](../README.md#google-cloud-run-free-tier)). Because the server is stateless, an
+instance that is shut down after idling costs nothing and nobody has to log in again.
+
+The service URL is deterministic, so `PUBLIC_URL` can be set on the very first deploy:
+`https://<SERVICE>-<PROJECT_NUMBER>.<REGION>.run.app`. The Cloud Run APIs must already be
+enabled and the Compute Engine default service account must have the *Cloud Run Builder* role
+(both done once for the app). `TOKEN_SECRET` goes into Secret Manager rather than a plain env
+var:
+
+```bash
+cd mcp-server
+PROJECT_NUMBER=$(gcloud projects describe "$(gcloud config get-value project)" --format='value(projectNumber)')
+
+gcloud services enable secretmanager.googleapis.com
+openssl rand -base64 48 | gcloud secrets create familyfux-mcp-token-secret --data-file=-
+gcloud secrets add-iam-policy-binding familyfux-mcp-token-secret \
+  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+
+gcloud run deploy familyfux-mcp \
+  --source . \
+  --region europe-west1 \
+  --allow-unauthenticated \
+  --memory 256Mi --cpu 1 \
+  --min-instances 0 --max-instances 1 \
+  --set-secrets "TOKEN_SECRET=familyfux-mcp-token-secret:latest" \
+  --set-env-vars "SUPABASE_URL=https://xxxxxxxx.supabase.co,SUPABASE_ANON_KEY=sb_publishable_...,PUBLIC_URL=https://familyfux-mcp-${PROJECT_NUMBER}.europe-west1.run.app,LOG_TO_FILE=false"
+```
+
+`--allow-unauthenticated` only opens the HTTP port; every tool call still needs the OAuth
+login above. `LOG_TO_FILE=false` because Cloud Run's filesystem is in-memory and stdout already
+lands in Cloud Logging. The MCP endpoint for ChatGPT / Claude is then
+`https://familyfux-mcp-<PROJECT_NUMBER>.europe-west1.run.app/mcp` with **OAuth** as the
+authentication method. Re-run the deploy command for a new version; the secret stays.
+
 ## Logs
 
 Every OAuth login and MCP request/tool-call is logged to `logs/mcp.log` (one JSON line per
-event) and to the console. `tail -f logs/mcp.log` to watch live while testing.
+event) and to the console. `tail -f logs/mcp.log` to watch live while testing. `LOG_TO_FILE=false`
+keeps it on the console only (Cloud Run).

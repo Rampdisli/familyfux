@@ -1,6 +1,5 @@
-import { randomBytes, randomUUID } from 'node:crypto';
 import type { Response } from 'express';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type Session } from '@supabase/supabase-js';
 import { InvalidGrantError, InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import type {
   AuthorizationParams,
@@ -13,229 +12,310 @@ import type {
   OAuthTokenRevocationRequest,
   OAuthTokens,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
+import { createSealer, fingerprint, type Sealer } from './sealed.js';
 
-interface PendingAuthorization {
-  client: OAuthClientInformationFull;
-  params: AuthorizationParams;
+// Token kinds (bound into the ciphertext, see sealed.ts) and their lifetimes.
+const KIND_CLIENT = 'client';
+const KIND_LOGIN = 'login';
+const KIND_CODE = 'code';
+const KIND_ACCESS = 'access';
+const KIND_REFRESH = 'refresh';
+
+const LOGIN_TTL = 10 * 60;
+const CODE_TTL = 5 * 60;
+const ACCESS_TTL = 60 * 60;
+const REFRESH_TTL = 30 * 24 * 60 * 60;
+
+/** The registration fields the auth router actually checks; keeps client ids short. */
+const CLIENT_FIELDS = [
+  'redirect_uris',
+  'client_name',
+  'client_secret',
+  'client_secret_expires_at',
+  'client_id_issued_at',
+  'token_endpoint_auth_method',
+  'grant_types',
+  'response_types',
+  'scope',
+] as const satisfies readonly (keyof OAuthClientInformationFull)[];
+
+/** Payload of a login request (the hidden `request_id` of the login form). */
+interface LoginPayload extends Record<string, unknown> {
+  c: string; // client_id
+  p: {
+    state?: string;
+    scopes?: string[];
+    codeChallenge: string;
+    redirectUri: string;
+    resource?: string;
+  };
 }
 
-interface SupabaseSession {
-  userId: string;
-  email: string;
-  accessToken: string;
-  refreshToken: string;
+/** Payload of an authorization code. */
+interface CodePayload extends Record<string, unknown> {
+  c: string; // fingerprint(client_id)
+  ch: string; // PKCE code challenge
+  r: string; // redirect URI the code was issued for
+  s: string[]; // scopes
+  rt: string; // Supabase refresh token of the freshly signed-in session
 }
 
-interface IssuedToken {
-  clientId: string;
-  scopes: string[];
-  expiresAt: number;
-  refreshToken: string;
-  supabase: SupabaseSession;
+/** Payload of an access token. */
+interface AccessPayload extends Record<string, unknown> {
+  c: string; // fingerprint(client_id)
+  s: string[];
+  u: string; // Supabase user id
+  e: string; // email
+  at: string; // Supabase access token (JWT) for RLS-scoped queries
 }
 
-class InMemoryClientsStore implements OAuthRegisteredClientsStore {
-  private readonly clients = new Map<string, OAuthClientInformationFull>();
+/** Payload of a refresh token. */
+interface RefreshPayload extends Record<string, unknown> {
+  c: string; // fingerprint(client_id)
+  s: string[];
+  rt: string; // Supabase refresh token
+}
+
+/**
+ * Client "store" without storage: the client id *is* the registration,
+ * sealed. Dynamic registration therefore works across restarts and instances.
+ */
+class SealedClientsStore implements OAuthRegisteredClientsStore {
+  constructor(private readonly sealer: Sealer) {}
 
   getClient(clientId: string): OAuthClientInformationFull | undefined {
-    return this.clients.get(clientId);
+    const stored = this.sealer.open<Record<string, unknown>>(KIND_CLIENT, clientId);
+    if (!stored) {
+      return undefined;
+    }
+    return { ...stored, client_id: clientId } as OAuthClientInformationFull;
   }
 
   registerClient(
     client: Omit<OAuthClientInformationFull, 'client_id' | 'client_id_issued_at'>,
   ): OAuthClientInformationFull {
-    const full: OAuthClientInformationFull = {
-      ...client,
-      client_id: randomUUID(),
-      client_id_issued_at: Math.floor(Date.now() / 1000),
-    };
-    this.clients.set(full.client_id, full);
-    return full;
+    const issuedAt = Math.floor(Date.now() / 1000);
+    const full = { ...client, client_id_issued_at: issuedAt } as Omit<OAuthClientInformationFull, 'client_id'>;
+
+    const stored: Record<string, unknown> = {};
+    for (const field of CLIENT_FIELDS) {
+      if (full[field] !== undefined) {
+        stored[field] = full[field];
+      }
+    }
+    // Client ids do not expire; a confidential client's secret expiry is
+    // checked by the SDK's client authentication from the stored field.
+    const clientId = this.sealer.seal(KIND_CLIENT, stored);
+    return { ...full, client_id: clientId };
   }
 }
 
 /**
- * OAuth 2.1 authorization server that sits in front of the `create_task` tool.
- * Instead of a fixed service account baked into `.env`, every MCP client
- * (ChatGPT, Claude, ...) goes through a real login screen — email/password
- * checked against Supabase Auth — and is issued a token tied to that user's
- * own Supabase session, so the existing `tasks` RLS policies keep applying
- * per-client instead of a single shared credential.
+ * OAuth 2.1 authorization server in front of the MCP tools, backed by
+ * Supabase Auth and otherwise stateless.
+ *
+ * Every MCP client (ChatGPT, Claude, ...) goes through a real login screen —
+ * email/password checked against Supabase Auth — and is issued tokens tied to
+ * that user's own Supabase session, so the family tables' RLS policies apply
+ * per signed-in account instead of one shared credential.
+ *
+ * Nothing is kept in memory or on disk between requests: client ids, login
+ * requests, authorization codes, access and refresh tokens are all sealed
+ * (encrypted + authenticated) with TOKEN_SECRET and carry their own state.
+ * Consequences:
+ * - restarts, redeploys and scale-to-zero (Cloud Run) do not log anyone out;
+ * - an authorization code can be exchanged only once in practice, because
+ *   exchanging it consumes the Supabase refresh token inside it;
+ * - revoking a token ends its Supabase session, so its refresh token stops
+ *   working at once, while the access token stays valid until it expires
+ *   (at most one hour).
  */
 export class SupabaseOAuthProvider implements OAuthServerProvider {
-  readonly clientsStore = new InMemoryClientsStore();
-
-  private readonly pending = new Map<string, PendingAuthorization>();
-  private readonly codes = new Map<string, PendingAuthorization & { supabase: SupabaseSession }>();
-  private readonly tokens = new Map<string, IssuedToken>();
-  private readonly tokensByRefreshToken = new Map<string, string>();
+  private readonly sealer: Sealer;
+  readonly clientsStore: SealedClientsStore;
 
   constructor(
     private readonly supabaseUrl: string,
     private readonly supabaseAnonKey: string,
-  ) {}
+    tokenSecret: string,
+  ) {
+    this.sealer = createSealer(tokenSecret);
+    this.clientsStore = new SealedClientsStore(this.sealer);
+  }
 
   async authorize(
     client: OAuthClientInformationFull,
     params: AuthorizationParams,
     res: Response,
   ): Promise<void> {
-    const requestId = randomUUID();
-    this.pending.set(requestId, { client, params });
+    const payload: LoginPayload = {
+      c: client.client_id,
+      p: {
+        state: params.state,
+        scopes: params.scopes,
+        codeChallenge: params.codeChallenge,
+        redirectUri: params.redirectUri,
+        resource: params.resource?.href,
+      },
+    };
+    const requestId = this.sealer.seal(KIND_LOGIN, payload, LOGIN_TTL);
     res.type('html').send(renderLoginPage(requestId, client.client_name));
   }
 
   async challengeForAuthorizationCode(
-    _client: OAuthClientInformationFull,
+    client: OAuthClientInformationFull,
     authorizationCode: string,
   ): Promise<string> {
-    const entry = this.codes.get(authorizationCode);
-    if (!entry) {
-      throw new InvalidGrantError('Unknown authorization code');
-    }
-    return entry.params.codeChallenge;
+    return this.openCode(client, authorizationCode).ch;
   }
 
   async exchangeAuthorizationCode(
     client: OAuthClientInformationFull,
     authorizationCode: string,
+    _codeVerifier?: string,
+    redirectUri?: string,
   ): Promise<OAuthTokens> {
-    const entry = this.codes.get(authorizationCode);
-    if (!entry) {
-      throw new InvalidGrantError('Unknown authorization code');
+    const code = this.openCode(client, authorizationCode);
+    if (redirectUri !== undefined && redirectUri !== code.r) {
+      throw new InvalidGrantError('redirect_uri does not match the authorization request');
     }
-    if (entry.client.client_id !== client.client_id) {
-      throw new InvalidGrantError('Authorization code was not issued to this client');
-    }
-
-    this.codes.delete(authorizationCode);
-    return this.issueTokens(client, entry.params.scopes ?? [], entry.supabase);
+    // Turning the code's refresh token into a session also spends it, so a
+    // replayed code fails here.
+    const session = await this.refreshSupabaseSession(code.rt);
+    return this.issueTokens(client, code.s, session);
   }
 
   async exchangeRefreshToken(client: OAuthClientInformationFull, refreshToken: string): Promise<OAuthTokens> {
-    const accessToken = this.tokensByRefreshToken.get(refreshToken);
-    const record = accessToken ? this.tokens.get(accessToken) : undefined;
-
-    if (!record || record.clientId !== client.client_id) {
+    const record = this.sealer.open<RefreshPayload>(KIND_REFRESH, refreshToken);
+    if (!record || record.c !== fingerprint(client.client_id)) {
       throw new InvalidGrantError('Invalid refresh token');
     }
-
-    const supabase = createClient(this.supabaseUrl, this.supabaseAnonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data, error } = await supabase.auth.refreshSession({
-      refresh_token: record.supabase.refreshToken,
-    });
-
-    if (error || !data.session) {
-      throw new InvalidGrantError(`Supabase session could not be refreshed: ${error?.message}`);
-    }
-
-    this.tokens.delete(accessToken!);
-    this.tokensByRefreshToken.delete(refreshToken);
-
-    return this.issueTokens(client, record.scopes, {
-      userId: data.session.user.id,
-      email: data.session.user.email ?? record.supabase.email,
-      accessToken: data.session.access_token,
-      refreshToken: data.session.refresh_token,
-    });
+    const session = await this.refreshSupabaseSession(record.rt);
+    return this.issueTokens(client, record.s, session);
   }
 
   async verifyAccessToken(token: string): Promise<AuthInfo> {
-    const record = this.tokens.get(token);
-    if (!record || record.expiresAt < Date.now()) {
+    const record = this.sealer.open<AccessPayload>(KIND_ACCESS, token);
+    if (!record) {
       throw new InvalidTokenError('Invalid or expired access token');
     }
-
     return {
       token,
-      clientId: record.clientId,
-      scopes: record.scopes,
-      expiresAt: Math.floor(record.expiresAt / 1000),
+      // The sealed client id is long; tokens carry its fingerprint instead.
+      clientId: record.c,
+      scopes: record.s,
+      expiresAt: record.exp,
       extra: {
-        supabaseUserId: record.supabase.userId,
-        supabaseEmail: record.supabase.email,
-        supabaseAccessToken: record.supabase.accessToken,
+        supabaseUserId: record.u,
+        supabaseEmail: record.e,
+        supabaseAccessToken: record.at,
       },
     };
   }
 
-  async revokeToken(_client: OAuthClientInformationFull, request: OAuthTokenRevocationRequest): Promise<void> {
-    if (this.tokens.has(request.token)) {
-      const record = this.tokens.get(request.token)!;
-      this.tokens.delete(request.token);
-      this.tokensByRefreshToken.delete(record.refreshToken);
-      return;
-    }
-
-    const accessToken = this.tokensByRefreshToken.get(request.token);
-    if (accessToken) {
-      this.tokens.delete(accessToken);
-      this.tokensByRefreshToken.delete(request.token);
+  async revokeToken(client: OAuthClientInformationFull, request: OAuthTokenRevocationRequest): Promise<void> {
+    const clientFingerprint = fingerprint(client.client_id);
+    try {
+      const access = this.sealer.open<AccessPayload>(KIND_ACCESS, request.token);
+      if (access) {
+        if (access.c === clientFingerprint) {
+          // Ends this Supabase session: its refresh token stops working now,
+          // the access token itself runs out within the hour.
+          await this.authClient().auth.admin.signOut(access.at, 'local');
+        }
+        return;
+      }
+      const refresh = this.sealer.open<RefreshPayload>(KIND_REFRESH, request.token);
+      if (refresh && refresh.c === clientFingerprint) {
+        const session = await this.refreshSupabaseSession(refresh.rt);
+        await this.authClient().auth.admin.signOut(session.access_token, 'local');
+      }
+    } catch {
+      // Per spec, revoking an unknown or already revoked token is a no-op.
     }
   }
 
   /** Called by the app's POST /login route once the login form is submitted. */
   async completeLogin(requestId: string, email: string, password: string): Promise<string> {
-    const pending = this.pending.get(requestId);
-    if (!pending) {
+    const login = this.sealer.open<LoginPayload>(KIND_LOGIN, requestId);
+    if (!login) {
       throw new Error('Anmelde-Sitzung abgelaufen. Bitte den Connector erneut verbinden.');
     }
 
-    const supabase = createClient(this.supabaseUrl, this.supabaseAnonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
+    const { data, error } = await this.authClient().auth.signInWithPassword({ email, password });
     if (error || !data.session) {
       throw new Error(error?.message ?? 'Anmeldung fehlgeschlagen');
     }
 
-    this.pending.delete(requestId);
+    const payload: CodePayload = {
+      c: fingerprint(login.c),
+      ch: login.p.codeChallenge,
+      r: login.p.redirectUri,
+      s: login.p.scopes ?? [],
+      rt: data.session.refresh_token,
+    };
+    const code = this.sealer.seal(KIND_CODE, payload, CODE_TTL);
 
-    const code = randomUUID();
-    this.codes.set(code, {
-      ...pending,
-      supabase: {
-        userId: data.session.user.id,
-        email: data.session.user.email ?? email,
-        accessToken: data.session.access_token,
-        refreshToken: data.session.refresh_token,
-      },
-    });
-
-    const redirectUrl = new URL(pending.params.redirectUri);
+    const redirectUrl = new URL(login.p.redirectUri);
     redirectUrl.searchParams.set('code', code);
-    if (pending.params.state !== undefined) {
-      redirectUrl.searchParams.set('state', pending.params.state);
+    if (login.p.state !== undefined) {
+      redirectUrl.searchParams.set('state', login.p.state);
     }
     return redirectUrl.href;
   }
 
-  private issueTokens(
-    client: OAuthClientInformationFull,
-    scopes: string[],
-    supabase: SupabaseSession,
-  ): OAuthTokens {
-    const accessToken = randomBytes(32).toString('hex');
-    const refreshToken = randomBytes(32).toString('hex');
-    const expiresIn = 3600;
+  private openCode(client: OAuthClientInformationFull, authorizationCode: string): CodePayload {
+    const code = this.sealer.open<CodePayload>(KIND_CODE, authorizationCode);
+    if (!code) {
+      throw new InvalidGrantError('Unknown or expired authorization code');
+    }
+    if (code.c !== fingerprint(client.client_id)) {
+      throw new InvalidGrantError('Authorization code was not issued to this client');
+    }
+    return code;
+  }
 
-    this.tokens.set(accessToken, {
-      clientId: client.client_id,
-      scopes,
-      expiresAt: Date.now() + expiresIn * 1000,
-      refreshToken,
-      supabase,
+  private authClient() {
+    return createClient(this.supabaseUrl, this.supabaseAnonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
-    this.tokensByRefreshToken.set(refreshToken, accessToken);
+  }
+
+  private async refreshSupabaseSession(refreshToken: string): Promise<Session> {
+    const { data, error } = await this.authClient().auth.refreshSession({ refresh_token: refreshToken });
+    if (error || !data.session) {
+      throw new InvalidGrantError(`Supabase session could not be refreshed: ${error?.message ?? 'no session'}`);
+    }
+    return data.session;
+  }
+
+  private issueTokens(client: OAuthClientInformationFull, scopes: string[], session: Session): OAuthTokens {
+    const clientFingerprint = fingerprint(client.client_id);
+    const now = Math.floor(Date.now() / 1000);
+    // Never outlive the Supabase JWT inside, which the tools use for RLS.
+    const expiresIn = Math.max(
+      60,
+      Math.min(ACCESS_TTL, session.expires_at !== undefined ? session.expires_at - now - 30 : ACCESS_TTL),
+    );
+
+    const access: AccessPayload = {
+      c: clientFingerprint,
+      s: scopes,
+      u: session.user.id,
+      e: session.user.email ?? '',
+      at: session.access_token,
+    };
+    const refresh: RefreshPayload = {
+      c: clientFingerprint,
+      s: scopes,
+      rt: session.refresh_token,
+    };
 
     return {
-      access_token: accessToken,
+      access_token: this.sealer.seal(KIND_ACCESS, access, expiresIn),
       token_type: 'bearer',
       expires_in: expiresIn,
-      refresh_token: refreshToken,
+      refresh_token: this.sealer.seal(KIND_REFRESH, refresh, REFRESH_TTL),
       scope: scopes.join(' '),
     };
   }

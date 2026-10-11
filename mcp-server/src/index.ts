@@ -16,9 +16,16 @@ import { copyImage, isOwnImage, readRecipePage, RECIPE_IMAGES_BUCKET } from './r
 import { registerRewardTools } from './rewards.js';
 
 const { SUPABASE_URL, SUPABASE_ANON_KEY, PUBLIC_URL, PORT } = process.env;
+const TOKEN_SECRET = process.env.TOKEN_SECRET?.trim();
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !PUBLIC_URL) {
   throw new Error('Missing SUPABASE_URL, SUPABASE_ANON_KEY or PUBLIC_URL in .env');
+}
+if (!TOKEN_SECRET) {
+  throw new Error(
+    'Missing TOKEN_SECRET in .env (random, at least 32 characters; e.g. `openssl rand -base64 48`). ' +
+      'It seals the OAuth tokens; changing it logs every connected MCP client out.',
+  );
 }
 
 const supabaseUrl: string = SUPABASE_URL;
@@ -195,7 +202,7 @@ function sameRecipeUrl(a: string | null, b: string | null): boolean {
   return !!a && !!b && normalize(a) === normalize(b);
 }
 
-const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
+const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey, TOKEN_SECRET);
 
 /**
  * Builds a Supabase client scoped to one signed-in MCP client's own session
