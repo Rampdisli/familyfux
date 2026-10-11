@@ -26,15 +26,23 @@ const supabaseAnonKey: string = SUPABASE_ANON_KEY;
 const publicUrl = new URL(PUBLIC_URL);
 const mcpUrl = new URL('/mcp', publicUrl);
 
+// LOG_TO_FILE=false keeps the log on stdout only. On Cloud Run the filesystem
+// is in-memory and counts against the instance's RAM, and stdout already lands
+// in Cloud Logging.
+const logToFile = process.env.LOG_TO_FILE !== 'false';
 const logDir = path.join(import.meta.dirname, '..', 'logs');
-await mkdir(logDir, { recursive: true });
 const logFile = path.join(logDir, 'mcp.log');
+if (logToFile) {
+  await mkdir(logDir, { recursive: true });
+}
 
-/** Logs every MCP/OAuth event to the console and to logs/mcp.log. */
+/** Logs every MCP/OAuth event to the console and (unless disabled) to logs/mcp.log. */
 async function logEvent(event: Record<string, unknown>): Promise<void> {
   const line = JSON.stringify({ timestamp: new Date().toISOString(), ...event });
   console.log(line);
-  await appendFile(logFile, line + '\n');
+  if (logToFile) {
+    await appendFile(logFile, line + '\n');
+  }
 }
 
 /** Tile colours of the task pool, same as in the Angular app (`PoolColor`). */
