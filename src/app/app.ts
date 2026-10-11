@@ -36,6 +36,14 @@ export class App {
     return item.path === '/belohnungen' && this.pool.isParent() ? this.rewards.open().length : 0;
   }
 
+  /**
+   * Full page reload. The app is mostly used from the home screen, where there
+   * is no browser reload button; this also picks up a freshly deployed version.
+   */
+  protected reload(): void {
+    window.location.reload();
+  }
+
   protected signOut(): void {
     // Auth navigates to /login on SIGNED_OUT.
     void this.auth.signOut();
