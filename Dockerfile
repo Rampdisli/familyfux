@@ -35,9 +35,14 @@ LABEL org.opencontainers.image.title="Familyfux" \
 ENV PORT=8080 \
     NGINX_ENVSUBST_FILTER='^PORT$'
 COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
-# Executable bit comes from git (mode 100755); no --chmod so the file also
-# builds on Docker's classic builder (Cloud Build without BuildKit).
+# The entrypoint silently skips this script unless it is executable, and the
+# build context may lose the bit (Windows checkout uploaded by `gcloud run
+# deploy --source`). An explicit chmod works on BuildKit and the classic
+# builder alike; COPY --chmod would need BuildKit. Needs root briefly.
+USER root
 COPY docker/30-familyfux-config.sh /docker-entrypoint.d/30-familyfux-config.sh
+RUN chmod 755 /docker-entrypoint.d/30-familyfux-config.sh
+USER nginx
 # --chown so the startup script can overwrite it with the BASE_HREF rewrite.
 COPY --chown=nginx:nginx docker/base-href.conf /etc/nginx/familyfux-base-href.conf
 
