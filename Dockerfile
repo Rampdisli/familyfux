@@ -28,8 +28,16 @@ LABEL org.opencontainers.image.title="Familyfux" \
       org.opencontainers.image.source="https://github.com/Rampdisli/familyfux" \
       org.opencontainers.image.version="${VERSION}"
 
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --chmod=755 docker/30-familyfux-config.sh /docker-entrypoint.d/30-familyfux-config.sh
+# Listen port. Cloud Run injects PORT per instance (its default is 8080 too);
+# everywhere else the default below applies. The entrypoint's envsubst step
+# renders /etc/nginx/templates/*.template into /etc/nginx/conf.d/ on every
+# start, and the filter keeps it from touching nginx's own $variables.
+ENV PORT=8080 \
+    NGINX_ENVSUBST_FILTER='^PORT$'
+COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
+# Executable bit comes from git (mode 100755); no --chmod so the file also
+# builds on Docker's classic builder (Cloud Build without BuildKit).
+COPY docker/30-familyfux-config.sh /docker-entrypoint.d/30-familyfux-config.sh
 # --chown so the startup script can overwrite it with the BASE_HREF rewrite.
 COPY --chown=nginx:nginx docker/base-href.conf /etc/nginx/familyfux-base-href.conf
 
@@ -37,4 +45,5 @@ COPY --chown=nginx:nginx docker/base-href.conf /etc/nginx/familyfux-base-href.co
 # rewrite config.js and index.html (base href) in place.
 COPY --from=build --chown=nginx:nginx /app/dist/familyfux/browser /usr/share/nginx/html
 
+# Documentation only; the actual port is $PORT (see above).
 EXPOSE 8080

@@ -189,6 +189,11 @@ env vars, and `index.html` loads that file before the bundle:
 | `SUPABASE_URL` | yes | `https://aenkarrgedrcnqxpakam.supabase.co` |
 | `SUPABASE_ANON_KEY` | yes | `sb_publishable_...` |
 | `BASE_HREF` | no, default `/` | `/familyfux` |
+| `PORT` | no, default `8080` | `8080` |
+
+`PORT` is the port nginx listens on inside the container. Cloud Run sets it per instance
+(see [Google Cloud Run](#google-cloud-run-free-tier)); on the NAS and with docker compose the
+default applies. `docker/nginx.conf.template` is rendered with it on every start.
 
 If either Supabase variable is missing the container exits at startup with an error instead
 of serving a broken app. So the same image can be pointed at a different Supabase project
@@ -241,6 +246,54 @@ Building and pushing by hand instead, without the workflow:
 docker buildx build --platform linux/amd64,linux/arm64 \
   -t ghcr.io/rampdisli/familyfux-app:latest --push .
 ```
+
+### Google Cloud Run (free tier)
+
+The same image runs on [Cloud Run](https://cloud.google.com/run) without changes: Cloud Run
+hands the container a `PORT`, nginx listens on it, and the Supabase values come in as env
+vars like everywhere else. For a family-sized app this stays inside the
+[always-free tier](https://cloud.google.com/run/pricing) (per month: 2 million requests,
+180 000 vCPU-seconds, 360 000 GiB-seconds, 1 GB egress), provided the service
+
+- runs in a **Tier 1 region** — `europe-west1` (Belgium) is the closest one; Frankfurt
+  (`europe-west3`) and Zurich (`europe-west6`) are Tier 2 and are billed from the first
+  request,
+- keeps **request-based billing** (the default: CPU is only allocated while a request is in
+  flight) with `--min-instances 0`, so an idle service costs nothing, and
+- caps `--max-instances` at `1`, so a traffic spike or a bug cannot fan out.
+
+Google still requires a billing account on the project; a
+[budget alert](https://cloud.google.com/billing/docs/how-to/budgets) at a few euros is cheap
+insurance.
+
+One-time setup, then deploy straight from the checkout (Cloud Build builds the `Dockerfile`
+and stores the image in Artifact Registry, both well inside their own free quotas;
+`.gcloudignore` keeps the upload down to what the build needs):
+
+```bash
+gcloud auth login
+gcloud config set project <PROJECT_ID>
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+
+gcloud run deploy familyfux \
+  --source . \
+  --region europe-west1 \
+  --allow-unauthenticated \
+  --memory 128Mi --cpu 1 \
+  --min-instances 0 --max-instances 1 \
+  --set-env-vars SUPABASE_URL=https://xxxxxxxx.supabase.co,SUPABASE_ANON_KEY=sb_publishable_...
+```
+
+The command prints the service URL (`https://familyfux-....run.app`, HTTPS included). Add it
+to *Authentication → URL Configuration* in the Supabase dashboard so the auth redirects work,
+and re-run the same command to roll out a new version. Do **not** set `BASE_HREF`: Cloud Run
+serves the app at the root of its URL.
+
+Each deploy leaves the previous image in Artifact Registry (free up to 0.5 GB, roughly 20
+images of this size). A
+[cleanup policy](https://cloud.google.com/artifact-registry/docs/repositories/cleanup-policy)
+on the `cloud-run-source-deploy` repository, or deleting old images now and then, keeps that
+free too.
 
 ## Running unit tests
 
