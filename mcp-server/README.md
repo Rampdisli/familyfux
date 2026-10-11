@@ -159,6 +159,10 @@ always-free tier for family use (the same conditions as for the app: a Tier 1 re
 [root README](../README.md#google-cloud-run-free-tier)). Because the server is stateless, an
 instance that is shut down after idling costs nothing and nobody has to log in again.
 
+Like the app, the service is connected to the GitHub repository: every push to `main` builds
+`mcp-server/Dockerfile` and deploys it; env vars and the secret carry over between revisions.
+The one-time setup below creates the service, its secret and the env vars by hand.
+
 The service URL is deterministic, so `PUBLIC_URL` can be set on the very first deploy:
 `https://<SERVICE>-<PROJECT_NUMBER>.<REGION>.run.app`. The Cloud Run APIs must already be
 enabled and the Compute Engine default service account must have the *Cloud Run Builder* role
@@ -189,7 +193,7 @@ gcloud run deploy familyfux-mcp \
 login above. `LOG_TO_FILE=false` because Cloud Run's filesystem is in-memory and stdout already
 lands in Cloud Logging. The MCP endpoint for ChatGPT / Claude is then
 `https://familyfux-mcp-<PROJECT_NUMBER>.europe-west1.run.app/mcp` with **OAuth** as the
-authentication method. Re-run the deploy command for a new version; the secret stays.
+authentication method. New versions arrive with the next push to `main`; the secret stays.
 
 ## Logs
 

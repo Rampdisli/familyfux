@@ -266,9 +266,14 @@ Google still requires a billing account on the project; a
 [budget alert](https://cloud.google.com/billing/docs/how-to/budgets) at a few euros is cheap
 insurance.
 
-One-time setup, then deploy straight from the checkout (Cloud Build builds the `Dockerfile`
-and stores the image in Artifact Registry, both well inside their own free quotas;
-`.gcloudignore` keeps the upload down to what the build needs):
+**Deploys are automatic.** Both Cloud Run services are connected to this GitHub repository
+(*Cloud Run → service → Set up continuous deployment*): every push to `main` has Cloud Build
+build the `Dockerfile` (app) and `mcp-server/Dockerfile` (MCP server) and roll the new revision
+out. Env vars and secrets carry over from the previous revision, so nothing has to be set again.
+Cloud Build (2 500 build-minutes/month) and Artifact Registry (0.5 GB) stay inside their free
+quotas for this; `.gcloudignore` keeps the source upload down to what the build needs.
+
+The first deploy, or one from a laptop without going through `main`, works by hand too:
 
 ```bash
 gcloud auth login
@@ -284,10 +289,9 @@ gcloud run deploy familyfux \
   --set-env-vars SUPABASE_URL=https://xxxxxxxx.supabase.co,SUPABASE_ANON_KEY=sb_publishable_...
 ```
 
-The command prints the service URL (`https://familyfux-....run.app`, HTTPS included). Add it
-to *Authentication → URL Configuration* in the Supabase dashboard so the auth redirects work,
-and re-run the same command to roll out a new version. Do **not** set `BASE_HREF`: Cloud Run
-serves the app at the root of its URL.
+The command prints the service URL (`https://familyfux-<PROJECT_NUMBER>.europe-west1.run.app`,
+HTTPS included). Add it to *Authentication → URL Configuration* in the Supabase dashboard so the
+auth redirects work. Do **not** set `BASE_HREF`: Cloud Run serves the app at the root of its URL.
 
 The MCP server deploys the same way as a second service, see
 [mcp-server/README.md](mcp-server/README.md#deploying-to-google-cloud-run-free-tier).
