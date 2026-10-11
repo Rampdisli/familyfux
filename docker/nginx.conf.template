@@ -1,7 +1,14 @@
-# Serves the compiled Angular app as a SPA. Port 8080 because the image runs
-# as a non-root user, which may not bind to 80.
+# Serves the compiled Angular app as a SPA.
+#
+# This is an nginx *template*: the image's entrypoint runs envsubst on it at
+# container start and writes the result to /etc/nginx/conf.d/default.conf.
+# Only the PORT variable is substituted (NGINX_ENVSUBST_FILTER in the Dockerfile), so the
+# nginx variables below ($uri, ...) pass through untouched.
+#
+# PORT defaults to 8080 in the Dockerfile; Cloud Run (and similar platforms)
+# override it per instance. Non-root user, so it may not bind to 80 anyway.
 server {
-    listen       8080;
+    listen       ${PORT};
     server_name  _;
 
     root  /usr/share/nginx/html;

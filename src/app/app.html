@@ -32,6 +32,9 @@
           >{{ admin.isActive ? '👪' : '🔒' }}</a
         >
       }
+      <button type="button" class="icon-btn" title="Neu laden" aria-label="Neu laden" (click)="reload()">
+        🔄
+      </button>
       <button type="button" class="icon-btn" title="Abmelden" aria-label="Abmelden" (click)="signOut()">
         👋
       </button>

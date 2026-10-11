@@ -16,9 +16,16 @@ import { copyImage, isOwnImage, readRecipePage, RECIPE_IMAGES_BUCKET } from './r
 import { registerRewardTools } from './rewards.js';
 
 const { SUPABASE_URL, SUPABASE_ANON_KEY, PUBLIC_URL, PORT } = process.env;
+const TOKEN_SECRET = process.env.TOKEN_SECRET?.trim();
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !PUBLIC_URL) {
   throw new Error('Missing SUPABASE_URL, SUPABASE_ANON_KEY or PUBLIC_URL in .env');
+}
+if (!TOKEN_SECRET) {
+  throw new Error(
+    'Missing TOKEN_SECRET in .env (random, at least 32 characters; e.g. `openssl rand -base64 48`). ' +
+      'It seals the OAuth tokens; changing it logs every connected MCP client out.',
+  );
 }
 
 const supabaseUrl: string = SUPABASE_URL;
@@ -26,15 +33,23 @@ const supabaseAnonKey: string = SUPABASE_ANON_KEY;
 const publicUrl = new URL(PUBLIC_URL);
 const mcpUrl = new URL('/mcp', publicUrl);
 
+// LOG_TO_FILE=false keeps the log on stdout only. On Cloud Run the filesystem
+// is in-memory and counts against the instance's RAM, and stdout already lands
+// in Cloud Logging.
+const logToFile = process.env.LOG_TO_FILE !== 'false';
 const logDir = path.join(import.meta.dirname, '..', 'logs');
-await mkdir(logDir, { recursive: true });
 const logFile = path.join(logDir, 'mcp.log');
+if (logToFile) {
+  await mkdir(logDir, { recursive: true });
+}
 
-/** Logs every MCP/OAuth event to the console and to logs/mcp.log. */
+/** Logs every MCP/OAuth event to the console and (unless disabled) to logs/mcp.log. */
 async function logEvent(event: Record<string, unknown>): Promise<void> {
   const line = JSON.stringify({ timestamp: new Date().toISOString(), ...event });
   console.log(line);
-  await appendFile(logFile, line + '\n');
+  if (logToFile) {
+    await appendFile(logFile, line + '\n');
+  }
 }
 
 /** Tile colours of the task pool, same as in the Angular app (`PoolColor`). */
@@ -187,7 +202,7 @@ function sameRecipeUrl(a: string | null, b: string | null): boolean {
   return !!a && !!b && normalize(a) === normalize(b);
 }
 
-const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey);
+const authProvider = new SupabaseOAuthProvider(supabaseUrl, supabaseAnonKey, TOKEN_SECRET);
 
 /**
  * Builds a Supabase client scoped to one signed-in MCP client's own session

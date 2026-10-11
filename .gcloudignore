@@ -1,0 +1,27 @@
+# Upload filter for `gcloud run deploy --source .` (Cloud Build gets only what
+# the Dockerfile needs). Mirrors .dockerignore; the build itself still applies
+# .dockerignore on top.
+.gcloudignore
+.git
+.github
+.claude
+.vscode
+.idea
+node_modules
+dist
+out-tsc
+coverage
+.angular
+__screenshots__
+*.log
+.DS_Store
+**/.DS_Store
+.env
+.env.*
+
+mcp-server
+supabase
+design
+README.md
+TODO.md
+docker-compose*.yml

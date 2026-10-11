@@ -1,0 +1,14 @@
+# Upload filter for `gcloud run deploy --source .` run inside mcp-server/.
+# Mirrors .dockerignore; the build applies .dockerignore on top.
+.gcloudignore
+.gitignore
+node_modules
+dist
+logs
+.env
+.env.*
+npm-debug.log
+README.md
+docker-compose*.yml
+scripts
+tsconfig.scripts.json
