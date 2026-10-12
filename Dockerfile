@@ -20,6 +20,34 @@ COPY public ./public
 COPY src ./src
 RUN npm run build
 
+# version.json next to the bundle: package.json version, the commit and the
+# build time. The container start folds it into config.js (window.__env.build)
+# for the footer. The commit comes from the COMMIT_SHA build arg (the GitHub
+# workflow passes github.sha); without one it is read from the checkout's own
+# .git (Cloud Build's trigger clones the repo; .dockerignore lets HEAD and the
+# refs through), and stays empty when neither is there (`gcloud run deploy
+# --source` uploads without .git).
+ARG COMMIT_SHA=
+# package.json is only there so the COPY has a match when .git is absent
+# (a COPY whose sources all match nothing fails the build).
+COPY package.json .gi[t] ./gitmeta/
+RUN commit="$COMMIT_SHA"; \
+    if [ -z "$commit" ] && [ -f gitmeta/HEAD ]; then \
+      head=$(cat gitmeta/HEAD); \
+      case "$head" in \
+        ref:*) ref=${head#ref: }; \
+               if [ -f "gitmeta/$ref" ]; then commit=$(cat "gitmeta/$ref"); \
+               elif [ -f gitmeta/packed-refs ]; then commit=$(grep " $ref\$" gitmeta/packed-refs | cut -d' ' -f1); fi ;; \
+        *)     commit=$head ;; \
+      esac; \
+    fi; \
+    node -e "require('fs').writeFileSync('dist/familyfux/browser/version.json', JSON.stringify({ \
+      version: require('./package.json').version, \
+      commit: process.argv[1].trim().slice(0, 7), \
+      builtAt: new Date().toISOString(), \
+    }))" "$commit" \
+    && cat dist/familyfux/browser/version.json && echo
+
 # ---------- serve the static bundle ----------
 FROM nginxinc/nginx-unprivileged:alpine AS runtime
 ARG VERSION=0.0.0

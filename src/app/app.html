@@ -55,4 +55,18 @@
 
 <main [class.with-nav]="auth.isAuthenticated()">
   <router-outlet />
+
+  @if (auth.isAuthenticated()) {
+    <footer class="version">
+      <span><span class="app-name">Fuxis Plan </span>v{{ build.version }}</span>
+      @if (build.commit) {
+        <span class="sep">·</span>
+        <a class="commit" [href]="commitUrl" target="_blank" rel="noopener" title="Commit auf GitHub">{{ build.commit }}</a>
+      }
+      @if (builtAt) {
+        <span class="sep">·</span>
+        <span>{{ builtAt }}</span>
+      }
+    </footer>
+  }
 </main>
