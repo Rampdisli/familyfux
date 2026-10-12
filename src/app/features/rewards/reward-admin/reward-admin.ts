@@ -44,7 +44,7 @@ export class RewardAdmin {
       const since = new Date();
       since.setDate(since.getDate() - HISTORY_DAYS);
       const { data, error } = await supabase
-        .from('reward_purchases')
+        .from('old_reward_purchases')
         .select(PURCHASE_COLUMNS)
         .gte('purchased_at', since.toISOString())
         .order('purchased_at', { ascending: false });

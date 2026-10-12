@@ -135,7 +135,7 @@ export class TaskPool {
 
       const [members, pool, stars, balances, repeatable, completions] = await Promise.all([
         supabase
-          .from('family_members')
+          .from('old_family_members')
           .select('id, family_id, user_id, name, emoji, color, role')
           .order('sort_order')
           .order('created_at'),
@@ -148,7 +148,7 @@ export class TaskPool {
         supabase.from('member_week_stars').select('member_id, stars'),
         supabase.from('member_balance').select('member_id, balance'),
         supabase
-          .from('tasks')
+          .from('old_tasks')
           .select('id, title, emoji, color, reward')
           .eq('is_repeatable', true)
           .is('archived_at', null)
@@ -159,7 +159,7 @@ export class TaskPool {
       // Participants of the entries currently in the pool.
       const claims = pool.data?.length
         ? await supabase
-            .from('task_claims')
+            .from('old_task_claims')
             .select('id, occurrence_id, member_id, is_done')
             .in('occurrence_id', pool.data.map((t) => t.id))
             // Parts a parent removed from the history (remove_done_entry).
@@ -270,27 +270,27 @@ export class TaskPool {
   /** Adds a participant; `done` for "has already done it". */
   join(occurrenceId: string, memberId: string, done = false): Promise<void> {
     return this.writeClaim(
-      supabase.from('task_claims').insert({ occurrence_id: occurrenceId, member_id: memberId, is_done: done }),
+      supabase.from('old_task_claims').insert({ occurrence_id: occurrenceId, member_id: memberId, is_done: done }),
     );
   }
 
   /** Steps out again (only while their part isn't done). */
   leave(claim: PoolClaim): Promise<void> {
-    return this.writeClaim(supabase.from('task_claims').delete().eq('id', claim.id));
+    return this.writeClaim(supabase.from('old_task_claims').delete().eq('id', claim.id));
   }
 
   toggleDone(claim: PoolClaim): Promise<void> {
-    return this.writeClaim(supabase.from('task_claims').update({ is_done: !claim.is_done }).eq('id', claim.id));
+    return this.writeClaim(supabase.from('old_task_claims').update({ is_done: !claim.is_done }).eq('id', claim.id));
   }
 
   /** One more "done" of a repeatable task, for the member who did it (earns them its stars). */
   complete(taskId: string, memberId: string): Promise<void> {
-    return this.writeClaim(supabase.from('task_completions').insert({ task_id: taskId, member_id: memberId }));
+    return this.writeClaim(supabase.from('old_task_completions').insert({ task_id: taskId, member_id: memberId }));
   }
 
   /** "Rückgängig": removes a completion again (only today's; the DB refuses older ones). */
   undoCompletion(completion: TodayCompletion): Promise<void> {
-    return this.writeClaim(supabase.from('task_completions').delete().eq('id', completion.id));
+    return this.writeClaim(supabase.from('old_task_completions').delete().eq('id', completion.id));
   }
 
   /** Creates a task (one-off, recurring or repeatable), optionally assigned to members. Resolves to an error message, if any. */
@@ -301,7 +301,7 @@ export class TaskPool {
     }
 
     // family_id comes from the tasks_before_write trigger, the first occurrence from tasks_after_insert.
-    const { data, error } = await supabase.from('tasks').insert({ ...input, user_id: userId }).select('id').single();
+    const { data, error } = await supabase.from('old_tasks').insert({ ...input, user_id: userId }).select('id').single();
     if (error) {
       this.data.reload();
       return error.message;
@@ -317,7 +317,7 @@ export class TaskPool {
     input: TaskInput,
     assignees: { add: string[]; remove: string[] },
   ): Promise<string | null> {
-    const updated = await supabase.from('tasks').update(input).eq('id', taskId);
+    const updated = await supabase.from('old_tasks').update(input).eq('id', taskId);
     if (updated.error) {
       this.data.reload();
       return updated.error.message;
@@ -325,7 +325,7 @@ export class TaskPool {
 
     if (assignees.remove.length) {
       const removed = await supabase
-        .from('task_assignees')
+        .from('old_task_assignees')
         .delete()
         .eq('task_id', taskId)
         .in('member_id', assignees.remove);
@@ -340,7 +340,7 @@ export class TaskPool {
 
   private assign(taskId: string, memberIds: string[]): PromiseLike<{ error: { message: string } | null }> {
     return memberIds.length
-      ? supabase.from('task_assignees').insert(memberIds.map((member_id) => ({ task_id: taskId, member_id })))
+      ? supabase.from('old_task_assignees').insert(memberIds.map((member_id) => ({ task_id: taskId, member_id })))
       : Promise.resolve({ error: null });
   }
 
@@ -348,7 +348,7 @@ export class TaskPool {
   setTaskArchived(taskId: string, archived: boolean): Promise<string | null> {
     return this.mutate(
       supabase
-        .from('tasks')
+        .from('old_tasks')
         .update({ archived_at: archived ? new Date().toISOString() : null })
         .eq('id', taskId),
     );
@@ -362,16 +362,16 @@ export class TaskPool {
     }
 
     return this.mutate(
-      supabase.from('family_members').insert({ ...draft, family_id: familyId, sort_order: this.family().length }),
+      supabase.from('old_family_members').insert({ ...draft, family_id: familyId, sort_order: this.family().length }),
     );
   }
 
   updateMember(id: string, draft: MemberDraft): Promise<string | null> {
-    return this.mutate(supabase.from('family_members').update(draft).eq('id', id));
+    return this.mutate(supabase.from('old_family_members').update(draft).eq('id', id));
   }
 
   removeMember(id: string): Promise<string | null> {
-    return this.mutate(supabase.from('family_members').delete().eq('id', id));
+    return this.mutate(supabase.from('old_family_members').delete().eq('id', id));
   }
 
   /** Links a member to the account with this email (kid logins); parents only. Resolves to an error message, if any. */

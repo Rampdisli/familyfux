@@ -4,9 +4,9 @@
 --   psql "$LOCAL_DB_URL" -f supabase/seed.sql
 -- (`supabase db reset` runs this file automatically.)
 
-insert into public.rewards (family_id, title, emoji, color, category, price, unit_amount, unit_label, description, max_quantity, sort_order)
+insert into public.old_rewards (family_id, title, emoji, color, category, price, unit_amount, unit_label, description, max_quantity, sort_order)
 select f.id, r.title, r.emoji, r.color, r.category, r.price, r.unit_amount, r.unit_label, r.description, r.max_quantity, r.sort_order
-from public.families f
+from public.old_families f
 cross join (
   values
     ('Tabletzeit',        '📱', 'peach', 'screen', 20,  5,    'Minuten', null,                  6, 0),
@@ -18,4 +18,4 @@ cross join (
     ('Filmabend',         '🎬', 'peach', 'fun',    60,  null, null,      'du wählst den Film',  1, 6),
     ('Ausflug wählen',    '🏞️', 'mint',  'fun',    150, null, null,      'am Wochenende',       1, 7)
 ) as r (title, emoji, color, category, price, unit_amount, unit_label, description, max_quantity, sort_order)
-where not exists (select 1 from public.rewards x where x.family_id = f.id);
+where not exists (select 1 from public.old_rewards x where x.family_id = f.id);

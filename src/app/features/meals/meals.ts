@@ -181,15 +181,15 @@ export class Meals {
 
       const [recipes, stats, ratings, wishes] = await Promise.all([
         supabase
-          .from('recipes')
+          .from('old_recipes')
           .select(
             'id, title, url, image_url, ingredients_available, created_at, ' +
-              'recipe_ingredients(id, position, quantity, name, original_quantity, original_name, status)',
+              'recipe_ingredients:old_recipe_ingredients(id, position, quantity, name, original_quantity, original_name, status)',
           )
           .order('title')
           .order('position', { referencedTable: 'recipe_ingredients' }),
         supabase.from('recipe_stats').select('recipe_id, cook_count, last_cooked_on'),
-        supabase.from('recipe_ratings').select('recipe_id, member_id, rating'),
+        supabase.from('old_recipe_ratings').select('recipe_id, member_id, rating'),
         supabase.from('recipe_wishes_today').select('recipe_id, member_id, wish_date'),
       ]);
 
@@ -242,12 +242,12 @@ export class Meals {
       const start = addDays(today(), params.offset * DAYS_PER_WEEK);
       const [meals, first] = await Promise.all([
         supabase
-          .from('meals')
-          .select('id, day, meal, recipe_id, meal_wishers(member_id)')
+          .from('old_meals')
+          .select('id, day, meal, recipe_id, meal_wishers:old_meal_wishers(member_id)')
           .gte('day', isoDate(start))
           .lte('day', isoDate(addDays(start, DAYS_PER_WEEK - 1))),
         // The oldest planned day limits how far back the plan can be paged.
-        supabase.from('meals').select('day').order('day').limit(1),
+        supabase.from('old_meals').select('day').order('day').limit(1),
       ]);
 
       const error = meals.error ?? first.error;
@@ -332,7 +332,7 @@ export class Meals {
    * restrict). Resolves to an error message, if any.
    */
   async deleteRecipe(recipe: Recipe): Promise<string | null> {
-    const { data, error } = await supabase.from('recipes').delete().eq('id', recipe.id).select('id');
+    const { data, error } = await supabase.from('old_recipes').delete().eq('id', recipe.id).select('id');
     this.recipesData.reload();
     if (error) {
       return error.code === '23503' ? 'Das Rezept steht auf dem Menüplan.' : error.message;
@@ -354,13 +354,13 @@ export class Meals {
   }
 
   setAvailable(recipe: Recipe, available: boolean): Promise<void> {
-    return this.write(supabase.from('recipes').update({ ingredients_available: available }).eq('id', recipe.id));
+    return this.write(supabase.from('old_recipes').update({ ingredients_available: available }).eq('id', recipe.id));
   }
 
   /** Sets the member's 👍 / 👎; the same value again takes it back. */
   rate(recipe: Recipe, memberId: string, value: Rating): Promise<void> {
     const current = recipe.ratings[memberId];
-    const ratings = supabase.from('recipe_ratings');
+    const ratings = supabase.from('old_recipe_ratings');
     return this.write(
       current === value
         ? ratings.delete().eq('recipe_id', recipe.id).eq('member_id', memberId)
@@ -372,12 +372,12 @@ export class Meals {
 
   /** "Wieder vorschlagen": forgets all ratings of a turned-down recipe. */
   restore(recipe: Recipe): Promise<void> {
-    return this.write(supabase.from('recipe_ratings').delete().eq('recipe_id', recipe.id));
+    return this.write(supabase.from('old_recipe_ratings').delete().eq('recipe_id', recipe.id));
   }
 
   /** Today's "Das will ich!" of a member, on or off. */
   toggleWish(recipe: Recipe, memberId: string): Promise<void> {
-    const wishes = supabase.from('recipe_wishes');
+    const wishes = supabase.from('old_recipe_wishes');
     return this.write(
       recipe.wishers.includes(memberId)
         ? wishes.delete().eq('recipe_id', recipe.id).eq('member_id', memberId).eq('wish_date', recipe.wish_date!)
@@ -409,12 +409,12 @@ export class Meals {
   }
 
   removeMeal(meal: PlannedMeal): Promise<void> {
-    return this.write(supabase.from('meals').delete().eq('id', meal.id), true);
+    return this.write(supabase.from('old_meals').delete().eq('id', meal.id), true);
   }
 
   /** "+ Ich auch" / "Nicht mehr ich" on a planned meal. */
   toggleMealWish(meal: PlannedMeal, memberId: string): Promise<void> {
-    const wishers = supabase.from('meal_wishers');
+    const wishers = supabase.from('old_meal_wishers');
     return this.write(
       meal.wishers.includes(memberId)
         ? wishers.delete().eq('meal_id', meal.id).eq('member_id', memberId)

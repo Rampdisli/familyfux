@@ -149,7 +149,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
   /** The signed-in account's family member entry. */
   async function me(): Promise<MemberRow | null> {
     const { data } = await supabase
-      .from('family_members')
+      .from('old_family_members')
       .select('id, family_id, user_id, name, emoji, role')
       .eq('user_id', userId)
       .order('created_at')
@@ -168,7 +168,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
 
   async function rewards(): Promise<RewardRow[]> {
     const { data, error } = await supabase
-      .from('rewards')
+      .from('old_rewards')
       .select(REWARD_COLUMNS)
       .order('sort_order')
       .order('title')
@@ -206,7 +206,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
 
   async function family(): Promise<MemberRow[]> {
     const { data } = await supabase
-      .from('family_members')
+      .from('old_family_members')
       .select('id, family_id, user_id, name, emoji, role')
       .order('sort_order')
       .order('created_at')
@@ -223,7 +223,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
 
   async function timeZone(familyId: string | undefined): Promise<string> {
     const { data } = familyId
-      ? await supabase.from('families').select('timezone').eq('id', familyId).maybeSingle<{ timezone: string }>()
+      ? await supabase.from('old_families').select('timezone').eq('id', familyId).maybeSingle<{ timezone: string }>()
       : { data: null };
     return data?.timezone ?? 'Europe/Zurich';
   }
@@ -257,7 +257,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
 
       const since = new Date(Date.now() - 30 * 24 * 3600e3).toISOString();
       const { data: recent } = await supabase
-        .from('reward_purchases')
+        .from('old_reward_purchases')
         .select('reward_id')
         .gte('purchased_at', since)
         .returns<{ reward_id: string | null }[]>();
@@ -340,7 +340,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
       const color = input.color ?? (defaults.push(`Farbe ${DEFAULT_COLOR}`), DEFAULT_COLOR);
 
       const { data, error } = await supabase
-        .from('rewards')
+        .from('old_rewards')
         .insert({
           family_id: who.value.family_id,
           title: input.title,
@@ -442,7 +442,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
       }
 
       const { id, family_id, is_active, ...update } = after;
-      const { error } = await supabase.from('rewards').update(update).eq('id', before.id);
+      const { error } = await supabase.from('old_rewards').update(update).eq('id', before.id);
       if (error) {
         return fail('update_reward', `Konnte die Belohnung nicht speichern: ${error.message}`, { rewardId: before.id });
       }
@@ -512,7 +512,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
           }
         }
 
-        const { error } = await supabase.from('rewards').update({ is_active: !archive }).eq('id', r.id);
+        const { error } = await supabase.from('old_rewards').update({ is_active: !archive }).eq('id', r.id);
         if (error) {
           const message =
             error.code === '23505'
@@ -534,7 +534,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
   /** Open purchases, oldest first, optionally of one member. */
   async function openPurchases(memberId?: string): Promise<PurchaseRow[]> {
     let query = supabase
-      .from('reward_purchases')
+      .from('old_reward_purchases')
       .select(PURCHASE_COLUMNS)
       .is('redeemed_at', null)
       .order('purchased_at');

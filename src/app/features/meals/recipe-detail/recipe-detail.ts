@@ -104,13 +104,13 @@ export class RecipeDetail implements OnDestroy {
     // Reloads with the recipes, e.g. after "Heute gekocht" or a 👍.
     params: () => ({ id: this.id(), recipes: this.meals.recipes() }),
     loader: async ({ params }) => {
-      const family = await supabase.from('families').select('timezone').limit(1).maybeSingle();
+      const family = await supabase.from('old_families').select('timezone').limit(1).maybeSingle();
       const now = nowIn((family.data?.timezone as string | undefined) ?? 'Europe/Zurich');
 
       const [meals, ratings, today] = await Promise.all([
-        supabase.from('meals').select('day, meal').eq('recipe_id', params.id).order('day'),
-        supabase.from('recipe_ratings').select('member_id, rating, rated_at').eq('recipe_id', params.id),
-        supabase.from('meals').select('day, meal, recipe_id').eq('day', now.day),
+        supabase.from('old_meals').select('day, meal').eq('recipe_id', params.id).order('day'),
+        supabase.from('old_recipe_ratings').select('member_id, rating, rated_at').eq('recipe_id', params.id),
+        supabase.from('old_meals').select('day, meal, recipe_id').eq('day', now.day),
       ]);
 
       const error = family.error ?? meals.error ?? ratings.error ?? today.error;
