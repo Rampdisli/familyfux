@@ -490,7 +490,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     },
     async () => {
       // Adds the occurrences of recurring tasks that became due since the last visit.
-      const refresh = await supabase.rpc('refresh_task_pool');
+      const refresh = await supabase.rpc('old_refresh_task_pool');
       if (refresh.error) {
         return fail('list_tasks', `Failed to refresh the pool: ${refresh.error.message}`);
       }
@@ -812,7 +812,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
 
       // Quantity and name apart, split the same way the database does it.
       const split = draft.ingredients.length
-        ? await supabase.rpc('split_ingredients', { lines: draft.ingredients })
+        ? await supabase.rpc('old_split_ingredients', { lines: draft.ingredients })
         : { data: [], error: null };
       const ingredients: { quantity: string | null; name: string }[] = split.error
         ? draft.ingredients.map((name) => ({ quantity: null, name }))
@@ -939,7 +939,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       );
 
       // Recipe and ingredients in one transaction (the family comes from the signed-in user).
-      const { data: recipeId, error } = await supabase.rpc('create_recipe', {
+      const { data: recipeId, error } = await supabase.rpc('old_create_recipe', {
         p_title: title,
         p_url: url ?? null,
         p_image_url: storedImage?.publicUrl ?? null,

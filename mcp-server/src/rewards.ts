@@ -648,7 +648,7 @@ export function registerRewardTools(server: McpServer, supabase: SupabaseClient,
         return fail('confirm_redemption', `Konnte die Käufe nicht laden: ${(error as Error).message}`);
       }
 
-      const { data, error } = await supabase.rpc('confirm_redemption', { p_purchase_id: purchase.id });
+      const { data, error } = await supabase.rpc('old_confirm_redemption', { p_purchase_id: purchase.id });
       if (error || !data) {
         return fail('confirm_redemption', error?.message ?? PARENTS_ONLY, { purchaseId: purchase.id });
       }

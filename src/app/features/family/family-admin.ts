@@ -39,7 +39,7 @@ export class FamilyAdmin {
   protected readonly accounts = resource({
     params: () => ({ family: this.pool.family() }),
     loader: async () => {
-      const { data, error } = await supabase.rpc('family_member_accounts');
+      const { data, error } = await supabase.rpc('old_family_member_accounts');
       if (error) {
         throw new Error(error.message, { cause: error });
       }

@@ -72,7 +72,7 @@ grant execute on function pg_temp.expect_error(text, text), pg_temp.check(boolea
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', true);
 
-select pg_temp.expect_error($$select public.update_recipe('50000000-0000-0000-0000-000000000001', 'Pasta', null, null, true, '[]')$$, 'Nur Eltern');
+select pg_temp.expect_error($$select public.old_update_recipe('50000000-0000-0000-0000-000000000001', 'Pasta', null, null, true, '[]')$$, 'Nur Eltern');
 select pg_temp.expect_error($$update public.old_recipes set title = 'Pasta' where id = '50000000-0000-0000-0000-000000000001'$$, 'permission denied');
 select pg_temp.expect_error($$update public.old_recipes set image_url = 'https://x.test/a.jpg' where id = '50000000-0000-0000-0000-000000000001'$$, 'permission denied');
 
@@ -86,7 +86,7 @@ select pg_temp.check((select count(*) from public.old_recipe_ingredients where r
 update public.old_recipes set ingredients_available = false where id = '50000000-0000-0000-0000-000000000001';
 select pg_temp.check(not (select ingredients_available from public.old_recipes where id = '50000000-0000-0000-0000-000000000001'), 'kids toggle "Zutaten da"');
 
-select pg_temp.check(public.create_recipe('Pfannkuchen', null, null, true, '[{"quantity": "3", "name": "Eier", "original_quantity": "3", "original_name": "Eier"}]') is not null, 'kids still add recipes');
+select pg_temp.check(public.old_create_recipe('Pfannkuchen', null, null, true, '[{"quantity": "3", "name": "Eier", "original_quantity": "3", "original_name": "Eier"}]') is not null, 'kids still add recipes');
 select pg_temp.check((select count(*) from public.old_recipe_ingredients i join public.old_recipes r on r.id = i.recipe_id where r.title = 'Pfannkuchen') = 1, 'with their ingredients');
 
 -- ---------------------------------------------------------------------------
@@ -96,7 +96,7 @@ select pg_temp.check((select count(*) from public.old_recipe_ingredients i join 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000c', true);
 
 select pg_temp.check((select count(*) from public.old_recipes) = 0, 'strangers see no recipes');
-select pg_temp.expect_error($$select public.update_recipe('50000000-0000-0000-0000-000000000001', 'Pasta', null, null, true, '[]')$$, 'Nur Eltern');
+select pg_temp.expect_error($$select public.old_update_recipe('50000000-0000-0000-0000-000000000001', 'Pasta', null, null, true, '[]')$$, 'Nur Eltern');
 delete from public.old_recipes where id = '50000000-0000-0000-0000-000000000001';
 update public.old_recipe_ingredients set name = 'Milch' where id = '60000000-0000-0000-0000-000000000002';
 
@@ -110,7 +110,7 @@ select pg_temp.check((select count(*) from public.old_recipes where id = '500000
 select pg_temp.check((select name from public.old_recipe_ingredients where id = '60000000-0000-0000-0000-000000000002') = 'Rahm', 'nor change ingredients');
 
 -- Rahm → Milch (changed), Zwiebel not sent (left out), Karotten added, an empty added row skipped.
-select public.update_recipe(
+select public.old_update_recipe(
   '50000000-0000-0000-0000-000000000001', ' Spaghetti Bolognese ', 'https://fooby.ch/spaghetti', '', true,
   '[{"id": "60000000-0000-0000-0000-000000000001", "quantity": "500 g", "name": "Spaghetti"},
     {"id": "60000000-0000-0000-0000-000000000002", "quantity": "200 ml", "name": "Milch"},
@@ -127,7 +127,7 @@ select pg_temp.check((select count(*) from public.old_recipe_ingredients where r
 select pg_temp.check((select ingredients from public.old_recipes where id = '50000000-0000-0000-0000-000000000001') = array['500 g Spaghetti', '200 ml Milch', '2 Karotten'], 'text copy follows');
 
 -- Zwiebel back ("↺ zurückholen"), Milch explicitly left out (name empty), Karotten not sent → deleted.
-select public.update_recipe(
+select public.old_update_recipe(
   '50000000-0000-0000-0000-000000000001', 'Spaghetti Bolognese', 'https://fooby.ch/spaghetti', null, true,
   '[{"id": "60000000-0000-0000-0000-000000000001", "quantity": "500 g", "name": "Spaghetti"},
     {"id": "60000000-0000-0000-0000-000000000002", "quantity": "200 ml", "name": ""},
@@ -138,9 +138,9 @@ select pg_temp.check((select status = 'removed' and quantity is null and origina
 select pg_temp.check((select count(*) from public.old_recipe_ingredients where recipe_id = '50000000-0000-0000-0000-000000000001' and original_name is null) = 0, 'added row not sent is deleted');
 select pg_temp.check((select count(*) from public.old_recipe_ingredients where recipe_id = '50000000-0000-0000-0000-000000000001') = 3, 'originals never deleted');
 
-select pg_temp.expect_error($$select public.update_recipe('50000000-0000-0000-0000-000000000001', 'X', null, null, true, '[{"id": "60000000-0000-0000-0000-000000000004", "name": "Kokosmilch"}]')$$, 'gehört nicht');
-select pg_temp.expect_error($$select public.update_recipe('50000000-0000-0000-0000-000000000001', '  ', null, null, true, '[]')$$, 'Namen');
-select pg_temp.expect_error($$select public.update_recipe('50000000-0000-0000-0000-000000000001', 'X', 'javascript:alert(1)', null, true, '[]')$$, 'check');
+select pg_temp.expect_error($$select public.old_update_recipe('50000000-0000-0000-0000-000000000001', 'X', null, null, true, '[{"id": "60000000-0000-0000-0000-000000000004", "name": "Kokosmilch"}]')$$, 'gehört nicht');
+select pg_temp.expect_error($$select public.old_update_recipe('50000000-0000-0000-0000-000000000001', '  ', null, null, true, '[]')$$, 'Namen');
+select pg_temp.expect_error($$select public.old_update_recipe('50000000-0000-0000-0000-000000000001', 'X', 'javascript:alert(1)', null, true, '[]')$$, 'check');
 
 -- Meals block deleting: cooked (past) and planned (future) alike.
 select pg_temp.expect_error($$delete from public.old_recipes where id = '50000000-0000-0000-0000-000000000002'$$, 'foreign key');

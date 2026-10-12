@@ -154,7 +154,7 @@ export class Rewards {
 
   /** Buys `quantity` units for a kid; the server checks the balance. Resolves to an error message, if any. */
   async redeem(memberId: string, rewardId: string, quantity: number): Promise<string | null> {
-    const { error } = await supabase.rpc('redeem_reward', {
+    const { error } = await supabase.rpc('old_redeem_reward', {
       p_member_id: memberId,
       p_reward_id: rewardId,
       p_quantity: quantity,
@@ -165,14 +165,14 @@ export class Rewards {
 
   /** Parents: the kid got it. */
   async confirm(purchaseId: string): Promise<string | null> {
-    const { data, error } = await supabase.rpc('confirm_redemption', { p_purchase_id: purchaseId });
+    const { data, error } = await supabase.rpc('old_confirm_redemption', { p_purchase_id: purchaseId });
     this.reloadAll();
     return error?.message ?? (data ? null : 'Schon abgehakt, oder du darfst das nicht.');
   }
 
   /** Parents: takes a purchase back that wasn't redeemed yet; the stars come back. */
   async cancel(purchaseId: string): Promise<string | null> {
-    const { data, error } = await supabase.rpc('cancel_purchase', { p_purchase_id: purchaseId });
+    const { data, error } = await supabase.rpc('old_cancel_purchase', { p_purchase_id: purchaseId });
     this.reloadAll();
     return error?.message ?? (data ? null : 'Schon eingelöst, oder du darfst das nicht.');
   }

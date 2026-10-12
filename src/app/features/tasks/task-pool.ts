@@ -128,7 +128,7 @@ export class TaskPool {
       }
 
       // Adds the occurrences that became due since the last visit (recurring tasks).
-      const refresh = await supabase.rpc('refresh_task_pool');
+      const refresh = await supabase.rpc('old_refresh_task_pool');
       if (refresh.error) {
         throw new Error(refresh.error.message, { cause: refresh.error });
       }
@@ -376,12 +376,12 @@ export class TaskPool {
 
   /** Links a member to the account with this email (kid logins); parents only. Resolves to an error message, if any. */
   linkAccount(memberId: string, email: string): Promise<string | null> {
-    return this.mutate(supabase.rpc('link_member_account', { p_member_id: memberId, p_email: email.trim() }));
+    return this.mutate(supabase.rpc('old_link_member_account', { p_member_id: memberId, p_email: email.trim() }));
   }
 
   /** Removes a member's login link again; parents only, never their own. */
   async unlinkAccount(memberId: string): Promise<string | null> {
-    const { data, error } = await supabase.rpc('unlink_member_account', { p_member_id: memberId });
+    const { data, error } = await supabase.rpc('old_unlink_member_account', { p_member_id: memberId });
     this.data.reload();
     return error?.message ?? (data ? null : 'Das Konto ist schon gelöst, oder du darfst es nicht lösen.');
   }
