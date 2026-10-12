@@ -20,6 +20,32 @@ COPY public ./public
 COPY src ./src
 RUN npm run build
 
+# version.json next to the bundle: package.json version, the commit and the
+# build time. The container start folds it into config.js (window.__env.build)
+# for the footer. The commit is read from the checkout's own .git: HEAD and
+# the refs, which .dockerignore and .gcloudignore let through (GitHub Actions,
+# Cloud Build's trigger and `gcloud run deploy --source` all have them). It
+# stays empty when the context has no .git at all.
+# package.json is only there so the COPY has a match when .git is absent
+# (a COPY whose sources all match nothing fails the build).
+COPY package.json .gi[t] ./gitmeta/
+RUN commit=""; \
+    if [ -f gitmeta/HEAD ]; then \
+      head=$(cat gitmeta/HEAD); \
+      case "$head" in \
+        ref:*) ref=${head#ref: }; \
+               if [ -f "gitmeta/$ref" ]; then commit=$(cat "gitmeta/$ref"); \
+               elif [ -f gitmeta/packed-refs ]; then commit=$(grep " $ref\$" gitmeta/packed-refs | cut -d' ' -f1); fi ;; \
+        *)     commit=$head ;; \
+      esac; \
+    fi; \
+    node -e "require('fs').writeFileSync('dist/familyfux/browser/version.json', JSON.stringify({ \
+      version: require('./package.json').version, \
+      commit: process.argv[1].trim().slice(0, 7), \
+      builtAt: new Date().toISOString(), \
+    }))" "$commit" \
+    && cat dist/familyfux/browser/version.json && echo
+
 # ---------- serve the static bundle ----------
 FROM nginxinc/nginx-unprivileged:alpine AS runtime
 ARG VERSION=0.0.0

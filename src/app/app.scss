@@ -118,6 +118,35 @@
   }
 }
 
+/* Version footer: one quiet line under the page content (inside main, so it
+   sits above the mobile tab bar's padding). */
+.version {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0 8px;
+  padding: 18px 16px 10px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--brown-soft);
+  opacity: 0.72;
+  font-variant-numeric: tabular-nums;
+
+  .sep {
+    opacity: 0.6;
+  }
+
+  .commit {
+    color: inherit;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+  }
+}
+
 /* Mobile: bottom tab bar instead of the pills */
 .bottom-bar {
   display: none;
@@ -149,6 +178,14 @@
 
   main.with-nav {
     padding-bottom: 90px;
+  }
+
+  .version {
+    padding: 14px 12px 8px;
+
+    .app-name {
+      display: none;
+    }
   }
 
   .bottom-bar {

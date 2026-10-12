@@ -21,6 +21,7 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.topnav')).toBeNull();
+    expect(compiled.querySelector('.version')).toBeNull();
     expect(compiled.querySelector('router-outlet')).not.toBeNull();
   });
 });

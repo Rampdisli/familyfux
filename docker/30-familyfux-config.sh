@@ -25,10 +25,17 @@ escape() {
     printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
 }
 
+# Written by the image build (see Dockerfile); valid JSON, so it can go in as is.
+build='{}'
+if [ -f "$html/version.json" ]; then
+    build=$(cat "$html/version.json")
+fi
+
 cat > "$target" <<CONFIG
 window.__env = {
   supabaseUrl: "$(escape "$SUPABASE_URL")",
   supabaseAnonKey: "$(escape "$SUPABASE_ANON_KEY")",
+  build: $build,
 };
 CONFIG
 

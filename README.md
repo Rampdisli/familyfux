@@ -195,6 +195,13 @@ env vars, and `index.html` loads that file before the bundle:
 (see [Google Cloud Run](#google-cloud-run-free-tier)); on the NAS and with docker compose the
 default applies. `docker/nginx.conf.template` is rendered with it on every start.
 
+The footer at the bottom of every page shows the bundle's version (`package.json`), commit and
+build time. The image build writes them to `version.json` next to the bundle, and the startup
+script folds that file into `config.js` as `window.__env.build`. The commit is read from the
+checkout's own `.git` (`HEAD` and the refs, which `.dockerignore` and `.gcloudignore` let
+through), so it is there whichever way the image is built: the workflow, Cloud Build, or
+`gcloud run deploy --source` from a laptop.
+
 If either Supabase variable is missing the container exits at startup with an error instead
 of serving a broken app. So the same image can be pointed at a different Supabase project
 without a rebuild — and it can stay a public package, since the only values baked in are the
