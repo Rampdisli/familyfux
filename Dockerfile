@@ -22,17 +22,15 @@ RUN npm run build
 
 # version.json next to the bundle: package.json version, the commit and the
 # build time. The container start folds it into config.js (window.__env.build)
-# for the footer. The commit comes from the COMMIT_SHA build arg (the GitHub
-# workflow passes github.sha); without one it is read from the checkout's own
-# .git (Cloud Build's trigger clones the repo; .dockerignore lets HEAD and the
-# refs through), and stays empty when neither is there (`gcloud run deploy
-# --source` uploads without .git).
-ARG COMMIT_SHA=
+# for the footer. The commit is read from the checkout's own .git: HEAD and
+# the refs, which .dockerignore and .gcloudignore let through (GitHub Actions,
+# Cloud Build's trigger and `gcloud run deploy --source` all have them). It
+# stays empty when the context has no .git at all.
 # package.json is only there so the COPY has a match when .git is absent
 # (a COPY whose sources all match nothing fails the build).
 COPY package.json .gi[t] ./gitmeta/
-RUN commit="$COMMIT_SHA"; \
-    if [ -z "$commit" ] && [ -f gitmeta/HEAD ]; then \
+RUN commit=""; \
+    if [ -f gitmeta/HEAD ]; then \
       head=$(cat gitmeta/HEAD); \
       case "$head" in \
         ref:*) ref=${head#ref: }; \

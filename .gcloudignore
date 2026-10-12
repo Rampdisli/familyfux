@@ -2,7 +2,11 @@
 # the Dockerfile needs). Mirrors .dockerignore; the build itself still applies
 # .dockerignore on top.
 .gcloudignore
-.git
+# .git stays out, except the files that name the current commit (version.json, see Dockerfile).
+.git/**
+!.git/HEAD
+!.git/packed-refs
+!.git/refs/heads/**
 .github
 .claude
 .vscode
