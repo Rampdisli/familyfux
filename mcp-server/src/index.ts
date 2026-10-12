@@ -237,7 +237,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       return [];
     }
     const { data } = await supabase
-      .from('task_claims')
+      .from('old_task_claims')
       .select('occurrence_id, member_id, is_done')
       .in('occurrence_id', rows.map((r) => r.id))
       // Parts a parent removed from the history.
@@ -252,7 +252,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
   /** Active repeatable tasks with today's completions (family time zone). */
   async function repeatableTasks(taskId?: string) {
     let tasks = supabase
-      .from('tasks')
+      .from('old_tasks')
       .select('id, title, emoji, reward')
       .eq('is_repeatable', true)
       .is('archived_at', null)
@@ -276,7 +276,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
 
   /** "🦊 Ramona" per member id, for the pool listings. */
   async function memberNames(): Promise<MemberNames> {
-    const { data } = await supabase.from('family_members').select('id, name, emoji');
+    const { data } = await supabase.from('old_family_members').select('id, name, emoji');
     return new Map((data ?? []).map((m) => [m.id as string, `${m.emoji} ${m.name}`]));
   }
 
@@ -371,7 +371,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       // Names (as spoken) or ids → member ids; unknown names become a question.
       let assignees: { id: string; name: string }[] = [];
       if (assign_to?.length) {
-        const { data: family } = await supabase.from('family_members').select('id, name');
+        const { data: family } = await supabase.from('old_family_members').select('id, name');
         const members = family ?? [];
         const unknown: string[] = [];
         for (const who of assign_to) {
@@ -406,7 +406,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
 
       // family_id comes from the tasks_before_write trigger, the first occurrence from tasks_after_insert.
       const { data, error } = await supabase
-        .from('tasks')
+        .from('old_tasks')
         .insert({
           title,
           emoji,
@@ -441,7 +441,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       // Assignees join the task's open occurrence right away (DB trigger).
       if (assignees.length) {
         const assigned = await supabase
-          .from('task_assignees')
+          .from('old_task_assignees')
           .insert(assignees.map((m) => ({ task_id: data.id, member_id: m.id })));
         if (assigned.error) {
           return fail('create_task', `Created the task, but assigning failed: ${assigned.error.message}`, {
@@ -545,7 +545,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     async () => {
       const [members, stars, balances] = await Promise.all([
         supabase
-          .from('family_members')
+          .from('old_family_members')
           .select('id, name, emoji, role')
           .order('sort_order')
           .order('created_at')
@@ -593,7 +593,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     },
     async ({ id, member_id }) => {
       // The DB trigger rejects members of other families.
-      const { error } = await supabase.from('task_claims').insert({ occurrence_id: id, member_id });
+      const { error } = await supabase.from('old_task_claims').insert({ occurrence_id: id, member_id });
       if (error) {
         const text = error.code === '23505' ? 'This member already takes part.' : `Failed to claim task: ${error.message}`;
         return fail('claim_task', text, { occurrenceId: id, memberId: member_id });
@@ -614,7 +614,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     },
     async ({ id, member_id }) => {
       const { data, error } = await supabase
-        .from('task_claims')
+        .from('old_task_claims')
         .delete()
         .eq('occurrence_id', id)
         .eq('member_id', member_id)
@@ -654,7 +654,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     },
     async ({ id, member_id, done }) => {
       const { data: repeatable } = await supabase
-        .from('tasks')
+        .from('old_tasks')
         .select('id')
         .eq('id', id)
         .eq('is_repeatable', true)
@@ -664,7 +664,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       }
 
       const updated = await supabase
-        .from('task_claims')
+        .from('old_task_claims')
         .update({ is_done: done })
         .eq('occurrence_id', id)
         .eq('member_id', member_id)
@@ -679,7 +679,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
           return fail('set_task_done', 'This member does not take part in the task.', { occurrenceId: id, memberId: member_id });
         }
         // Not a participant yet: join and finish in one go.
-        const inserted = await supabase.from('task_claims').insert({ occurrence_id: id, member_id, is_done: true });
+        const inserted = await supabase.from('old_task_claims').insert({ occurrence_id: id, member_id, is_done: true });
         if (inserted.error) {
           return fail('set_task_done', `Failed to update task: ${inserted.error.message}`, {
             occurrenceId: id,
@@ -703,7 +703,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     },
     async ({ task_id }) => {
       const { data, error } = await supabase
-        .from('tasks')
+        .from('old_tasks')
         .update({ archived_at: new Date().toISOString() })
         .eq('id', task_id)
         .is('archived_at', null)
@@ -731,7 +731,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
 
     if (done) {
       // The DB trigger rejects archived tasks and members of other families.
-      const { error } = await supabase.from('task_completions').insert({ task_id: taskId, member_id: memberId });
+      const { error } = await supabase.from('old_task_completions').insert({ task_id: taskId, member_id: memberId });
       if (error) {
         return fail('set_task_done', `Failed to tick off the task: ${error.message}`, details);
       }
@@ -747,7 +747,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       if (!latest) {
         return fail('set_task_done', 'This member has not done the task today.', details);
       }
-      const { error } = await supabase.from('task_completions').delete().eq('id', latest.id);
+      const { error } = await supabase.from('old_task_completions').delete().eq('id', latest.id);
       if (error) {
         return fail('set_task_done', `Failed to take it back: ${error.message}`, details);
       }
@@ -768,7 +768,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
   /** The family the signed-in user belongs to (recipes are stored per family). */
   async function ownFamilyId(): Promise<string | null> {
     const { data } = await supabase
-      .from('family_members')
+      .from('old_family_members')
       .select('family_id')
       .eq('user_id', userId)
       .order('created_at')
@@ -779,8 +779,8 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
 
   async function familyRecipes() {
     return supabase
-      .from('recipes')
-      .select('id, title, url, image_url, ingredients:recipe_ingredients(status)')
+      .from('old_recipes')
+      .select('id, title, url, image_url, ingredients:old_recipe_ingredients(status)')
       .order('title')
       .returns<RecipeRow[]>();
   }

@@ -110,7 +110,7 @@ export class Profile {
       since.setDate(since.getDate() - 29);
 
       const purchases = await supabase
-        .from('reward_purchases')
+        .from('old_reward_purchases')
         .select(PURCHASE_COLUMNS)
         .eq('member_id', params.memberId)
         .gte('purchased_at', since.toISOString())
@@ -136,7 +136,7 @@ export class Profile {
       const rows = claims.data as (Pick<DoneTask, 'id' | 'done_at' | 'stars'> & { task_id: string })[];
       const tasks = rows.length
         ? await supabase
-            .from('tasks')
+            .from('old_tasks')
             .select('id, title, emoji, color')
             .in('id', [...new Set(rows.map((r) => r.task_id))])
         : { data: [], error: null };

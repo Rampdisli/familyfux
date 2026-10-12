@@ -36,7 +36,7 @@ export const parentGuard: CanActivateFn = async () => {
   }
 
   const { data } = await supabase
-    .from('family_members')
+    .from('old_family_members')
     .select('id')
     .eq('user_id', userId)
     .eq('role', 'parent')

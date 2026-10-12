@@ -60,10 +60,10 @@ export class RecipeDeleteDialog implements OnDestroy {
     params: () => ({ id: this.recipe().id }),
     loader: async ({ params }) => {
       const [family, meals, ratings, wishes] = await Promise.all([
-        supabase.from('families').select('timezone').limit(1).maybeSingle(),
-        supabase.from('meals').select('day, meal').eq('recipe_id', params.id).order('day'),
-        supabase.from('recipe_ratings').select('member_id').eq('recipe_id', params.id),
-        supabase.from('recipe_wishes').select('member_id').eq('recipe_id', params.id),
+        supabase.from('old_families').select('timezone').limit(1).maybeSingle(),
+        supabase.from('old_meals').select('day, meal').eq('recipe_id', params.id).order('day'),
+        supabase.from('old_recipe_ratings').select('member_id').eq('recipe_id', params.id),
+        supabase.from('old_recipe_wishes').select('member_id').eq('recipe_id', params.id),
       ]);
 
       const error = family.error ?? meals.error ?? ratings.error ?? wishes.error;

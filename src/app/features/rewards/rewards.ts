@@ -124,9 +124,9 @@ export class Rewards {
       }
 
       const [rewards, open] = await Promise.all([
-        supabase.from('rewards').select(REWARD_COLUMNS).order('sort_order').order('price').order('title'),
+        supabase.from('old_rewards').select(REWARD_COLUMNS).order('sort_order').order('price').order('title'),
         supabase
-          .from('reward_purchases')
+          .from('old_reward_purchases')
           .select(PURCHASE_COLUMNS)
           .is('redeemed_at', null)
           .order('purchased_at', { ascending: false }),
@@ -183,17 +183,17 @@ export class Rewards {
       return Promise.resolve('Du gehörst zu keiner Familie.');
     }
     return this.mutate(
-      supabase.from('rewards').insert({ ...input, family_id: familyId, sort_order: this.all().length }),
+      supabase.from('old_rewards').insert({ ...input, family_id: familyId, sort_order: this.all().length }),
     );
   }
 
   updateReward(id: string, input: RewardInput): Promise<string | null> {
-    return this.mutate(supabase.from('rewards').update(input).eq('id', id));
+    return this.mutate(supabase.from('old_rewards').update(input).eq('id', id));
   }
 
   /** Archived rewards leave the shop; their purchases stay. */
   setArchived(id: string, archived: boolean): Promise<string | null> {
-    return this.mutate(supabase.from('rewards').update({ is_active: !archived }).eq('id', id));
+    return this.mutate(supabase.from('old_rewards').update({ is_active: !archived }).eq('id', id));
   }
 
   private async mutate(query: PromiseLike<{ error: { message: string; code?: string } | null }>): Promise<string | null> {

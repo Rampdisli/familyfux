@@ -82,7 +82,7 @@ try {
   console.log('\nrewards smoke test: ok');
 } finally {
   if (rewardId) {
-    await supabase.from('rewards').delete().eq('id', rewardId);
+    await supabase.from('old_rewards').delete().eq('id', rewardId);
   }
   await client.close();
 }

@@ -85,7 +85,7 @@ export class TaskAdmin {
     loader: async () => {
       const [tasks, claims, assignees] = await Promise.all([
         supabase
-          .from('tasks')
+          .from('old_tasks')
           .select(
             'id, title, emoji, color, reward, reward_mode, is_repeatable, schedule, start_date, repeat_every, weekdays, month_day, month, archived_at',
           )
@@ -95,7 +95,7 @@ export class TaskAdmin {
           .select('id, task_id, occurrence_id, member_id, done_at, stars')
           .eq('is_done', true)
           .order('done_at', { ascending: false }),
-        supabase.from('task_assignees').select('task_id, member_id'),
+        supabase.from('old_task_assignees').select('task_id, member_id'),
       ]);
 
       const error = tasks.error ?? claims.error ?? assignees.error;
