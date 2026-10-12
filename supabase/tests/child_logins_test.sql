@@ -58,15 +58,15 @@ grant execute on function pg_temp.expect_error(text, text), pg_temp.check(boolea
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', true);
 
-select pg_temp.expect_error($$select public.link_member_account('20000000-0000-0000-0000-00000000000b', 'nobody@test.local')$$, 'kein Konto');
-select pg_temp.expect_error($$select public.link_member_account('20000000-0000-0000-0000-00000000000b', 'other@test.local')$$, 'schon zu einer Familie');
-select pg_temp.expect_error($$select public.link_member_account('20000000-0000-0000-0000-00000000000d', 'mia@test.local')$$, 'Nur Eltern');
-select public.link_member_account('20000000-0000-0000-0000-00000000000b', ' mia@test.local ');
+select pg_temp.expect_error($$select public.old_link_member_account('20000000-0000-0000-0000-00000000000b', 'nobody@test.local')$$, 'kein Konto');
+select pg_temp.expect_error($$select public.old_link_member_account('20000000-0000-0000-0000-00000000000b', 'other@test.local')$$, 'schon zu einer Familie');
+select pg_temp.expect_error($$select public.old_link_member_account('20000000-0000-0000-0000-00000000000d', 'mia@test.local')$$, 'Nur Eltern');
+select public.old_link_member_account('20000000-0000-0000-0000-00000000000b', ' mia@test.local ');
 select pg_temp.check((select user_id from public.old_family_members where name = 'Mia') = '00000000-0000-0000-0000-00000000000b', 'linked, email case-insensitive');
-select pg_temp.expect_error($$select public.link_member_account('20000000-0000-0000-0000-00000000000b', 'mia@test.local')$$, 'schon mit einem Konto');
-select pg_temp.check((select count(*) from public.family_member_accounts()) = 2, 'parent sees the linked emails of the family');
+select pg_temp.expect_error($$select public.old_link_member_account('20000000-0000-0000-0000-00000000000b', 'mia@test.local')$$, 'schon mit einem Konto');
+select pg_temp.check((select count(*) from public.old_family_member_accounts()) = 2, 'parent sees the linked emails of the family');
 select pg_temp.expect_error($$update public.old_family_members set user_id = null where name = 'Mia'$$, 'permission denied');
-select pg_temp.check(not public.unlink_member_account('20000000-0000-0000-0000-00000000000a'), 'parents cannot unlink themselves');
+select pg_temp.check(not public.old_unlink_member_account('20000000-0000-0000-0000-00000000000a'), 'parents cannot unlink themselves');
 
 -- Parents still act for everybody.
 insert into public.old_task_claims (occurrence_id, member_id)
@@ -79,8 +79,8 @@ insert into public.old_task_completions (task_id, member_id) values ('30000000-0
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', true);
 
-select pg_temp.check((select count(*) from public.family_member_accounts()) = 0, 'kids see no emails');
-select pg_temp.expect_error($$select public.link_member_account('20000000-0000-0000-0000-00000000000c', 'other@test.local')$$, 'Nur Eltern');
+select pg_temp.check((select count(*) from public.old_family_member_accounts()) = 0, 'kids see no emails');
+select pg_temp.expect_error($$select public.old_link_member_account('20000000-0000-0000-0000-00000000000c', 'other@test.local')$$, 'Nur Eltern');
 
 insert into public.old_task_claims (occurrence_id, member_id)
 select id, '20000000-0000-0000-0000-00000000000b' from public.old_task_occurrences;
@@ -106,7 +106,7 @@ select pg_temp.check((select count(*) from public.old_task_completions where mem
 -- ---------------------------------------------------------------------------
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', true);
-select pg_temp.check(public.unlink_member_account('20000000-0000-0000-0000-00000000000b'), 'parent unlinks');
+select pg_temp.check(public.old_unlink_member_account('20000000-0000-0000-0000-00000000000b'), 'parent unlinks');
 select pg_temp.check((select user_id from public.old_family_members where name = 'Mia') is null, 'unlinked');
 
 reset role;

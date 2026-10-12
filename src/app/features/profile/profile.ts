@@ -298,7 +298,7 @@ export class Profile {
     this.removing.set(task.id);
     this.removeError.set(null);
 
-    const { data, error } = await supabase.rpc('remove_done_entry', { p_id: task.id });
+    const { data, error } = await supabase.rpc('old_remove_done_entry', { p_id: task.id });
     if (error || !data) {
       this.removeError.set(error?.message ?? 'Der Eintrag ist schon weg, oder du darfst ihn nicht löschen.');
     }

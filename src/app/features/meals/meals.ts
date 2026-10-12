@@ -285,7 +285,7 @@ export class Meals {
    * Typed in by hand, the ingredients as entered are its original.
    */
   async createRecipe(input: RecipeInput): Promise<string | null> {
-    const { error } = await supabase.rpc('create_recipe', {
+    const { error } = await supabase.rpc('old_create_recipe', {
       p_title: input.title,
       p_url: input.url,
       p_image_url: input.image_url,
@@ -307,7 +307,7 @@ export class Meals {
    * bucket is deleted afterwards. Resolves to an error message, if any.
    */
   async updateRecipe(recipe: Recipe, input: RecipeEdit): Promise<string | null> {
-    const { error } = await supabase.rpc('update_recipe', {
+    const { error } = await supabase.rpc('old_update_recipe', {
       p_recipe_id: recipe.id,
       p_title: input.title,
       p_url: input.url,
@@ -388,7 +388,7 @@ export class Meals {
   /** Puts a recipe on a day's lunch / dinner (replacing what was there); the active member is its first wisher. */
   planMeal(day: string, meal: MealSlot, recipeId: string): Promise<void> {
     return this.write(
-      supabase.rpc('plan_meal', {
+      supabase.rpc('old_plan_meal', {
         p_day: day,
         p_meal: meal,
         p_recipe_id: recipeId,
@@ -404,7 +404,7 @@ export class Meals {
    */
   cookedToday(day: string, meal: MealSlot, recipeId: string): Promise<string | null> {
     return this.writeResult(
-      supabase.rpc('plan_meal', { p_day: day, p_meal: meal, p_recipe_id: recipeId, p_member_id: null }),
+      supabase.rpc('old_plan_meal', { p_day: day, p_meal: meal, p_recipe_id: recipeId, p_member_id: null }),
     );
   }
 

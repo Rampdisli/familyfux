@@ -68,28 +68,28 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b
 select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 30, 'Mia starts with 30');
 
 -- 3 × 5 Minuten = 15 ⭐
-select pg_temp.check(public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000001', 3) is not null, 'Mia buys tablet time');
+select pg_temp.check(public.old_redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000001', 3) is not null, 'Mia buys tablet time');
 select pg_temp.check((select label from public.old_reward_purchases) = 'Tabletzeit · 15 Minuten', 'label with amount');
 select pg_temp.check((select cost from public.old_reward_purchases) = 15, 'cost copied');
 select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 15, 'balance drops right away');
 
 -- Not enough stars, too many units, archived reward, someone else, direct writes.
-select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000002', 2)$$, 'Nicht genug Sterne');
-select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000001', 7)$$, 'Menge');
-select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000003', 1)$$, 'gibt es nicht mehr');
-select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000c', '40000000-0000-0000-0000-000000000001', 1)$$, 'nur für dich selbst');
-select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000001', 1)$$, 'nur für dich selbst');
+select pg_temp.expect_error($$select public.old_redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000002', 2)$$, 'Nicht genug Sterne');
+select pg_temp.expect_error($$select public.old_redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000001', 7)$$, 'Menge');
+select pg_temp.expect_error($$select public.old_redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000003', 1)$$, 'gibt es nicht mehr');
+select pg_temp.expect_error($$select public.old_redeem_reward('20000000-0000-0000-0000-00000000000c', '40000000-0000-0000-0000-000000000001', 1)$$, 'nur für dich selbst');
+select pg_temp.expect_error($$select public.old_redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000001', 1)$$, 'nur für dich selbst');
 select pg_temp.expect_error($$insert into public.old_reward_purchases (family_id, member_id, title, emoji, color, quantity, label, cost) values ('10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-00000000000b', 'x', 'x', 'peach', 1, 'x', 1)$$, 'permission denied');
 select pg_temp.expect_error($$update public.old_reward_purchases set redeemed_at = now()$$, 'permission denied');
 select pg_temp.expect_error($$insert into public.old_rewards (family_id, title, price) values ('10000000-0000-0000-0000-000000000001', 'Eis', 10)$$, 'row-level security');
 
 -- 1 Folge for 10 ⭐ (singular), then only 5 ⭐ left.
-select public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000002', 1);
+select public.old_redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000002', 1);
 select pg_temp.check((select count(*) from public.old_reward_purchases where label = 'Serienfolge · 1 Folge') = 1, 'singular unit');
 
 -- Kids can't confirm or cancel.
-select pg_temp.check(not public.confirm_redemption((select id from public.old_reward_purchases where cost = 15)), 'kid cannot confirm');
-select pg_temp.check(not public.cancel_purchase((select id from public.old_reward_purchases where cost = 15)), 'kid cannot cancel');
+select pg_temp.check(not public.old_confirm_redemption((select id from public.old_reward_purchases where cost = 15)), 'kid cannot confirm');
+select pg_temp.check(not public.old_cancel_purchase((select id from public.old_reward_purchases where cost = 15)), 'kid cannot cancel');
 
 -- ---------------------------------------------------------------------------
 -- As a stranger (no family)
@@ -98,7 +98,7 @@ select pg_temp.check(not public.cancel_purchase((select id from public.old_rewar
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000c', true);
 select pg_temp.check((select count(*) from public.old_rewards) = 0, 'strangers see no rewards');
 select pg_temp.check((select count(*) from public.old_reward_purchases) = 0, 'strangers see no purchases');
-select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000001', 1)$$, 'gibt es nicht');
+select pg_temp.expect_error($$select public.old_redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000001', 1)$$, 'gibt es nicht');
 
 -- ---------------------------------------------------------------------------
 -- As Mama (parent login)
@@ -107,17 +107,17 @@ select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-00
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', true);
 
 -- Parents buy for themselves too (20260930090000_parents_redeem_rewards.sql).
-select pg_temp.check(public.redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000001', 1) is not null, 'Mama buys for herself');
+select pg_temp.check(public.old_redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000001', 1) is not null, 'Mama buys for herself');
 select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000a') = 5, 'Mama''s balance drops');
-select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000002', 1)$$, 'Nicht genug Sterne');
-select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000c', '40000000-0000-0000-0000-000000000001', 1)$$, 'Nicht genug Sterne');
+select pg_temp.expect_error($$select public.old_redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000002', 1)$$, 'Nicht genug Sterne');
+select pg_temp.expect_error($$select public.old_redeem_reward('20000000-0000-0000-0000-00000000000c', '40000000-0000-0000-0000-000000000001', 1)$$, 'Nicht genug Sterne');
 
-select pg_temp.check(public.confirm_redemption((select id from public.old_reward_purchases where cost = 15)), 'parent confirms');
+select pg_temp.check(public.old_confirm_redemption((select id from public.old_reward_purchases where cost = 15)), 'parent confirms');
 select pg_temp.check((select redeemed_by from public.old_reward_purchases where cost = 15) = '20000000-0000-0000-0000-00000000000a', 'redeemed_by = Mama');
-select pg_temp.check(not public.confirm_redemption((select id from public.old_reward_purchases where cost = 15)), 'confirm only once');
-select pg_temp.check(not public.cancel_purchase((select id from public.old_reward_purchases where cost = 15)), 'redeemed purchases stay');
+select pg_temp.check(not public.old_confirm_redemption((select id from public.old_reward_purchases where cost = 15)), 'confirm only once');
+select pg_temp.check(not public.old_cancel_purchase((select id from public.old_reward_purchases where cost = 15)), 'redeemed purchases stay');
 
-select pg_temp.check(public.cancel_purchase((select id from public.old_reward_purchases where cost = 10)), 'parent cancels');
+select pg_temp.check(public.old_cancel_purchase((select id from public.old_reward_purchases where cost = 10)), 'parent cancels');
 select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 15, 'stars come back');
 
 -- Rewards: parents write, one active title per family (case-insensitive).
@@ -129,11 +129,11 @@ update public.old_rewards set price = 7 where title = 'Tabletzeit';
 select pg_temp.check((select cost from public.old_reward_purchases where cost = 15) = 15, 'price change keeps purchases');
 
 -- Negative balance after a parent removes an entry: shown, but buying is blocked.
-select public.remove_done_entry((select id from public.old_task_completions limit 1));
+select public.old_remove_done_entry((select id from public.old_task_completions limit 1));
 select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 5, 'balance after removal');
-select public.remove_done_entry((select id from public.old_task_completions where removed_at is null limit 1));
+select public.old_remove_done_entry((select id from public.old_task_completions where removed_at is null limit 1));
 select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = -5, 'negative balance');
-select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000001', 1)$$, 'Nicht genug Sterne');
+select pg_temp.expect_error($$select public.old_redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000001', 1)$$, 'Nicht genug Sterne');
 
 reset role;
 select 'rewards_test: ok';
