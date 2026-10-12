@@ -140,20 +140,20 @@ export class TaskPool {
           .order('sort_order')
           .order('created_at'),
         supabase
-          .from('task_pool')
+          .from('old_task_pool')
           .select('id, task_id, schedule, title, emoji, color, reward, reward_mode, is_done, done_at')
           .order('is_done')
           .order('due_date')
           .order('title'),
-        supabase.from('member_week_stars').select('member_id, stars'),
-        supabase.from('member_balance').select('member_id, balance'),
+        supabase.from('old_member_week_stars').select('member_id, stars'),
+        supabase.from('old_member_balance').select('member_id, balance'),
         supabase
           .from('old_tasks')
           .select('id, title, emoji, color, reward')
           .eq('is_repeatable', true)
           .is('archived_at', null)
           .order('title'),
-        supabase.from('task_completions_today').select('id, task_id, member_id, completed_at').order('completed_at'),
+        supabase.from('old_task_completions_today').select('id, task_id, member_id, completed_at').order('completed_at'),
       ]);
 
       // Participants of the entries currently in the pool.

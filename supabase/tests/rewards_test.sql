@@ -65,13 +65,13 @@ grant execute on function pg_temp.expect_error(text, text), pg_temp.check(boolea
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', true);
 
-select pg_temp.check((select balance from public.member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 30, 'Mia starts with 30');
+select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 30, 'Mia starts with 30');
 
 -- 3 × 5 Minuten = 15 ⭐
 select pg_temp.check(public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000001', 3) is not null, 'Mia buys tablet time');
 select pg_temp.check((select label from public.old_reward_purchases) = 'Tabletzeit · 15 Minuten', 'label with amount');
 select pg_temp.check((select cost from public.old_reward_purchases) = 15, 'cost copied');
-select pg_temp.check((select balance from public.member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 15, 'balance drops right away');
+select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 15, 'balance drops right away');
 
 -- Not enough stars, too many units, archived reward, someone else, direct writes.
 select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000002', 2)$$, 'Nicht genug Sterne');
@@ -108,7 +108,7 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a
 
 -- Parents buy for themselves too (20260930090000_parents_redeem_rewards.sql).
 select pg_temp.check(public.redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000001', 1) is not null, 'Mama buys for herself');
-select pg_temp.check((select balance from public.member_balance where member_id = '20000000-0000-0000-0000-00000000000a') = 5, 'Mama''s balance drops');
+select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000a') = 5, 'Mama''s balance drops');
 select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000a', '40000000-0000-0000-0000-000000000002', 1)$$, 'Nicht genug Sterne');
 select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000c', '40000000-0000-0000-0000-000000000001', 1)$$, 'Nicht genug Sterne');
 
@@ -118,7 +118,7 @@ select pg_temp.check(not public.confirm_redemption((select id from public.old_re
 select pg_temp.check(not public.cancel_purchase((select id from public.old_reward_purchases where cost = 15)), 'redeemed purchases stay');
 
 select pg_temp.check(public.cancel_purchase((select id from public.old_reward_purchases where cost = 10)), 'parent cancels');
-select pg_temp.check((select balance from public.member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 15, 'stars come back');
+select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 15, 'stars come back');
 
 -- Rewards: parents write, one active title per family (case-insensitive).
 insert into public.old_rewards (family_id, title, price) values ('10000000-0000-0000-0000-000000000001', 'Eis', 10);
@@ -130,9 +130,9 @@ select pg_temp.check((select cost from public.old_reward_purchases where cost = 
 
 -- Negative balance after a parent removes an entry: shown, but buying is blocked.
 select public.remove_done_entry((select id from public.old_task_completions limit 1));
-select pg_temp.check((select balance from public.member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 5, 'balance after removal');
+select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = 5, 'balance after removal');
 select public.remove_done_entry((select id from public.old_task_completions where removed_at is null limit 1));
-select pg_temp.check((select balance from public.member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = -5, 'negative balance');
+select pg_temp.check((select balance from public.old_member_balance where member_id = '20000000-0000-0000-0000-00000000000b') = -5, 'negative balance');
 select pg_temp.expect_error($$select public.redeem_reward('20000000-0000-0000-0000-00000000000b', '40000000-0000-0000-0000-000000000001', 1)$$, 'Nicht genug Sterne');
 
 reset role;

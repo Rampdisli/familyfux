@@ -188,9 +188,9 @@ export class Meals {
           )
           .order('title')
           .order('position', { referencedTable: 'recipe_ingredients' }),
-        supabase.from('recipe_stats').select('recipe_id, cook_count, last_cooked_on'),
+        supabase.from('old_recipe_stats').select('recipe_id, cook_count, last_cooked_on'),
         supabase.from('old_recipe_ratings').select('recipe_id, member_id, rating'),
-        supabase.from('recipe_wishes_today').select('recipe_id, member_id, wish_date'),
+        supabase.from('old_recipe_wishes_today').select('recipe_id, member_id, wish_date'),
       ]);
 
       const error = recipes.error ?? stats.error ?? ratings.error ?? wishes.error;

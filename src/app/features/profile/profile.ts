@@ -122,7 +122,7 @@ export class Profile {
 
       // The member's finished parts, with their stars (full reward or their share).
       const claims = await supabase
-        .from('claim_rewards')
+        .from('old_claim_rewards')
         .select('id, task_id, done_at, stars')
         .eq('member_id', params.memberId)
         .eq('is_done', true)

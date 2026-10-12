@@ -263,7 +263,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
     const [repeatable, today] = await Promise.all([
       tasks.returns<Omit<RepeatableRow, 'today'>[]>(),
       supabase
-        .from('task_completions_today')
+        .from('old_task_completions_today')
         .select('task_id, member_id')
         .order('completed_at')
         .returns<{ task_id: string; member_id: string | null }[]>(),
@@ -452,7 +452,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       }
 
       const { data: current } = await supabase
-        .from('task_pool')
+        .from('old_task_pool')
         .select(POOL_COLUMNS)
         .eq('task_id', data.id)
         .maybeSingle<Omit<PoolRow, 'claims'>>();
@@ -497,7 +497,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
 
       const [pool, repeatable, members] = await Promise.all([
         supabase
-          .from('task_pool')
+          .from('old_task_pool')
           .select(POOL_COLUMNS)
           .order('is_done')
           .order('due_date')
@@ -550,8 +550,8 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
           .order('sort_order')
           .order('created_at')
           .returns<{ id: string; name: string; emoji: string; role: string }[]>(),
-        supabase.from('member_week_stars').select('member_id, stars').returns<{ member_id: string; stars: number | string }[]>(),
-        supabase.from('member_balance').select('member_id, balance').returns<{ member_id: string; balance: number | string }[]>(),
+        supabase.from('old_member_week_stars').select('member_id, stars').returns<{ member_id: string; stars: number | string }[]>(),
+        supabase.from('old_member_balance').select('member_id, balance').returns<{ member_id: string; balance: number | string }[]>(),
       ]);
 
       const error = members.error ?? stars.error ?? balances.error;
@@ -737,7 +737,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
       }
     } else {
       const { data: latest } = await supabase
-        .from('task_completions_today')
+        .from('old_task_completions_today')
         .select('id')
         .eq('task_id', taskId)
         .eq('member_id', memberId)
@@ -1026,7 +1026,7 @@ function createMcpServer(supabaseAccessToken: string, userId: string): McpServer
   async function reportEntry(tool: string, id: string, details: Record<string, unknown>) {
     await logEvent({ type: 'tool_call', tool, userId, occurrenceId: id, ...details });
 
-    const { data } = await supabase.from('task_pool').select(POOL_COLUMNS).eq('id', id).maybeSingle<Omit<PoolRow, 'claims'>>();
+    const { data } = await supabase.from('old_task_pool').select(POOL_COLUMNS).eq('id', id).maybeSingle<Omit<PoolRow, 'claims'>>();
     if (!data) {
       return { content: [{ type: 'text' as const, text: 'Done. (The entry is no longer in the current pool.)' }] };
     }
