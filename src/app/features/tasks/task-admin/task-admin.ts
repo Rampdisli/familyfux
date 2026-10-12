@@ -91,7 +91,7 @@ export class TaskAdmin {
           )
           .order('created_at', { ascending: false }),
         supabase
-          .from('claim_rewards')
+          .from('old_claim_rewards')
           .select('id, task_id, occurrence_id, member_id, done_at, stars')
           .eq('is_done', true)
           .order('done_at', { ascending: false }),
